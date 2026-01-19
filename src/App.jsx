@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Settings } from 'lucide-react';
 
 export default function App() {
   const [hasOnboarded, setHasOnboarded] = useState(localStorage.getItem('imperium_onboarded') === 'true');
@@ -23,12 +23,13 @@ function MainOS() {
 }
 
 // ==========================================
-// 1. ONBOARDING (Inchangé)
+// 1. ONBOARDING (Avec choix de la Devise)
 // ==========================================
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(1);
   const [initialBalance, setInitialBalance] = useState('');
   const [mainProject, setMainProject] = useState('');
+  const [currency, setCurrency] = useState(''); // Nouvelle variable pour la devise
   const [isHolding, setIsHolding] = useState(false);
   const holdTimer = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -55,6 +56,7 @@ function OnboardingScreen({ onComplete }) {
   const finishOnboarding = () => {
     localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(initialBalance) || 0));
     localStorage.setItem('imperium_project_name', mainProject || "Empire Naissant");
+    localStorage.setItem('imperium_currency', currency || "€"); // On sauvegarde la devise
     localStorage.setItem('imperium_onboarded', 'true');
     window.location.reload();
   };
@@ -79,11 +81,36 @@ function OnboardingScreen({ onComplete }) {
           <p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p>
         </div>
       )}
-      {(step === 3 || step === 4) && (
+      {/* ÉTAPE 3 : CHOIX DE LA DEVISE */}
+      {step === 3 && (
         <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs">
-          <label className="block text-xs text-gray-500 uppercase mb-2 text-left">{step === 3 ? "Trésorerie Actuelle (€)" : "Nom du Projet"}</label>
-          <input type={step === 3 ? "number" : "text"} value={step === 3 ? initialBalance : mainProject} onChange={(e) => step === 3 ? setInitialBalance(e.target.value) : setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8" placeholder={step === 3 ? "0.00" : "Ex: Agence IA"} autoFocus />
-          <button onClick={step === 3 ? () => setStep(4) : finishOnboarding} disabled={step === 3 ? !initialBalance : !mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">CONFIRMER</button>
+          <label className="block text-xs text-gray-500 uppercase mb-2 text-left">Votre Devise (Monnaie)</label>
+          <input 
+            type="text" 
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-2 placeholder-gray-800"
+            placeholder="Ex: FCFA, $, €"
+            autoFocus
+          />
+          <p className="text-[10px] text-gray-500 mb-8 text-left">Tapez le symbole ou le code (FCFA, XOF, USD...)</p>
+          <button onClick={() => setStep(4)} disabled={!currency} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button>
+        </div>
+      )}
+      {/* ÉTAPE 4 : SOLDE */}
+      {step === 4 && (
+        <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs">
+          <label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle ({currency})</label>
+          <input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus />
+          <button onClick={() => setStep(5)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button>
+        </div>
+      )}
+      {/* ÉTAPE 5 : PROJET */}
+      {step === 5 && (
+        <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs">
+          <label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label>
+          <input type="text" value={mainProject} onChange={(e) => setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="Ex: Agence IA" autoFocus />
+          <button onClick={finishOnboarding} disabled={!mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">LANCER L'EMPIRE</button>
         </div>
       )}
     </div>
@@ -97,13 +124,12 @@ function Dashboard({ onNavigate }) {
   const [balance, setBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
   const [transactions, setTransactions] = useState(JSON.parse(localStorage.getItem('imperium_transactions') || "[]"));
   const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
+  const currency = localStorage.getItem('imperium_currency') || "€"; // Récupération de la devise
   
-  // Données Projet
   const tasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
   const completedTasks = tasks.filter(t => t.done).length;
   const progressPercent = tasks.length === 0 ? 0 : Math.round((completedTasks / tasks.length) * 100);
 
-  // Données Skills (Nouveau)
   const skills = JSON.parse(localStorage.getItem('imperium_skills') || "[]");
   const mainSkill = skills.length > 0 ? skills[0] : null;
 
@@ -143,41 +169,33 @@ function Dashboard({ onNavigate }) {
           <div className="p-2 bg-gold/10 rounded-full shrink-0"><TrendingDown className="w-5 h-5 text-gold" /></div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider">Allocation Survie</p>
-            <p className="text-white font-bold text-lg">{(balance / 30).toFixed(2)} € <span className="text-gray-600 font-normal text-xs">/ jour</span></p>
+            {/* Affichage devise dynamique */}
+            <p className="text-white font-bold text-lg">{(balance / 30).toFixed(2)} {currency} <span className="text-gray-600 font-normal text-xs">/ jour</span></p>
           </div>
         </div>
       </div>
 
       <main className="w-full px-4 grid gap-3 mt-4">
-        {/* Trésorerie */}
         <div className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center">
             <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Trésorerie</h2></div>
-            <div className="text-center py-4 mt-2"><span className={`text-5xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{balance.toFixed(2)} <span className="text-lg text-gray-500">€</span></span></div>
+            <div className="text-center py-4 mt-2">
+                {/* Affichage devise dynamique */}
+                <span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{balance.toFixed(2)} <span className="text-lg text-gray-500">{currency}</span></span>
+            </div>
         </div>
 
-        {/* Arsenal (Compétences - Clickable) */}
         <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group">
             <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors"><ChevronRight className="w-5 h-5" /></div>
             <div className="flex items-center gap-2 mb-3 opacity-60"><Sword className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Arsenal</h2></div>
             {mainSkill ? (
-              <div className="flex justify-between items-center">
-                 <span className="font-bold text-white text-sm">{mainSkill.name}</span>
-                 <span className="text-[10px] text-gold bg-gold/10 px-2 py-1 rounded uppercase">{mainSkill.level}</span>
-              </div>
-            ) : (
-              <p className="text-xs text-gray-500 italic">Aucune arme. Cliquez pour forger.</p>
-            )}
-            {skills.length > 1 && <p className="text-[10px] text-gray-600 mt-2">+{skills.length - 1} autre(s) compétence(s)</p>}
+              <div className="flex justify-between items-center"><span className="font-bold text-white text-sm">{mainSkill.name}</span><span className="text-[10px] text-gold bg-gold/10 px-2 py-1 rounded uppercase">{mainSkill.level}</span></div>
+            ) : (<p className="text-xs text-gray-500 italic">Aucune arme. Cliquez pour forger.</p>)}
         </div>
 
-        {/* Projet (Clickable) */}
         <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group">
             <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors"><ChevronRight className="w-5 h-5" /></div>
             <div className="flex items-center gap-2 mb-3 opacity-60"><Castle className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Conquête</h2></div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-bold text-white text-sm tracking-wide">{projectName}</span>
-              <span className="text-[10px] text-gold bg-gold/10 px-2 py-0.5 rounded">{progressPercent}%</span>
-            </div>
+            <div className="flex justify-between items-center mb-2"><span className="font-bold text-white text-sm tracking-wide">{projectName}</span><span className="text-[10px] text-gold bg-gold/10 px-2 py-0.5 rounded">{progressPercent}%</span></div>
             <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-gold h-1.5 rounded-full shadow-[0_0_10px_#D4AF37]" style={{ width: `${progressPercent}%` }}></div></div>
         </div>
       </main>
@@ -192,7 +210,8 @@ function Dashboard({ onNavigate }) {
                     <div className={`p-1.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>{t.type === 'income' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}</div>
                     <div className="overflow-hidden"><p className="text-sm text-gray-300 font-medium truncate">{t.desc}</p><p className="text-[10px] text-gray-600">{t.date}</p></div>
                 </div>
-                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{t.type === 'income' ? '+' : '-'} {t.amount}</span>
+                {/* Affichage devise dynamique */}
+                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{t.type === 'income' ? '+' : '-'} {t.amount} {currency}</span>
             </div>
             ))}
         </div>
@@ -211,7 +230,7 @@ function Dashboard({ onNavigate }) {
                 <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-5">
-              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0.00" autoFocus />
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus />
               <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} />
               <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>{transactionType === 'expense' ? 'Confirmer la perte' : 'Encaisser le butin'}</button>
             </form>
@@ -264,7 +283,7 @@ function ProjectScreen({ onBack }) {
 }
 
 // ==========================================
-// 4. ÉCRAN ARSENAL (COMPÉTENCES) - NOUVEAU
+// 4. ÉCRAN ARSENAL
 // ==========================================
 function SkillsScreen({ onBack }) {
     const [skills, setSkills] = useState(JSON.parse(localStorage.getItem('imperium_skills') || "[]"));
@@ -272,65 +291,30 @@ function SkillsScreen({ onBack }) {
     const [newLevel, setNewLevel] = useState("Apprenti");
 
     useEffect(() => { localStorage.setItem('imperium_skills', JSON.stringify(skills)); }, [skills]);
-
-    const addSkill = (e) => {
-        e.preventDefault();
-        if (!newSkill.trim()) return;
-        setSkills([...skills, { id: Date.now(), name: newSkill, level: newLevel }]);
-        setNewSkill("");
-    };
-
+    const addSkill = (e) => { e.preventDefault(); if (!newSkill.trim()) return; setSkills([...skills, { id: Date.now(), name: newSkill, level: newLevel }]); setNewSkill(""); };
     const deleteSkill = (id) => { setSkills(skills.filter(s => s.id !== id)); };
 
     return (
         <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300">
             <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
-                <div className="flex justify-between items-end">
-                    <h1 className="text-2xl font-serif text-white font-bold">Arsenal</h1>
-                    <span className="text-gold text-sm font-bold">{skills.length} armes</span>
-                </div>
+                <div className="flex justify-between items-end"><h1 className="text-2xl font-serif text-white font-bold">Arsenal</h1><span className="text-gold text-sm font-bold">{skills.length} armes</span></div>
             </div>
-
             <div className="flex-1 p-5 overflow-y-auto pb-40">
                 <div className="space-y-3">
-                    {skills.length === 0 && (
-                        <div className="text-center py-10 border border-dashed border-white/10 rounded-xl">
-                            <Zap className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-                            <p className="text-gray-500 text-sm">Arsenal vide.</p>
-                            <p className="text-gray-700 text-xs mt-1">Ajoutez vos compétences pour monétiser.</p>
-                        </div>
-                    )}
-
+                    {skills.length === 0 && <div className="text-center py-10 border border-dashed border-white/10 rounded-xl"><Zap className="w-8 h-8 text-gray-700 mx-auto mb-2" /><p className="text-gray-500 text-sm">Arsenal vide.</p></div>}
                     {skills.map(skill => (
                         <div key={skill.id} className="bg-[#111] border border-white/5 p-4 rounded-lg flex justify-between items-center group hover:border-gold/30 transition-colors">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gray-900 rounded-lg text-gold"><Star className="w-4 h-4 fill-current" /></div>
-                                <div>
-                                    <p className="text-sm font-bold text-gray-200">{skill.name}</p>
-                                    <p className="text-[10px] text-gold uppercase tracking-wider">{skill.level}</p>
-                                </div>
-                            </div>
+                            <div className="flex items-center gap-3"><div className="p-2 bg-gray-900 rounded-lg text-gold"><Star className="w-4 h-4 fill-current" /></div><div><p className="text-sm font-bold text-gray-200">{skill.name}</p><p className="text-[10px] text-gold uppercase tracking-wider">{skill.level}</p></div></div>
                             <button onClick={() => deleteSkill(skill.id)} className="text-gray-700 hover:text-red-500 p-2"><Trash2 className="w-4 h-4" /></button>
                         </div>
                     ))}
                 </div>
             </div>
-
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
                 <form onSubmit={addSkill} className="flex flex-col gap-3">
-                    <div className="flex gap-2">
-                         <input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Compétence (ex: Anglais)" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                         <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-2 text-xs text-gold focus:border-gold focus:outline-none">
-                             <option>Apprenti</option>
-                             <option>Soldat</option>
-                             <option>Expert</option>
-                             <option>Maître</option>
-                         </select>
-                    </div>
-                    <button type="submit" disabled={!newSkill.trim()} className="w-full bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2">
-                        <Plus className="w-4 h-4" /> AJOUTER À L'ARSENAL
-                    </button>
+                    <div className="flex gap-2"><input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Compétence..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-2 text-xs text-gold focus:border-gold focus:outline-none"><option>Apprenti</option><option>Soldat</option><option>Expert</option><option>Maître</option></select></div>
+                    <button type="submit" disabled={!newSkill.trim()} className="w-full bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"><Plus className="w-4 h-4" /> AJOUTER À L'ARSENAL</button>
                 </form>
             </div>
         </div>
