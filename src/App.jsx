@@ -79,7 +79,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v7.1</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v7.2</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -319,7 +319,7 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 8. PROTOCOLES (REVENUS RÉCURRENTS) - CORRECTIF PADDING
+// 8. PROTOCOLES - CORRECTIF LAYOUT 2 LIGNES
 // ==========================================
 function ProtocolsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -388,16 +388,18 @@ function ProtocolsScreen({ onBack }) {
                 </div>
             </div>
 
-            {/* CORRECTIF PADDING ICI */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0a0a0a] border-t border-white/10 pb-[calc(2rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
                 <div className="flex bg-black p-1 rounded-lg mb-3 border border-white/5">
                     <button onClick={() => setType('expense')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Charge Fixe</button>
                     <button onClick={() => setType('income')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Rente Fixe</button>
                 </div>
-                <form onSubmit={addProtocol} className="flex gap-2">
-                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Netflix)" className="flex-[2] bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                    <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                    <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
+                {/* CORRECTIF ICI : FORMULAIRE SUR 2 LIGNES */}
+                <form onSubmit={addProtocol} className="flex flex-col gap-3">
+                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Netflix)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <div className="flex gap-2">
+                         <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                         <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -406,7 +408,7 @@ function ProtocolsScreen({ onBack }) {
 }
 
 // ==========================================
-// 8. LE GRAND LIVRE (DETTES & CRÉANCES) - CORRECTIF PADDING
+// 8. LE GRAND LIVRE - CORRECTIF LAYOUT 2 LIGNES
 // ==========================================
 function DebtsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -467,16 +469,18 @@ function DebtsScreen({ onBack }) {
                 </div>
             </div>
 
-            {/* CORRECTIF PADDING ICI */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0a0a0a] border-t border-white/10 pb-[calc(2rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
                 <div className="flex bg-black p-1 rounded-lg mb-3 border border-white/5">
                     <button onClick={() => setType('owe')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owe' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Je Dois (Dette)</button>
                     <button onClick={() => setType('owed')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owed' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>On me Doit (Créance)</button>
                 </div>
-                <form onSubmit={addEntry} className="flex gap-2">
-                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Moussa)" className="flex-[2] bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                    <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                    <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
+                {/* CORRECTIF ICI : FORMULAIRE SUR 2 LIGNES */}
+                <form onSubmit={addEntry} className="flex flex-col gap-3">
+                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Moussa)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <div className="flex gap-2">
+                        <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                        <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -485,7 +489,7 @@ function DebtsScreen({ onBack }) {
 }
 
 // ==========================================
-// 7. CIBLES DE CONQUÊTE (GOALS) - CORRECTIF PADDING
+// 7. CIBLES DE CONQUÊTE - CORRECTIF LAYOUT 2 LIGNES
 // ==========================================
 function GoalsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -565,12 +569,14 @@ function GoalsScreen({ onBack }) {
                 </div>
             )}
 
-            {/* CORRECTIF PADDING ICI */}
+            {/* CORRECTIF ICI : FORMULAIRE SUR 2 LIGNES */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0a0a0a] border-t border-white/10 pb-[calc(2rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
-                <form onSubmit={addGoal} className="flex gap-2">
-                    <input type="text" value={newGoalName} onChange={(e) => setNewGoalName(e.target.value)} placeholder="Nom (ex: PC Gamer)" className="flex-[2] bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                    <input type="number" value={newGoalTarget} onChange={(e) => setNewGoalTarget(e.target.value)} placeholder="Cible" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                    <button type="submit" disabled={!newGoalName || !newGoalTarget} className="bg-blue-600/80 text-white font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-blue-500 transition-colors"><Plus className="w-5 h-5" /></button>
+                <form onSubmit={addGoal} className="flex flex-col gap-3">
+                    <input type="text" value={newGoalName} onChange={(e) => setNewGoalName(e.target.value)} placeholder="Nom (ex: PC Gamer)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <div className="flex gap-2">
+                        <input type="number" value={newGoalTarget} onChange={(e) => setNewGoalTarget(e.target.value)} placeholder="Cible" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                        <button type="submit" disabled={!newGoalName || !newGoalTarget} className="bg-blue-600/80 text-white font-bold px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-blue-500 transition-colors"><Plus className="w-5 h-5" /></button>
+                    </div>
                 </form>
             </div>
         </div>
