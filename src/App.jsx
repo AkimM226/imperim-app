@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft } from 'lucide-react';
 
 export default function App() {
   const [hasOnboarded, setHasOnboarded] = useState(localStorage.getItem('imperium_onboarded') === 'true');
@@ -8,11 +8,28 @@ export default function App() {
     return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
   }
 
-  return <Dashboard />;
+  return <MainOS />;
 }
 
 // ==========================================
-// 1. ONBOARDING (Pleine page centrée)
+// 0. GESTIONNAIRE DE VUES (Navigation)
+// ==========================================
+function MainOS() {
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' ou 'project'
+
+  // Si la vue est 'dashboard', on affiche le Dashboard
+  if (currentView === 'dashboard') {
+    return <Dashboard onNavigate={(view) => setCurrentView(view)} />;
+  }
+
+  // Si la vue est 'project', on affiche la Salle de Guerre
+  if (currentView === 'project') {
+    return <ProjectScreen onBack={() => setCurrentView('dashboard')} />;
+  }
+}
+
+// ==========================================
+// 1. ONBOARDING (Inchangé)
 // ==========================================
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(1);
@@ -50,17 +67,13 @@ function OnboardingScreen({ onComplete }) {
 
   return (
     <div className="fixed inset-0 bg-black text-gold flex flex-col items-center justify-center p-6 text-center z-50 overflow-hidden w-full h-full">
-      {/* CONTENU IDENTIQUE À AVANT, JUSTE LE CONTAINER CORRIGÉ AU DESSUS */}
       {step === 1 && (
         <div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs">
           <h1 className="text-4xl font-serif font-bold tracking-widest mb-6">IMPERIUM</h1>
-          <p className="text-gray-400 text-sm leading-relaxed mb-10">
-            "Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."
-          </p>
+          <p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p>
           <button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button>
         </div>
       )}
-
       {step === 2 && (
         <div className="animate-in zoom-in duration-500 flex flex-col items-center w-full max-w-xs">
           <h2 className="text-xl font-serif mb-2">Le Pacte</h2>
@@ -72,18 +85,10 @@ function OnboardingScreen({ onComplete }) {
           <p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p>
         </div>
       )}
-
       {(step === 3 || step === 4) && (
         <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs">
           <label className="block text-xs text-gray-500 uppercase mb-2 text-left">{step === 3 ? "Trésorerie Actuelle (€)" : "Nom du Projet"}</label>
-          <input 
-            type={step === 3 ? "number" : "text"}
-            value={step === 3 ? initialBalance : mainProject}
-            onChange={(e) => step === 3 ? setInitialBalance(e.target.value) : setMainProject(e.target.value)}
-            className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8"
-            placeholder={step === 3 ? "0.00" : "Ex: Agence IA"}
-            autoFocus
-          />
+          <input type={step === 3 ? "number" : "text"} value={step === 3 ? initialBalance : mainProject} onChange={(e) => step === 3 ? setInitialBalance(e.target.value) : setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8" placeholder={step === 3 ? "0.00" : "Ex: Agence IA"} autoFocus />
           <button onClick={step === 3 ? () => setStep(4) : finishOnboarding} disabled={step === 3 ? !initialBalance : !mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">CONFIRMER</button>
         </div>
       )}
@@ -92,12 +97,19 @@ function OnboardingScreen({ onComplete }) {
 }
 
 // ==========================================
-// 2. DASHBOARD (CORRECTION MOBILE)
+// 2. DASHBOARD PRINCIPAL
 // ==========================================
-function Dashboard() {
+function Dashboard({ onNavigate }) {
   const savedBalance = localStorage.getItem('imperium_balance');
   const savedTransactions = localStorage.getItem('imperium_transactions');
   const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
+  
+  // Calcul du % d'avancement du projet (Nouveau !)
+  const savedTasks = localStorage.getItem('imperium_tasks');
+  const tasks = savedTasks ? JSON.parse(savedTasks) : [];
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(t => t.done).length;
+  const progressPercent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
   const [balance, setBalance] = useState(savedBalance ? JSON.parse(savedBalance) : 0);
   const [transactions, setTransactions] = useState(savedTransactions ? JSON.parse(savedTransactions) : []);
@@ -127,12 +139,11 @@ function Dashboard() {
   }
 
   return (
-    // ICI : Changement majeur. w-full et max-w-md sont gérés ici pour centrer sur grand écran mais remplir sur mobile
-    <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-32 flex flex-col relative shadow-2xl">
+    <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-32 flex flex-col relative shadow-2xl animate-in fade-in duration-500">
       
-      {/* HEADER (Sticky et ajusté) */}
+      {/* HEADER */}
       <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
-         <div className="w-8"></div> {/* Spacer pour équilibrer */}
+         <div className="w-8"></div>
          <div className="text-center flex-1">
             <h1 className="text-xl font-serif text-gold tracking-widest font-bold">IMPERIUM</h1>
          </div>
@@ -152,7 +163,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* GRILLE (Pleine largeur) */}
+      {/* GRILLE */}
       <main className="w-full px-4 grid gap-3 mt-4">
         {/* Trésorerie */}
         <div className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center">
@@ -167,19 +178,30 @@ function Dashboard() {
             </div>
         </div>
 
-        {/* Projet */}
-        <div className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden">
+        {/* Projet (Maintenant Clickable) */}
+        <div 
+            onClick={() => onNavigate('project')}
+            className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group"
+        >
+            <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors">
+                <ChevronRight className="w-5 h-5" />
+            </div>
             <div className="flex items-center gap-2 mb-3 opacity-60">
                 <Castle className="w-3 h-3 text-gold" />
                 <h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Conquête</h2>
             </div>
             <div className="flex justify-between items-center mb-2">
               <span className="font-bold text-white text-sm tracking-wide">{projectName}</span>
-              <span className="text-[10px] text-gold bg-gold/10 px-2 py-0.5 rounded">Niveau 1</span>
+              <span className="text-[10px] text-gold bg-gold/10 px-2 py-0.5 rounded">
+                {progressPercent === 100 ? 'Terminé' : `Niveau ${Math.floor(progressPercent/10) + 1}`}
+              </span>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-gold h-1.5 rounded-full shadow-[0_0_10px_#D4AF37]" style={{ width: '10%' }}></div>
+              <div className="bg-gold h-1.5 rounded-full shadow-[0_0_10px_#D4AF37] transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
             </div>
+            <p className="text-[10px] text-gray-500 mt-2">
+                {totalTasks === 0 ? "Aucune mission définie. Cliquez pour planifier." : `${completedTasks}/${totalTasks} missions accomplies`}
+            </p>
         </div>
       </main>
 
@@ -190,36 +212,30 @@ function Dashboard() {
           <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Derniers Mouvements</h3>
         </div>
         <div className="space-y-2 pb-24">
-          {transactions.length === 0 && (
-            <p className="text-center text-xs text-gray-800 italic py-8">Le calme avant la tempête.</p>
-          )}
-          {transactions.map((t) => (
+            {transactions.length === 0 && <p className="text-center text-xs text-gray-800 italic py-8">Le calme avant la tempête.</p>}
+            {transactions.map((t) => (
             <div key={t.id} className="bg-[#111] border-b border-white/5 p-3 flex justify-between items-center hover:bg-[#161616] transition-colors rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className={`p-1.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                   {t.type === 'income' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}
+                <div className="flex items-center gap-3">
+                    <div className={`p-1.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                        {t.type === 'income' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}
+                    </div>
+                    <div className="overflow-hidden">
+                        <p className="text-sm text-gray-300 font-medium truncate">{t.desc}</p>
+                        <p className="text-[10px] text-gray-600">{t.date}</p>
+                    </div>
                 </div>
-                <div className="overflow-hidden">
-                  <p className="text-sm text-gray-300 font-medium truncate">{t.desc}</p>
-                  <p className="text-[10px] text-gray-600">{t.date}</p>
-                </div>
-              </div>
-              <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                {t.type === 'income' ? '+' : '-'} {t.amount}
-              </span>
+                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                    {t.type === 'income' ? '+' : '-'} {t.amount}
+                </span>
             </div>
-          ))}
+            ))}
         </div>
       </section>
 
-      {/* BOUTON D'ACTION (Fixe en bas) */}
+      {/* BOUTON D'ACTION */}
       <div className="fixed bottom-0 left-0 right-0 flex justify-center z-20 pointer-events-none pb-[calc(2rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-dark via-dark/80 to-transparent pt-10">
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="tracking-widest text-xs">ACTION</span>
+        <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200">
+          <Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span>
         </button>
       </div>
 
@@ -245,4 +261,99 @@ function Dashboard() {
       )}
     </div>
   );
+}
+
+// ==========================================
+// 3. ÉCRAN PROJET (SALLE DE GUERRE)
+// ==========================================
+function ProjectScreen({ onBack }) {
+    const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
+    const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('imperium_tasks') || "[]"));
+    const [newTask, setNewTask] = useState("");
+
+    // Sauvegarde auto
+    useEffect(() => {
+        localStorage.setItem('imperium_tasks', JSON.stringify(tasks));
+    }, [tasks]);
+
+    const addTask = (e) => {
+        e.preventDefault();
+        if (!newTask.trim()) return;
+        setTasks([...tasks, { id: Date.now(), text: newTask, done: false }]);
+        setNewTask("");
+    };
+
+    const toggleTask = (id) => {
+        setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    };
+
+    const deleteTask = (id) => {
+        setTasks(tasks.filter(t => t.id !== id));
+    };
+
+    // Calculs
+    const completed = tasks.filter(t => t.done).length;
+    const progress = tasks.length === 0 ? 0 : Math.round((completed / tasks.length) * 100);
+
+    return (
+        <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Header Projet */}
+            <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2">
+                    <ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span>
+                </button>
+                <h1 className="text-2xl font-serif text-white font-bold">{projectName}</h1>
+                <div className="flex items-center gap-4 mt-4">
+                    <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <span className="text-gold font-bold text-sm">{progress}%</span>
+                </div>
+            </div>
+
+            {/* Liste des Tâches */}
+            <div className="flex-1 p-5 overflow-y-auto pb-32">
+                <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">Plan de Bataille</h3>
+                
+                <div className="space-y-3">
+                    {tasks.length === 0 && (
+                        <div className="text-center py-10 border border-dashed border-white/10 rounded-xl">
+                            <p className="text-gray-500 text-sm">Aucune mission en cours.</p>
+                            <p className="text-gray-700 text-xs mt-1">Ajoutez votre première étape.</p>
+                        </div>
+                    )}
+
+                    {tasks.map(task => (
+                        <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : 'bg-[#111] border-white/5'}`}>
+                            <button onClick={() => toggleTask(task.id)} className="mt-0.5 text-gold hover:scale-110 transition-transform">
+                                {task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                            </button>
+                            <div className="flex-1">
+                                <p className={`text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.text}</p>
+                            </div>
+                            <button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Input Ajout Tâche (Fixe en bas) */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
+                <form onSubmit={addTask} className="flex gap-2">
+                    <input 
+                        type="text" 
+                        value={newTask}
+                        onChange={(e) => setNewTask(e.target.value)}
+                        placeholder="Nouvelle mission..." 
+                        className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none"
+                    />
+                    <button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors">
+                        <Plus className="w-5 h-5" />
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
 }
