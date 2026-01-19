@@ -2,22 +2,31 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle } from 'lucide-react';
 
 const CURRENCIES = [
-  { code: 'EUR', symbol: '€', name: 'Euro' }, { code: 'USD', symbol: '$', name: 'Dollar Américain' }, { code: 'XOF', symbol: 'FCFA', name: 'Franc CFA (BCEAO)' }, { code: 'XAF', symbol: 'FCFA', name: 'Franc CFA (BEAC)' }, { code: 'CAD', symbol: '$', name: 'Dollar Canadien' }
+  { code: 'XOF', symbol: 'FCFA', name: 'Franc CFA (BCEAO)' }, 
+  { code: 'XAF', symbol: 'FCFA', name: 'Franc CFA (BEAC)' }, 
+  { code: 'EUR', symbol: '€', name: 'Euro' }, 
+  { code: 'USD', symbol: '$', name: 'Dollar Américain' }, 
+  { code: 'CAD', symbol: '$', name: 'Dollar Canadien' },
+  { code: 'GNF', symbol: 'FG', name: 'Franc Guinéen' },
+  { code: 'CDF', symbol: 'FC', name: 'Franc Congolais' },
+  { code: 'MAD', symbol: 'DH', name: 'Dirham Marocain' }
 ];
 
-// --- 🧠 LE CERVEAU BUSINESS (Base de données d'idées) ---
+// --- 🧠 LE CERVEAU BUSINESS (Base en Valeur "Monde" ~Euro/Dollar) ---
 const BUSINESS_IDEAS = {
-  'default': { title: 'Freelance Générique', price: '50', task: 'Propose tes services sur Upwork ou Fiverr.' },
-  'react': { title: 'Création Landing Page', price: '300', task: 'Contacte 5 artisans locaux et propose un site vitrine rapide.' },
-  'javascript': { title: 'Script Automation', price: '150', task: 'Automatise une tâche Excel pour une PME.' },
-  'design': { title: 'Pack Logo + Carte', price: '200', task: 'Refais le menu moche d\'un restaurant du coin.' },
-  'logo': { title: 'Création de Logo', price: '100', task: 'Vends des logos minimalistes sur 5euros.com.' },
-  'anglais': { title: 'Traduction CV/Mémoire', price: '40', task: 'Aide les étudiants à traduire leurs résumés.' },
-  'montage': { title: 'Shorts TikTok/Reels', price: '50', task: 'Propose à un influenceur de monter 3 vidéos courtes.' },
-  'video': { title: 'Montage Vidéo Event', price: '250', task: 'Filme et monte une petite vidéo pour un mariage ou une fête.' },
-  'redaction': { title: 'Articles SEO', price: '0.10/mot', task: 'Rédige des articles de blog pour des sites de niche.' },
-  'ia': { title: 'Formation Prompting', price: '100', task: 'Organise un atelier Zoom : Comment utiliser ChatGPT pour les débutants.' },
-  'prompt': { title: 'Optimisation Workflow', price: '200', task: 'Configure des assistants IA pour une petite agence.' }
+  'default': { title: 'Freelance Standard', price: 50, task: 'Propose tes services sur les groupes Facebook locaux ou Upwork.' },
+  'react': { title: 'Site Vitrine PME', price: 300, task: 'Contacte 5 artisans/commerçants et propose un site rapide et moderne.' },
+  'javascript': { title: 'Script Automation', price: 150, task: 'Automatise une tâche Excel/Google Sheets pour une entreprise.' },
+  'design': { title: 'Pack Identité Visuelle', price: 200, task: 'Refais le menu et le logo d\'un restaurant local.' },
+  'logo': { title: 'Création de Logo', price: 80, task: 'Crée 3 propositions de logos pour une start-up.' },
+  'infographie': { title: 'Pack Visuels Réseaux Sociaux', price: 60, task: 'Crée 5 affiches publicitaires pour WhatsApp/Instagram pour un commerçant.' },
+  'flyer': { title: 'Conception Flyer/Affiche', price: 40, task: 'Design une affiche pour un événement ou une soirée.' },
+  'anglais': { title: 'Traduction de Documents', price: 40, task: 'Aide les étudiants/pros à traduire leurs CV ou mémoires.' },
+  'montage': { title: 'Shorts TikTok/Reels', price: 50, task: 'Propose à un influenceur de monter 3 vidéos dynamiques.' },
+  'video': { title: 'Couverture Événement', price: 250, task: 'Filme et monte une vidéo récapitulative pour un mariage ou une conférence.' },
+  'redaction': { title: 'Rédaction Web', price: 30, task: 'Rédige 2 articles de blog optimisés SEO.' },
+  'ia': { title: 'Formation IA Débutant', price: 100, task: 'Organise un atelier : Comment utiliser ChatGPT pour son business.' },
+  'community': { title: 'Gestion de Page', price: 150, task: 'Gère la page Facebook d\'une boutique pendant 1 mois.' }
 };
 
 export default function App() {
@@ -38,7 +47,7 @@ function MainOS() {
 }
 
 // ==========================================
-// 1. ONBOARDING (Simplifié pour la place)
+// 1. ONBOARDING
 // ==========================================
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(1);
@@ -88,12 +97,10 @@ function Dashboard({ onNavigate }) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactionType, setTransactionType] = useState('expense');
-  // NOUVEAU : Catégorie de dépense
-  const [expenseCategory, setExpenseCategory] = useState('need'); // 'need' (Besoin) ou 'want' (Futilité)
+  const [expenseCategory, setExpenseCategory] = useState('need'); 
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
 
-  // LE SERGENT PARLE ICI
   const getSergeantMessage = () => {
     if (transactionType === 'income') return "Encaisser le butin";
     if (expenseCategory === 'want') return "CONFIRMER LA PERTE (Futilité)";
@@ -110,11 +117,8 @@ function Dashboard({ onNavigate }) {
     if (!amount) return;
     const value = parseFloat(amount);
     const newBalance = transactionType === 'expense' ? balance - value : balance + value;
-    
-    // Description enrichie pour l'historique
     let finalDesc = description;
     if (transactionType === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${description}`;
-
     const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) };
     setBalance(newBalance);
     setTransactions([newTransaction, ...transactions]);
@@ -129,18 +133,17 @@ function Dashboard({ onNavigate }) {
          <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white"><Settings className="w-5 h-5"/></button>
       </header>
 
-      {/* JAUGE DE SURVIE (Impact visuel) */}
       <div className="w-full px-4 mt-6">
         <div className={`border-l-2 p-4 rounded-r-lg flex items-center gap-4 shadow-lg w-full transition-colors ${balance < 0 ? 'bg-red-900/20 border-red-500' : 'bg-[#151515] border-gold'}`}>
           <div className="p-2 bg-gold/10 rounded-full shrink-0"><TrendingDown className="w-5 h-5 text-gold" /></div>
-          <div><p className="text-[10px] text-gray-400 uppercase tracking-wider">Allocation Survie</p><p className="text-white font-bold text-lg">{(balance / 30).toFixed(2)} {currency} <span className="text-gray-600 font-normal text-xs">/ jour</span></p></div>
+          <div><p className="text-[10px] text-gray-400 uppercase tracking-wider">Allocation Survie</p><p className="text-white font-bold text-lg">{(balance / 30).toLocaleString()} {currency} <span className="text-gray-600 font-normal text-xs">/ jour</span></p></div>
         </div>
       </div>
 
       <main className="w-full px-4 grid gap-3 mt-4">
         <div className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center">
             <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Trésorerie</h2></div>
-            <div className="text-center py-4 mt-2"><span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{balance.toFixed(2)} <span className="text-lg text-gray-500">{currency}</span></span></div>
+            <div className="text-center py-4 mt-2"><span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{balance.toLocaleString()} <span className="text-lg text-gray-500">{currency}</span></span></div>
         </div>
         <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30">
             <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors"><ChevronRight className="w-5 h-5" /></div>
@@ -164,7 +167,7 @@ function Dashboard({ onNavigate }) {
                     <div className={`p-1.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>{t.type === 'income' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}</div>
                     <div className="overflow-hidden"><p className="text-sm text-gray-300 font-medium truncate">{t.desc}</p><p className="text-[10px] text-gray-600">{t.date}</p></div>
                 </div>
-                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{t.type === 'income' ? '+' : '-'} {t.amount} {currency}</span>
+                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{t.type === 'income' ? '+' : '-'} {t.amount.toLocaleString()} {currency}</span>
             </div>
             ))}
         </div>
@@ -178,31 +181,20 @@ function Dashboard({ onNavigate }) {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
             <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Opération</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
-            
-            {/* SWITCH DEPENSE / REVENU */}
             <div className="flex bg-black p-1 rounded-lg mb-6 border border-white/5">
                 <button onClick={() => setTransactionType('expense')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
                 <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
             </div>
-
-            {/* NOUVEAU : SELECTEUR TYPE DE DÉPENSE (Besoin vs Futilité) */}
             {transactionType === 'expense' && (
                 <div className="flex gap-2 mb-4">
-                    <button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>
-                        NÉCESSITÉ
-                    </button>
-                    <button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>
-                        FUTILITÉ ⚠️
-                    </button>
+                    <button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button>
+                    <button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button>
                 </div>
             )}
-
             <form onSubmit={handleSubmit} className="space-y-5">
-              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0.00" autoFocus />
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus />
               <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} />
-              <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' && expenseCategory === 'want' ? 'bg-red-600 text-white animate-pulse' : (transactionType === 'expense' ? 'bg-white/10 text-white' : 'bg-green-600 text-white')}`}>
-                  {getSergeantMessage()}
-              </button>
+              <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' && expenseCategory === 'want' ? 'bg-red-600 text-white animate-pulse' : (transactionType === 'expense' ? 'bg-white/10 text-white' : 'bg-green-600 text-white')}`}>{getSergeantMessage()}</button>
             </form>
           </div>
         </div>
@@ -212,31 +204,37 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 4. ÉCRAN ARSENAL (AVEC INTELLIGENCE ARTIFICIELLE)
+// 4. ÉCRAN ARSENAL (INTELLIGENT & CALIBRÉ FCFA)
 // ==========================================
 function SkillsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
     const [skills, setSkills] = useState(JSON.parse(localStorage.getItem('imperium_skills') || "[]"));
     const [newSkill, setNewSkill] = useState("");
-    
-    // Suggestion Intelligente
     const [selectedGig, setSelectedGig] = useState(null);
 
     useEffect(() => { localStorage.setItem('imperium_skills', JSON.stringify(skills)); }, [skills]);
-    
-    const addSkill = (e) => { 
-        e.preventDefault(); 
-        if (!newSkill.trim()) return; 
-        setSkills([...skills, { id: Date.now(), name: newSkill, level: "Apprenti" }]); 
-        setNewSkill(""); 
-    };
-    
+    const addSkill = (e) => { e.preventDefault(); if (!newSkill.trim()) return; setSkills([...skills, { id: Date.now(), name: newSkill, level: "Apprenti" }]); setNewSkill(""); };
     const deleteSkill = (id) => { setSkills(skills.filter(s => s.id !== id)); };
 
-    // ALGORITHME DE MATCHING
+    // ALGORITHME DE MATCHING & CONVERSION
     const findGig = (skillName) => {
         const key = Object.keys(BUSINESS_IDEAS).find(k => skillName.toLowerCase().includes(k));
-        return key ? BUSINESS_IDEAS[key] : BUSINESS_IDEAS['default'];
+        const gig = key ? BUSINESS_IDEAS[key] : BUSINESS_IDEAS['default'];
+        
+        // CONVERTISSEUR INTELLIGENT
+        let displayPrice = gig.price;
+        if (currency.includes('FCFA') || currency.includes('XOF') || currency.includes('XAF')) {
+            // Multiplicateur FCFA (approx x650)
+            displayPrice = (gig.price * 650).toLocaleString();
+        } else if (currency.includes('GNF')) {
+             // Multiplicateur Franc Guinéen
+             displayPrice = (gig.price * 9000).toLocaleString();
+        } else {
+            // Par défaut (Euro/Dollars)
+            displayPrice = gig.price;
+        }
+
+        return { ...gig, displayPrice };
     };
 
     return (
@@ -245,7 +243,6 @@ function SkillsScreen({ onBack }) {
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Arsenal</h1>
             </div>
-
             <div className="flex-1 p-5 overflow-y-auto pb-40">
                 <div className="space-y-4">
                     {skills.map(skill => {
@@ -253,51 +250,37 @@ function SkillsScreen({ onBack }) {
                         return (
                         <div key={skill.id} className="bg-[#111] border border-white/5 p-4 rounded-lg group hover:border-gold/30 transition-colors">
                             <div className="flex justify-between items-start mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-gray-900 rounded-lg text-gold"><Zap className="w-4 h-4 fill-current" /></div>
-                                    <div><p className="text-sm font-bold text-gray-200">{skill.name}</p><p className="text-[10px] text-gray-500 uppercase">Potentiel Détecté</p></div>
-                                </div>
+                                <div className="flex items-center gap-3"><div className="p-2 bg-gray-900 rounded-lg text-gold"><Zap className="w-4 h-4 fill-current" /></div><div><p className="text-sm font-bold text-gray-200">{skill.name}</p><p className="text-[10px] text-gray-500 uppercase">Potentiel Détecté</p></div></div>
                                 <button onClick={() => deleteSkill(skill.id)} className="text-gray-700 hover:text-red-500 p-2"><Trash2 className="w-4 h-4" /></button>
                             </div>
-                            
-                            {/* BOUTON D'INTELLIGENCE BUSINESS */}
-                            <button 
-                                onClick={() => setSelectedGig(gig)}
-                                className="w-full bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded px-3 py-2 flex items-center justify-between text-xs text-gold transition-colors"
-                            >
+                            <button onClick={() => setSelectedGig(gig)} className="w-full bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded px-3 py-2 flex items-center justify-between text-xs text-gold transition-colors">
                                 <span className="flex items-center gap-2"><Briefcase className="w-3 h-3"/> Monétiser cette compétence</span>
-                                <span className="font-bold">~{gig.price} {currency}</span>
+                                <span className="font-bold">~{gig.displayPrice} {currency}</span>
                             </button>
                         </div>
                     )})}
                 </div>
             </div>
-
-            {/* MODAL IDÉE BUSINESS */}
             {selectedGig && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 animate-in fade-in">
                     <div className="bg-[#1a1a1a] border border-gold w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
                         <button onClick={() => setSelectedGig(null)} className="absolute top-4 right-4 text-gray-500"><X className="w-5 h-5"/></button>
                         <h3 className="text-gold font-serif text-xl mb-1">{selectedGig.title}</h3>
-                        <p className="text-white font-bold text-2xl mb-4">{selectedGig.price} {currency}</p>
-                        <div className="bg-black/50 p-4 rounded-lg border border-white/10 mb-4">
-                            <p className="text-xs text-gray-400 uppercase mb-2">Ordre de Mission :</p>
-                            <p className="text-sm text-gray-200 leading-relaxed">{selectedGig.task}</p>
-                        </div>
+                        <p className="text-white font-bold text-2xl mb-4">{selectedGig.displayPrice} {currency}</p>
+                        <div className="bg-black/50 p-4 rounded-lg border border-white/10 mb-4"><p className="text-xs text-gray-400 uppercase mb-2">Ordre de Mission :</p><p className="text-sm text-gray-200 leading-relaxed">{selectedGig.task}</p></div>
                         <button onClick={() => setSelectedGig(null)} className="w-full bg-gold text-black font-bold py-3 rounded text-xs uppercase tracking-widest">J'accepte le défi</button>
                     </div>
                 </div>
             )}
-
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
-                <form onSubmit={addSkill} className="flex gap-2"><input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Nouvelle compétence (ex: React, Anglais...)" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><button type="submit" disabled={!newSkill.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button></form>
+                <form onSubmit={addSkill} className="flex gap-2"><input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Compétence (Infographie, Anglais...)" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><button type="submit" disabled={!newSkill.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button></form>
             </div>
         </div>
     );
 }
 
 // ==========================================
-// 3. ECRAN PROJET & 5. SETTINGS (Inchangés mais inclus pour que le code soit complet)
+// 3. ECRAN PROJET & 5. SETTINGS (Inchangés)
 // ==========================================
 function ProjectScreen({ onBack }) { const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha"; const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('imperium_tasks') || "[]")); const [newTask, setNewTask] = useState(""); useEffect(() => { localStorage.setItem('imperium_tasks', JSON.stringify(tasks)); }, [tasks]); const addTask = (e) => { e.preventDefault(); if (!newTask.trim()) return; setTasks([...tasks, { id: Date.now(), text: newTask, done: false }]); setNewTask(""); }; const toggleTask = (id) => { setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)); }; const deleteTask = (id) => { setTasks(tasks.filter(t => t.id !== id)); }; const progress = tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.done).length / tasks.length) * 100); return (<div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300"><div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10"><button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button><h1 className="text-2xl font-serif text-white font-bold">{projectName}</h1><div className="flex items-center gap-4 mt-4"><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div></div><span className="text-gold font-bold text-sm">{progress}%</span></div></div><div className="flex-1 p-5 overflow-y-auto pb-32"><div className="space-y-3">{tasks.map(task => (<div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : 'bg-[#111] border-white/5'}`}><button onClick={() => toggleTask(task.id)} className="mt-0.5 text-gold hover:scale-110 transition-transform">{task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</button><p className={`flex-1 text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.text}</p><button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4" /></button></div>))}</div></div><div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto"><form onSubmit={addTask} className="flex gap-2"><input type="text" value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Nouvelle mission..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button></form></div></div>); }
 function SettingsScreen({ onBack }) { const [importData, setImportData] = useState(""); const handleExport = () => { const data = { balance: localStorage.getItem('imperium_balance'), transactions: localStorage.getItem('imperium_transactions'), project: localStorage.getItem('imperium_project_name'), tasks: localStorage.getItem('imperium_tasks'), skills: localStorage.getItem('imperium_skills'), currency: localStorage.getItem('imperium_currency'), onboarded: localStorage.getItem('imperium_onboarded'), }; const encoded = btoa(JSON.stringify(data)); navigator.clipboard.writeText(encoded); alert("⚔️ ARCHIVES SÉCURISÉES ⚔️\n\nCode copié."); }; const handleImport = () => { try { if(!importData) return; const decoded = JSON.parse(atob(importData)); if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); if(decoded.project) localStorage.setItem('imperium_project_name', decoded.project); if(decoded.tasks) localStorage.setItem('imperium_tasks', decoded.tasks); if(decoded.skills) localStorage.setItem('imperium_skills', decoded.skills); if(decoded.currency) localStorage.setItem('imperium_currency', decoded.currency); if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); alert("✅ RESTAURATION RÉUSSIE."); window.location.reload(); } catch (e) { alert("❌ ERREUR : Code invalide."); } }; const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; return (<div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300"><div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10"><button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button><h1 className="text-2xl font-serif text-white font-bold">Archives</h1></div><div className="p-5 space-y-8"><div className="bg-[#111] border border-white/5 rounded-xl p-5"><div className="flex items-center gap-3 mb-3"><div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div></div><button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"><Copy className="w-4 h-4" /> Copier le Code</button></div><div className="bg-[#111] border border-white/5 rounded-xl p-5"><div className="flex items-center gap-3 mb-3"><div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Restaurer les données</h3><p className="text-[10px] text-gray-500">Collez le code ici.</p></div></div><textarea value={importData} onChange={(e) => setImportData(e.target.value)} placeholder="Collez votre code ici..." className="w-full bg-black border border-white/10 rounded-lg p-3 text-xs text-gray-300 focus:border-gold focus:outline-none h-20 mb-3 font-mono"/><button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">Restaurer</button></div><div className="pt-10 border-t border-white/5"><button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button></div></div></div>); }
