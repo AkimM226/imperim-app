@@ -1,5 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Settings } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search } from 'lucide-react';
+
+// --- LISTE DES DEVISES (Base de données statique) ---
+const CURRENCIES = [
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'USD', symbol: '$', name: 'Dollar Américain' },
+  { code: 'XOF', symbol: 'FCFA', name: 'Franc CFA (BCEAO)' },
+  { code: 'XAF', symbol: 'FCFA', name: 'Franc CFA (BEAC)' },
+  { code: 'CAD', symbol: '$', name: 'Dollar Canadien' },
+  { code: 'GBP', symbol: '£', name: 'Livre Sterling' },
+  { code: 'CHF', symbol: 'CHF', name: 'Franc Suisse' },
+  { code: 'MAD', symbol: 'DH', name: 'Dirham Marocain' },
+  { code: 'DZD', symbol: 'DA', name: 'Dinar Algérien' },
+  { code: 'TND', symbol: 'DT', name: 'Dinar Tunisien' },
+  { code: 'NGN', symbol: '₦', name: 'Naira Nigérian' },
+  { code: 'GHS', symbol: '₵', name: 'Cedi Ghanéen' },
+  { code: 'CDF', symbol: 'FC', name: 'Franc Congolais' },
+  { code: 'GNF', symbol: 'FG', name: 'Franc Guinéen' },
+  { code: 'JPY', symbol: '¥', name: 'Yen Japonais' },
+  { code: 'CNY', symbol: '¥', name: 'Yuan Chinois' },
+  { code: 'INR', symbol: '₹', name: 'Roupie Indienne' },
+  { code: 'RUB', symbol: '₽', name: 'Rouble Russe' },
+  { code: 'BRL', symbol: 'R$', name: 'Réal Brésilien' },
+  { code: 'AUD', symbol: '$', name: 'Dollar Australien' },
+  { code: 'HTG', symbol: 'G', name: 'Gourde Haïtienne' },
+];
 
 export default function App() {
   const [hasOnboarded, setHasOnboarded] = useState(localStorage.getItem('imperium_onboarded') === 'true');
@@ -12,10 +37,10 @@ export default function App() {
 }
 
 // ==========================================
-// 0. GESTIONNAIRE DE VUES (Navigation)
+// 0. GESTIONNAIRE DE VUES
 // ==========================================
 function MainOS() {
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'project', 'skills'
+  const [currentView, setCurrentView] = useState('dashboard');
 
   if (currentView === 'dashboard') return <Dashboard onNavigate={(view) => setCurrentView(view)} />;
   if (currentView === 'project') return <ProjectScreen onBack={() => setCurrentView('dashboard')} />;
@@ -23,40 +48,45 @@ function MainOS() {
 }
 
 // ==========================================
-// 1. ONBOARDING (Avec choix de la Devise)
+// 1. ONBOARDING (AVEC RECHERCHE DE DEVISE)
 // ==========================================
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(1);
   const [initialBalance, setInitialBalance] = useState('');
   const [mainProject, setMainProject] = useState('');
-  const [currency, setCurrency] = useState(''); // Nouvelle variable pour la devise
+  
+  // Gestion Devise
+  const [currency, setCurrency] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Gestion Pacte
   const [isHolding, setIsHolding] = useState(false);
   const holdTimer = useRef(null);
   const [progress, setProgress] = useState(0);
 
+  // Filtre les devises selon la recherche
+  const filteredCurrencies = CURRENCIES.filter(c => 
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    c.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectCurrency = (selected) => {
+    setCurrency(selected.symbol); // On garde le symbole (ex: € ou FCFA)
+    setStep(4); // On passe direct à l'étape suivante
+  };
+
   const startHold = () => {
     setIsHolding(true);
     let p = 0;
-    holdTimer.current = setInterval(() => {
-      p += 2;
-      setProgress(p);
-      if (p >= 100) {
-        clearInterval(holdTimer.current);
-        setStep(3);
-      }
-    }, 30);
+    holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30);
   };
 
-  const stopHold = () => {
-    setIsHolding(false);
-    clearInterval(holdTimer.current);
-    setProgress(0);
-  };
+  const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
 
   const finishOnboarding = () => {
     localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(initialBalance) || 0));
     localStorage.setItem('imperium_project_name', mainProject || "Empire Naissant");
-    localStorage.setItem('imperium_currency', currency || "€"); // On sauvegarde la devise
+    localStorage.setItem('imperium_currency', currency || "€");
     localStorage.setItem('imperium_onboarded', 'true');
     window.location.reload();
   };
@@ -81,23 +111,52 @@ function OnboardingScreen({ onComplete }) {
           <p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p>
         </div>
       )}
-      {/* ÉTAPE 3 : CHOIX DE LA DEVISE */}
+      
+      {/* ÉTAPE 3 : SÉLECTEUR DE DEVISE (NOUVEAU) */}
       {step === 3 && (
-        <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs">
-          <label className="block text-xs text-gray-500 uppercase mb-2 text-left">Votre Devise (Monnaie)</label>
-          <input 
-            type="text" 
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-2 placeholder-gray-800"
-            placeholder="Ex: FCFA, $, €"
-            autoFocus
-          />
-          <p className="text-[10px] text-gray-500 mb-8 text-left">Tapez le symbole ou le code (FCFA, XOF, USD...)</p>
-          <button onClick={() => setStep(4)} disabled={!currency} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button>
+        <div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]">
+          <h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2>
+          
+          {/* Barre de recherche */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+            <input 
+              type="text" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none"
+              placeholder="Rechercher (ex: Euro, FCFA...)"
+              autoFocus
+            />
+          </div>
+
+          {/* Liste déroulante */}
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {filteredCurrencies.map((c) => (
+              <button 
+                key={c.code}
+                onClick={() => selectCurrency(c)}
+                className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">
+                    {c.symbol.substring(0, 2)}
+                  </span>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p>
+                    <p className="text-[10px] text-gray-500">{c.code}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" />
+              </button>
+            ))}
+            {filteredCurrencies.length === 0 && (
+               <p className="text-xs text-gray-500 mt-4">Aucune devise trouvée.</p>
+            )}
+          </div>
         </div>
       )}
-      {/* ÉTAPE 4 : SOLDE */}
+
       {step === 4 && (
         <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs">
           <label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle ({currency})</label>
@@ -105,7 +164,6 @@ function OnboardingScreen({ onComplete }) {
           <button onClick={() => setStep(5)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button>
         </div>
       )}
-      {/* ÉTAPE 5 : PROJET */}
       {step === 5 && (
         <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs">
           <label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label>
@@ -124,7 +182,7 @@ function Dashboard({ onNavigate }) {
   const [balance, setBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
   const [transactions, setTransactions] = useState(JSON.parse(localStorage.getItem('imperium_transactions') || "[]"));
   const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
-  const currency = localStorage.getItem('imperium_currency') || "€"; // Récupération de la devise
+  const currency = localStorage.getItem('imperium_currency') || "€";
   
   const tasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
   const completedTasks = tasks.filter(t => t.done).length;
@@ -163,35 +221,22 @@ function Dashboard({ onNavigate }) {
          <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
          <button onClick={resetEmpire} className="w-8 flex justify-end text-gray-800 hover:text-red-900"><Trash2 className="w-4 h-4"/></button>
       </header>
-
       <div className="w-full px-4 mt-6">
         <div className="bg-[#151515] border-l-2 border-gold p-4 rounded-r-lg flex items-center gap-4 shadow-lg w-full">
           <div className="p-2 bg-gold/10 rounded-full shrink-0"><TrendingDown className="w-5 h-5 text-gold" /></div>
-          <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Allocation Survie</p>
-            {/* Affichage devise dynamique */}
-            <p className="text-white font-bold text-lg">{(balance / 30).toFixed(2)} {currency} <span className="text-gray-600 font-normal text-xs">/ jour</span></p>
-          </div>
+          <div><p className="text-[10px] text-gray-400 uppercase tracking-wider">Allocation Survie</p><p className="text-white font-bold text-lg">{(balance / 30).toFixed(2)} {currency} <span className="text-gray-600 font-normal text-xs">/ jour</span></p></div>
         </div>
       </div>
-
       <main className="w-full px-4 grid gap-3 mt-4">
         <div className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center">
             <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Trésorerie</h2></div>
-            <div className="text-center py-4 mt-2">
-                {/* Affichage devise dynamique */}
-                <span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{balance.toFixed(2)} <span className="text-lg text-gray-500">{currency}</span></span>
-            </div>
+            <div className="text-center py-4 mt-2"><span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{balance.toFixed(2)} <span className="text-lg text-gray-500">{currency}</span></span></div>
         </div>
-
         <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group">
             <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors"><ChevronRight className="w-5 h-5" /></div>
             <div className="flex items-center gap-2 mb-3 opacity-60"><Sword className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Arsenal</h2></div>
-            {mainSkill ? (
-              <div className="flex justify-between items-center"><span className="font-bold text-white text-sm">{mainSkill.name}</span><span className="text-[10px] text-gold bg-gold/10 px-2 py-1 rounded uppercase">{mainSkill.level}</span></div>
-            ) : (<p className="text-xs text-gray-500 italic">Aucune arme. Cliquez pour forger.</p>)}
+            {mainSkill ? (<div className="flex justify-between items-center"><span className="font-bold text-white text-sm">{mainSkill.name}</span><span className="text-[10px] text-gold bg-gold/10 px-2 py-1 rounded uppercase">{mainSkill.level}</span></div>) : (<p className="text-xs text-gray-500 italic">Aucune arme. Cliquez pour forger.</p>)}
         </div>
-
         <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group">
             <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors"><ChevronRight className="w-5 h-5" /></div>
             <div className="flex items-center gap-2 mb-3 opacity-60"><Castle className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Conquête</h2></div>
@@ -199,7 +244,6 @@ function Dashboard({ onNavigate }) {
             <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-gold h-1.5 rounded-full shadow-[0_0_10px_#D4AF37]" style={{ width: `${progressPercent}%` }}></div></div>
         </div>
       </main>
-
       <section className="w-full px-4 mt-6 flex-1">
         <div className="flex items-center gap-2 mb-4 px-1"><History className="w-3 h-3 text-gray-600" /><h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Derniers Mouvements</h3></div>
         <div className="space-y-2 pb-24">
@@ -210,17 +254,14 @@ function Dashboard({ onNavigate }) {
                     <div className={`p-1.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>{t.type === 'income' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}</div>
                     <div className="overflow-hidden"><p className="text-sm text-gray-300 font-medium truncate">{t.desc}</p><p className="text-[10px] text-gray-600">{t.date}</p></div>
                 </div>
-                {/* Affichage devise dynamique */}
                 <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{t.type === 'income' ? '+' : '-'} {t.amount} {currency}</span>
             </div>
             ))}
         </div>
       </section>
-
       <div className="fixed bottom-0 left-0 right-0 flex justify-center z-20 pointer-events-none pb-[calc(2rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-dark via-dark/80 to-transparent pt-10">
         <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200"><Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span></button>
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
@@ -248,13 +289,11 @@ function ProjectScreen({ onBack }) {
     const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
     const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('imperium_tasks') || "[]"));
     const [newTask, setNewTask] = useState("");
-
     useEffect(() => { localStorage.setItem('imperium_tasks', JSON.stringify(tasks)); }, [tasks]);
     const addTask = (e) => { e.preventDefault(); if (!newTask.trim()) return; setTasks([...tasks, { id: Date.now(), text: newTask, done: false }]); setNewTask(""); };
     const toggleTask = (id) => { setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)); };
     const deleteTask = (id) => { setTasks(tasks.filter(t => t.id !== id)); };
     const progress = tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.done).length / tasks.length) * 100);
-
     return (
         <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300">
             <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
@@ -263,7 +302,6 @@ function ProjectScreen({ onBack }) {
                 <div className="flex items-center gap-4 mt-4"><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div></div><span className="text-gold font-bold text-sm">{progress}%</span></div>
             </div>
             <div className="flex-1 p-5 overflow-y-auto pb-32">
-                <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">Plan de Bataille</h3>
                 <div className="space-y-3">
                     {tasks.length === 0 && <div className="text-center py-10 border border-dashed border-white/10 rounded-xl"><p className="text-gray-500 text-sm">Aucune mission.</p></div>}
                     {tasks.map(task => (
@@ -289,11 +327,9 @@ function SkillsScreen({ onBack }) {
     const [skills, setSkills] = useState(JSON.parse(localStorage.getItem('imperium_skills') || "[]"));
     const [newSkill, setNewSkill] = useState("");
     const [newLevel, setNewLevel] = useState("Apprenti");
-
     useEffect(() => { localStorage.setItem('imperium_skills', JSON.stringify(skills)); }, [skills]);
     const addSkill = (e) => { e.preventDefault(); if (!newSkill.trim()) return; setSkills([...skills, { id: Date.now(), name: newSkill, level: newLevel }]); setNewSkill(""); };
     const deleteSkill = (id) => { setSkills(skills.filter(s => s.id !== id)); };
-
     return (
         <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300">
             <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
