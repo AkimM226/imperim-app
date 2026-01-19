@@ -12,20 +12,20 @@ const CURRENCIES = [
   { code: 'MAD', symbol: 'DH', name: 'Dirham Marocain' }
 ];
 
-// --- 🧠 LE CERVEAU BUSINESS (Base en Valeur "Monde" ~Euro/Dollar) ---
+// --- CERVEAU BUSINESS ---
 const BUSINESS_IDEAS = {
   'default': { title: 'Freelance Standard', price: 50, task: 'Propose tes services sur les groupes Facebook locaux ou Upwork.' },
   'react': { title: 'Site Vitrine PME', price: 300, task: 'Contacte 5 artisans/commerçants et propose un site rapide et moderne.' },
   'javascript': { title: 'Script Automation', price: 150, task: 'Automatise une tâche Excel/Google Sheets pour une entreprise.' },
   'design': { title: 'Pack Identité Visuelle', price: 200, task: 'Refais le menu et le logo d\'un restaurant local.' },
   'logo': { title: 'Création de Logo', price: 80, task: 'Crée 3 propositions de logos pour une start-up.' },
-  'infographie': { title: 'Pack Visuels Réseaux Sociaux', price: 60, task: 'Crée 5 affiches publicitaires pour WhatsApp/Instagram pour un commerçant.' },
-  'flyer': { title: 'Conception Flyer/Affiche', price: 40, task: 'Design une affiche pour un événement ou une soirée.' },
-  'anglais': { title: 'Traduction de Documents', price: 40, task: 'Aide les étudiants/pros à traduire leurs CV ou mémoires.' },
+  'infographie': { title: 'Pack Visuels RS', price: 60, task: 'Crée 5 affiches publicitaires pour WhatsApp/Instagram.' },
+  'flyer': { title: 'Conception Flyer', price: 40, task: 'Design une affiche pour un événement ou une soirée.' },
+  'anglais': { title: 'Traduction', price: 40, task: 'Aide les étudiants/pros à traduire leurs CV ou mémoires.' },
   'montage': { title: 'Shorts TikTok/Reels', price: 50, task: 'Propose à un influenceur de monter 3 vidéos dynamiques.' },
-  'video': { title: 'Couverture Événement', price: 250, task: 'Filme et monte une vidéo récapitulative pour un mariage ou une conférence.' },
+  'video': { title: 'Couverture Événement', price: 250, task: 'Filme et monte une vidéo récapitulative pour un mariage.' },
   'redaction': { title: 'Rédaction Web', price: 30, task: 'Rédige 2 articles de blog optimisés SEO.' },
-  'ia': { title: 'Formation IA Débutant', price: 100, task: 'Organise un atelier : Comment utiliser ChatGPT pour son business.' },
+  'ia': { title: 'Formation IA', price: 100, task: 'Organise un atelier : Comment utiliser ChatGPT pour son business.' },
   'community': { title: 'Gestion de Page', price: 150, task: 'Gère la page Facebook d\'une boutique pendant 1 mois.' }
 };
 
@@ -45,6 +45,12 @@ function MainOS() {
   if (currentView === 'skills') return <SkillsScreen onBack={() => setCurrentView('dashboard')} />;
   if (currentView === 'settings') return <SettingsScreen onBack={() => setCurrentView('dashboard')} />;
 }
+
+// Fonction utilitaire pour formater l'argent proprement (Pas de virgule pour le FCFA)
+const formatMoney = (amount) => {
+  // On arrondit tout pour éviter les virgules bizarres (196.666 -> 197)
+  return Math.floor(amount).toLocaleString('fr-FR');
+};
 
 // ==========================================
 // 1. ONBOARDING
@@ -136,14 +142,19 @@ function Dashboard({ onNavigate }) {
       <div className="w-full px-4 mt-6">
         <div className={`border-l-2 p-4 rounded-r-lg flex items-center gap-4 shadow-lg w-full transition-colors ${balance < 0 ? 'bg-red-900/20 border-red-500' : 'bg-[#151515] border-gold'}`}>
           <div className="p-2 bg-gold/10 rounded-full shrink-0"><TrendingDown className="w-5 h-5 text-gold" /></div>
-          <div><p className="text-[10px] text-gray-400 uppercase tracking-wider">Allocation Survie</p><p className="text-white font-bold text-lg">{(balance / 30).toLocaleString()} {currency} <span className="text-gray-600 font-normal text-xs">/ jour</span></p></div>
+          <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Allocation Survie</p>
+              {/* ICI LA CORRECTION : Math.floor pour enlever les virgules */}
+              <p className="text-white font-bold text-lg">{formatMoney(balance / 30)} {currency} <span className="text-gray-600 font-normal text-xs">/ jour</span></p>
+          </div>
         </div>
       </div>
 
       <main className="w-full px-4 grid gap-3 mt-4">
         <div className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center">
             <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Trésorerie</h2></div>
-            <div className="text-center py-4 mt-2"><span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{balance.toLocaleString()} <span className="text-lg text-gray-500">{currency}</span></span></div>
+            {/* ICI LA CORRECTION : formatMoney */}
+            <div className="text-center py-4 mt-2"><span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(balance)} <span className="text-lg text-gray-500">{currency}</span></span></div>
         </div>
         <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30">
             <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors"><ChevronRight className="w-5 h-5" /></div>
@@ -167,7 +178,8 @@ function Dashboard({ onNavigate }) {
                     <div className={`p-1.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>{t.type === 'income' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}</div>
                     <div className="overflow-hidden"><p className="text-sm text-gray-300 font-medium truncate">{t.desc}</p><p className="text-[10px] text-gray-600">{t.date}</p></div>
                 </div>
-                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{t.type === 'income' ? '+' : '-'} {t.amount.toLocaleString()} {currency}</span>
+                {/* ICI LA CORRECTION : formatMoney */}
+                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{t.type === 'income' ? '+' : '-'} {formatMoney(t.amount)} {currency}</span>
             </div>
             ))}
         </div>
@@ -204,7 +216,7 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 4. ÉCRAN ARSENAL (INTELLIGENT & CALIBRÉ FCFA)
+// 4. ÉCRAN ARSENAL
 // ==========================================
 function SkillsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -216,21 +228,17 @@ function SkillsScreen({ onBack }) {
     const addSkill = (e) => { e.preventDefault(); if (!newSkill.trim()) return; setSkills([...skills, { id: Date.now(), name: newSkill, level: "Apprenti" }]); setNewSkill(""); };
     const deleteSkill = (id) => { setSkills(skills.filter(s => s.id !== id)); };
 
-    // ALGORITHME DE MATCHING & CONVERSION
     const findGig = (skillName) => {
         const key = Object.keys(BUSINESS_IDEAS).find(k => skillName.toLowerCase().includes(k));
         const gig = key ? BUSINESS_IDEAS[key] : BUSINESS_IDEAS['default'];
         
-        // CONVERTISSEUR INTELLIGENT
         let displayPrice = gig.price;
         if (currency.includes('FCFA') || currency.includes('XOF') || currency.includes('XAF')) {
             // Multiplicateur FCFA (approx x650)
-            displayPrice = (gig.price * 650).toLocaleString();
+            displayPrice = formatMoney(gig.price * 650);
         } else if (currency.includes('GNF')) {
-             // Multiplicateur Franc Guinéen
-             displayPrice = (gig.price * 9000).toLocaleString();
+             displayPrice = formatMoney(gig.price * 9000);
         } else {
-            // Par défaut (Euro/Dollars)
             displayPrice = gig.price;
         }
 
@@ -280,7 +288,7 @@ function SkillsScreen({ onBack }) {
 }
 
 // ==========================================
-// 3. ECRAN PROJET & 5. SETTINGS (Inchangés)
+// 3. ECRAN PROJET & 5. SETTINGS
 // ==========================================
 function ProjectScreen({ onBack }) { const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha"; const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('imperium_tasks') || "[]")); const [newTask, setNewTask] = useState(""); useEffect(() => { localStorage.setItem('imperium_tasks', JSON.stringify(tasks)); }, [tasks]); const addTask = (e) => { e.preventDefault(); if (!newTask.trim()) return; setTasks([...tasks, { id: Date.now(), text: newTask, done: false }]); setNewTask(""); }; const toggleTask = (id) => { setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)); }; const deleteTask = (id) => { setTasks(tasks.filter(t => t.id !== id)); }; const progress = tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.done).length / tasks.length) * 100); return (<div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300"><div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10"><button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button><h1 className="text-2xl font-serif text-white font-bold">{projectName}</h1><div className="flex items-center gap-4 mt-4"><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div></div><span className="text-gold font-bold text-sm">{progress}%</span></div></div><div className="flex-1 p-5 overflow-y-auto pb-32"><div className="space-y-3">{tasks.map(task => (<div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : 'bg-[#111] border-white/5'}`}><button onClick={() => toggleTask(task.id)} className="mt-0.5 text-gold hover:scale-110 transition-transform">{task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</button><p className={`flex-1 text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.text}</p><button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4" /></button></div>))}</div></div><div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto"><form onSubmit={addTask} className="flex gap-2"><input type="text" value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Nouvelle mission..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button></form></div></div>); }
 function SettingsScreen({ onBack }) { const [importData, setImportData] = useState(""); const handleExport = () => { const data = { balance: localStorage.getItem('imperium_balance'), transactions: localStorage.getItem('imperium_transactions'), project: localStorage.getItem('imperium_project_name'), tasks: localStorage.getItem('imperium_tasks'), skills: localStorage.getItem('imperium_skills'), currency: localStorage.getItem('imperium_currency'), onboarded: localStorage.getItem('imperium_onboarded'), }; const encoded = btoa(JSON.stringify(data)); navigator.clipboard.writeText(encoded); alert("⚔️ ARCHIVES SÉCURISÉES ⚔️\n\nCode copié."); }; const handleImport = () => { try { if(!importData) return; const decoded = JSON.parse(atob(importData)); if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); if(decoded.project) localStorage.setItem('imperium_project_name', decoded.project); if(decoded.tasks) localStorage.setItem('imperium_tasks', decoded.tasks); if(decoded.skills) localStorage.setItem('imperium_skills', decoded.skills); if(decoded.currency) localStorage.setItem('imperium_currency', decoded.currency); if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); alert("✅ RESTAURATION RÉUSSIE."); window.location.reload(); } catch (e) { alert("❌ ERREUR : Code invalide."); } }; const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; return (<div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300"><div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10"><button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button><h1 className="text-2xl font-serif text-white font-bold">Archives</h1></div><div className="p-5 space-y-8"><div className="bg-[#111] border border-white/5 rounded-xl p-5"><div className="flex items-center gap-3 mb-3"><div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div></div><button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"><Copy className="w-4 h-4" /> Copier le Code</button></div><div className="bg-[#111] border border-white/5 rounded-xl p-5"><div className="flex items-center gap-3 mb-3"><div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Restaurer les données</h3><p className="text-[10px] text-gray-500">Collez le code ici.</p></div></div><textarea value={importData} onChange={(e) => setImportData(e.target.value)} placeholder="Collez votre code ici..." className="w-full bg-black border border-white/10 rounded-lg p-3 text-xs text-gray-300 focus:border-gold focus:outline-none h-20 mb-3 font-mono"/><button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">Restaurer</button></div><div className="pt-10 border-t border-white/5"><button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button></div></div></div>); }
