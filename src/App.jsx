@@ -52,25 +52,26 @@ const BUSINESS_IDEAS = {
   'ia': { title: 'Formation ChatGPT', price: 80, task: 'Forme une petite équipe à utiliser l\'IA pour gagner du temps.' },
 };
 
+// TEXTE DU COMMANDANT (Ton Épique)
 const TUTORIAL_STEPS = [
     {
-        title: "Ceci n'est pas un jeu",
-        text: "Bienvenue au Quartier Général. Écoutez bien. L'interface ressemble à un jeu, mais les chiffres sont réels. Ne confondez pas ce solde avec un score virtuel. C'est votre survie financière.",
+        title: "INITIALISATION",
+        text: "Soldat ! Ici le Commandement Central. Écoutez attentivement. Cette interface n'est pas un jeu. Les chiffres que vous voyez sont vos munitions réelles. Une erreur ici, et vous saignez dans la réalité. Compris ?",
         icon: AlertTriangle
     },
     {
-        title: "Le Solde Disponible",
-        text: "Le chiffre en haut est votre argent de poche réel. Si vous le dépensez, il disparaît. Pour sécuriser votre argent, vous devrez le placer dans des Cibles.",
+        title: "VOTRE MISSION",
+        text: "Regardez en haut. Ce solde est votre oxygène. Si il tombe à zéro, vous êtes mort. Votre mission est simple : Sécuriser les ressources, Éliminer les dépenses inutiles, et Bâtir un Empire.",
         icon: Shield
     },
     {
-        title: "Action Immédiate",
-        text: "Le bouton jaune en bas est votre arme principale. Utilisez-le à chaque fois que vous dépensez ou gagnez un centime. La discipline est la clé.",
+        title: "L'ARME PRINCIPALE",
+        text: "Le bouton jaune en bas est votre détonateur. À chaque fois que vous sortez votre portefeuille, vous devez appuyer dessus. La discipline n'est pas une option, c'est une question de survie.",
         icon: Plus
     },
     {
-        title: "À vos ordres",
-        text: "L'Empire est prêt. Commencez par explorer, et n'oubliez jamais : le chaos règne dehors, mais ici, c'est la discipline qui commande. Rompez.",
+        title: "EXÉCUTION",
+        text: "L'Empire est prêt à être déployé. Le chaos règne à l'extérieur, mais ici, c'est votre loi qui s'applique. Ne me décevez pas. Rompez !",
         icon: Star
     }
 ];
@@ -94,17 +95,51 @@ const formatMoney = (amount) => {
 };
 
 // ==========================================
-// SYSTEME VOCAL (TTS)
+// SYSTEME VOCAL AVANCÉ (Commandant Voice)
 // ==========================================
-const speak = (text) => {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop any previous speech
+const speakCommand = (text) => {
+    if (!('speechSynthesis' in window)) return;
+
+    // Charger les voix (parfois asynchrone sur Chrome/Android)
+    const synth = window.speechSynthesis;
+    let voices = synth.getVoices();
+
+    const playVoice = () => {
+        synth.cancel(); // Stop précédent
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'fr-FR'; // French
-        utterance.pitch = 0.8; // Lower pitch for serious tone
-        utterance.rate = 0.95; // Slightly slower
-        utterance.volume = 1;
-        window.speechSynthesis.speak(utterance);
+        
+        // RECHERCHE DE LA MEILLEURE VOIX MASCULINE/PREMIUM
+        // 1. Thomas (iPhone - Excellent)
+        // 2. Google Français (Android - Très bon)
+        // 3. N'importe quelle voix fr-FR
+        const targetVoice = voices.find(v => v.name.includes('Thomas')) || 
+                            voices.find(v => v.name.includes('Google') && v.lang.includes('fr')) ||
+                            voices.find(v => v.lang === 'fr-FR');
+
+        if (targetVoice) {
+            utterance.voice = targetVoice;
+            // Ajustements pour effet "Commandant"
+            utterance.pitch = 0.9; // Un peu plus grave
+            utterance.rate = 0.9; // Un peu plus lent et autoritaire
+            utterance.volume = 1.0;
+        } else {
+            // Fallback
+            utterance.lang = 'fr-FR';
+            utterance.pitch = 0.8; 
+            utterance.rate = 0.9;
+        }
+
+        synth.speak(utterance);
+    };
+
+    if (voices.length === 0) {
+        // Attendre que les voix chargent (Chrome bug fix)
+        synth.onvoiceschanged = () => {
+            voices = synth.getVoices();
+            playVoice();
+        };
+    } else {
+        playVoice();
     }
 };
 
@@ -123,7 +158,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v8.0</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v8.1</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -144,13 +179,14 @@ function TutorialOverlay({ onComplete }) {
 
     const startTutorial = () => {
         setStarted(true);
-        speak(TUTORIAL_STEPS[0].text);
+        speakCommand(TUTORIAL_STEPS[0].text);
     };
 
     const nextStep = () => {
         if (stepIndex < TUTORIAL_STEPS.length - 1) {
-            setStepIndex(stepIndex + 1);
-            speak(TUTORIAL_STEPS[stepIndex + 1].text);
+            const nextIdx = stepIndex + 1;
+            setStepIndex(nextIdx);
+            speakCommand(TUTORIAL_STEPS[nextIdx].text);
         } else {
             stopSpeaking();
             onComplete();
@@ -164,20 +200,20 @@ function TutorialOverlay({ onComplete }) {
 
     if (!started) {
         return (
-            <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-500">
+            <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-500">
                 <div className="bg-[#111] border border-gold/50 p-6 rounded-2xl max-w-sm w-full text-center shadow-[0_0_50px_rgba(212,175,55,0.2)]">
-                    <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-gold/30">
-                        <Volume2 className="w-8 h-8 text-gold animate-pulse" />
+                    <div className="w-20 h-20 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-gold animate-pulse">
+                        <Volume2 className="w-10 h-10 text-gold" />
                     </div>
-                    <h2 className="text-xl font-serif font-bold text-white mb-2">Briefing Audio</h2>
-                    <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                        Soldat. Avant de prendre le commandement, vous devez comprendre la nature de cet outil. Activez le son.
+                    <h2 className="text-2xl font-serif font-bold text-white mb-2 tracking-widest uppercase">Briefing Vocal</h2>
+                    <p className="text-gray-400 text-sm mb-8 leading-relaxed italic">
+                        "Activez le son. Le Général a des ordres pour vous."
                     </p>
-                    <button onClick={startTutorial} className="w-full bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs mb-3 hover:bg-yellow-400 transition-colors">
-                        Recevoir les ordres
+                    <button onClick={startTutorial} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs mb-3 hover:bg-yellow-400 transition-colors shadow-lg shadow-gold/20">
+                        RECEVOIR LES ORDRES
                     </button>
-                    <button onClick={skip} className="text-gray-600 text-xs hover:text-white uppercase tracking-widest">
-                        Passer l'initiation
+                    <button onClick={skip} className="text-gray-600 text-[10px] hover:text-white uppercase tracking-widest mt-4">
+                        Passer le briefing
                     </button>
                 </div>
             </div>
@@ -185,19 +221,21 @@ function TutorialOverlay({ onComplete }) {
     }
 
     return (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end justify-center pb-20 animate-in fade-in duration-300">
-            <div className="bg-[#161616] border-t border-gold/30 w-full rounded-t-3xl p-6 shadow-2xl relative max-w-md mx-auto">
-                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-black border-4 border-[#161616] rounded-full flex items-center justify-center z-10">
+        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-end justify-center pb-20 animate-in fade-in duration-300">
+            <div className="bg-[#161616] border-t-2 border-gold w-full rounded-t-3xl p-6 shadow-2xl relative max-w-md mx-auto">
+                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-black border-4 border-gold rounded-full flex items-center justify-center z-10 shadow-[0_0_20px_rgba(212,175,55,0.4)]">
                     <Icon className="w-8 h-8 text-gold" />
                  </div>
-                 <div className="mt-8 text-center">
-                     <h3 className="text-gold font-serif text-lg font-bold mb-2 uppercase tracking-widest">{step.title}</h3>
-                     <p className="text-gray-300 text-sm leading-relaxed mb-8 min-h-[80px]">{step.text}</p>
+                 <div className="mt-10 text-center">
+                     <h3 className="text-gold font-serif text-xl font-bold mb-4 uppercase tracking-[0.2em]">{step.title}</h3>
+                     <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-6">
+                        <p className="text-gray-200 text-sm leading-relaxed font-medium italic">"{step.text}"</p>
+                     </div>
                      
                      <div className="flex gap-3">
-                         <button onClick={skip} className="flex-1 bg-white/5 text-gray-500 font-bold py-3 rounded-lg uppercase tracking-widest text-xs">Passer</button>
-                         <button onClick={nextStep} className="flex-[2] bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2">
-                             {stepIndex === TUTORIAL_STEPS.length - 1 ? "Compris, Général" : "Suivant"} <ChevronRight className="w-4 h-4"/>
+                         <button onClick={skip} className="flex-1 bg-white/5 text-gray-500 font-bold py-3 rounded-lg uppercase tracking-widest text-[10px]">Abandonner</button>
+                         <button onClick={nextStep} className="flex-[2] bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-lg shadow-gold/20">
+                             {stepIndex === TUTORIAL_STEPS.length - 1 ? "À VOS ORDRES" : "SUIVANT"} <ChevronRight className="w-4 h-4"/>
                          </button>
                      </div>
                  </div>
