@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, PieChart, BarChart3 } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, PieChart, BarChart3, Flame, Clock } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -33,12 +33,11 @@ const BUSINESS_IDEAS = {
   'ia': { title: 'Formation ChatGPT', price: 80, task: 'Forme une petite équipe à utiliser l\'IA pour gagner du temps.' },
 };
 
-// NOUVEAU : SYSTÈME DE GRADES (Selon la fortune convertie en "Points de Puissance")
 const getRank = (balance, currency) => {
-  // On normalise tout en "Points" (1 Euro = 1 Point, 650 FCFA = 1 Point)
   let points = balance;
   if (currency.includes('FCFA')) points = balance / 650;
   else if (currency.includes('GNF')) points = balance / 9000;
+  else if (currency.includes('CDF')) points = balance / 2500;
   
   if (points < 0) return { title: "RUINE", color: "text-red-600", icon: AlertTriangle };
   if (points < 50) return { title: "VAGABOND", color: "text-gray-500", icon: Fingerprint };
@@ -73,7 +72,7 @@ function MainOS() {
 }
 
 // ==========================================
-// 1. ONBOARDING (Standard)
+// 1. ONBOARDING
 // ==========================================
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(1);
@@ -113,7 +112,7 @@ function OnboardingScreen({ onComplete }) {
 }
 
 // ==========================================
-// 2. DASHBOARD (AVEC RANGS & LIEN STATS)
+// 2. DASHBOARD
 // ==========================================
 function Dashboard({ onNavigate }) {
   const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
@@ -129,9 +128,28 @@ function Dashboard({ onNavigate }) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
 
-  // CALCUL DU RANG
+  // CALCUL DE LA SÉRIE (STREAK)
+  const calculateStreak = () => {
+    if (transactions.length === 0) return 0;
+    // On cherche la dernière dépense FUTILE
+    const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want');
+    if (!lastSin) return Math.min(transactions.length, 30); // Si aucune futilité, la série est le nombre total de transactions (max 30 pour l'exemple)
+
+    // Calcul du temps écoulé depuis le dernier "péché"
+    const lastSinDate = new Date(lastSin.rawDate || Date.now()); // Fallback si pas de date brute
+    const now = new Date();
+    const diffTime = Math.abs(now - lastSinDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays; 
+  };
+  
+  const streak = calculateStreak();
   const rank = getRank(balance, currency);
   const RankIcon = rank.icon;
+
+  // CALCUL DU TEMPS PERDU (MÉCANIQUE DE SÉNÈQUE)
+  const dailySurvivalCost = Math.max(balance / 30, 1); // Évite division par zéro
+  const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
 
   useEffect(() => {
     localStorage.setItem('imperium_balance', JSON.stringify(balance));
@@ -143,9 +161,21 @@ function Dashboard({ onNavigate }) {
     if (!amount) return;
     const value = parseFloat(amount);
     const newBalance = transactionType === 'expense' ? balance - value : balance + value;
+    
     let finalDesc = description;
     if (transactionType === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${description}`;
-    const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) };
+    
+    // On ajoute 'rawDate' pour le calcul précis du Streak
+    const newTransaction = { 
+        id: Date.now(), 
+        desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), 
+        amount: value, 
+        type: transactionType, 
+        category: expenseCategory, 
+        date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+        rawDate: new Date().toISOString() 
+    };
+    
     setBalance(newBalance);
     setTransactions([newTransaction, ...transactions]);
     setAmount(''); setDescription(''); setIsModalOpen(false);
@@ -159,23 +189,31 @@ function Dashboard({ onNavigate }) {
          <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white"><Settings className="w-5 h-5"/></button>
       </header>
 
-      {/* RANG ACTUEL (NOUVEAU) */}
-      <div className="w-full px-4 mt-6">
-        <div className="flex flex-col items-center justify-center mb-6">
-            <div className={`p-3 rounded-full bg-white/5 mb-2 border border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${rank.color}`}>
-                <RankIcon className="w-6 h-6" />
-            </div>
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Grade Actuel</p>
-            <h2 className={`text-2xl font-serif font-bold tracking-widest ${rank.color}`}>{rank.title}</h2>
+      {/* RANG & STREAK */}
+      <div className="w-full px-4 mt-6 flex justify-between items-end">
+        <div className="flex flex-col items-start">
+             <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Grade</p>
+             <div className="flex items-center gap-2">
+                <RankIcon className={`w-4 h-4 ${rank.color}`} />
+                <h2 className={`text-lg font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2>
+             </div>
+        </div>
+        
+        {/* LA FLAMME DE LA DISCIPLINE (NOUVEAU) */}
+        <div className="flex flex-col items-end">
+             <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Discipline</p>
+             <div className={`flex items-center gap-2 px-3 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}>
+                <Flame className={`w-4 h-4 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
+                <span className={`text-lg font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span>
+             </div>
         </div>
       </div>
 
-      <main className="w-full px-4 grid gap-3">
+      <main className="w-full px-4 grid gap-3 mt-6">
         {/* TRESORERIE */}
         <div className={`bg-[#111] border rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center transition-colors ${balance < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
             <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Trésorerie</h2></div>
             <div className="text-center py-4 mt-2"><span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(balance)} <span className="text-lg text-gray-500">{currency}</span></span></div>
-            {balance < 0 && <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest animate-pulse mt-2">Empire en Ruine</p>}
         </div>
 
         {/* COMPÉTENCES */}
@@ -206,16 +244,33 @@ function Dashboard({ onNavigate }) {
                 <button onClick={() => setTransactionType('expense')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
                 <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
             </div>
+            
+            {/* SELECTEUR TYPE DE DÉPENSE */}
             {transactionType === 'expense' && (
                 <div className="flex gap-2 mb-4">
                     <button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button>
                     <button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button>
                 </div>
             )}
+            
+            {/* CALCULATEUR DE TEMPS PERDU (MECANIQUE PSYCHOLOGIQUE) */}
+            {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (
+                 <div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                    <Clock className="w-5 h-5 text-red-500 shrink-0" />
+                    <div>
+                        <p className="text-red-400 font-bold text-xs uppercase">Avertissement du Sergent</p>
+                        <p className="text-gray-300 text-xs leading-relaxed mt-1">
+                            Cette dépense équivaut à <span className="text-white font-bold">{daysLost} jours</span> de survie.
+                            <br/>Est-ce que ça en vaut vraiment la peine ?
+                        </p>
+                    </div>
+                 </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus />
               <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} />
-              <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' && expenseCategory === 'want' ? 'bg-red-600 text-white animate-pulse' : (transactionType === 'expense' ? 'bg-white/10 text-white' : 'bg-green-600 text-white')}`}>{transactionType === 'income' ? "Encaisser" : "Valider"}</button>
+              <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' && expenseCategory === 'want' ? 'bg-red-600 text-white animate-pulse' : (transactionType === 'expense' ? 'bg-white/10 text-white' : 'bg-green-600 text-white')}`}>{transactionType === 'expense' && expenseCategory === 'want' ? "CONFIRMER LA PERTE" : "VALIDER"}</button>
             </form>
           </div>
         </div>
@@ -225,17 +280,14 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 3. STATISTIQUES (LA SALLE DES CARTES) - NOUVEAU
+// 3. STATISTIQUES
 // ==========================================
 function StatsScreen({ onBack }) {
     const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
     const currency = localStorage.getItem('imperium_currency') || "€";
-    
-    // Calcul des Stats
     const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
     const wants = transactions.filter(t => t.type === 'expense' && t.category === 'want').reduce((acc, t) => acc + t.amount, 0);
     const needs = transactions.filter(t => t.type === 'expense' && t.category === 'need').reduce((acc, t) => acc + t.amount, 0);
-    
     const wantPercent = totalExpenses === 0 ? 0 : Math.round((wants / totalExpenses) * 100);
     const needPercent = totalExpenses === 0 ? 0 : Math.round((needs / totalExpenses) * 100);
 
@@ -245,59 +297,19 @@ function StatsScreen({ onBack }) {
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Salle des Cartes</h1>
             </div>
-            
             <div className="p-5 overflow-y-auto">
-                {/* Résumé */}
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="bg-[#111] p-4 rounded-xl border border-white/5">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Dépensé</p>
-                        <p className="text-xl font-bold text-white">{formatMoney(totalExpenses)} {currency}</p>
-                    </div>
-                    <div className="bg-[#111] p-4 rounded-xl border border-white/5">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ratio Futilité</p>
-                        <p className={`text-xl font-bold ${wantPercent > 30 ? 'text-red-500' : 'text-green-500'}`}>{wantPercent}%</p>
-                    </div>
+                    <div className="bg-[#111] p-4 rounded-xl border border-white/5"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Dépensé</p><p className="text-xl font-bold text-white">{formatMoney(totalExpenses)} {currency}</p></div>
+                    <div className="bg-[#111] p-4 rounded-xl border border-white/5"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ratio Futilité</p><p className={`text-xl font-bold ${wantPercent > 30 ? 'text-red-500' : 'text-green-500'}`}>{wantPercent}%</p></div>
                 </div>
-
-                {/* Graphique Barres */}
                 <div className="bg-[#111] border border-white/5 rounded-xl p-6 mb-6">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Répartition Stratégique</h3>
-                    
-                    {/* Barre Besoins */}
-                    <div className="mb-4">
-                        <div className="flex justify-between text-xs mb-2">
-                            <span className="text-white font-bold">Nécessités</span>
-                            <span className="text-gray-400">{formatMoney(needs)} {currency}</span>
-                        </div>
-                        <div className="w-full bg-gray-900 rounded-full h-2">
-                            <div className="bg-white h-2 rounded-full" style={{ width: `${needPercent}%` }}></div>
-                        </div>
-                    </div>
-
-                    {/* Barre Futilités */}
-                    <div>
-                        <div className="flex justify-between text-xs mb-2">
-                            <span className="text-red-400 font-bold">Futilités (Plaisirs)</span>
-                            <span className="text-gray-400">{formatMoney(wants)} {currency}</span>
-                        </div>
-                        <div className="w-full bg-gray-900 rounded-full h-2">
-                            <div className="bg-red-500 h-2 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]" style={{ width: `${wantPercent}%` }}></div>
-                        </div>
-                    </div>
+                    <div className="mb-4"><div className="flex justify-between text-xs mb-2"><span className="text-white font-bold">Nécessités</span><span className="text-gray-400">{formatMoney(needs)} {currency}</span></div><div className="w-full bg-gray-900 rounded-full h-2"><div className="bg-white h-2 rounded-full" style={{ width: `${needPercent}%` }}></div></div></div>
+                    <div><div className="flex justify-between text-xs mb-2"><span className="text-red-400 font-bold">Futilités (Plaisirs)</span><span className="text-gray-400">{formatMoney(wants)} {currency}</span></div><div className="w-full bg-gray-900 rounded-full h-2"><div className="bg-red-500 h-2 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]" style={{ width: `${wantPercent}%` }}></div></div></div>
                 </div>
-
-                {/* Analyse du Sergent */}
                 <div className="bg-[#1a1a1a] border-l-2 border-gold p-4 rounded-r-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Shield className="w-4 h-4 text-gold" />
-                        <span className="text-xs font-bold text-gold uppercase tracking-widest">Rapport du Sergent</span>
-                    </div>
-                    <p className="text-sm text-gray-300 italic leading-relaxed">
-                        {totalExpenses === 0 ? "Aucune donnée. L'Empire est immobile." : 
-                         wantPercent > 50 ? "DISCIPLINE REQUISE ! Vous gaspillez plus de la moitié de vos ressources dans des futilités. L'Empire va s'effondrer." :
-                         wantPercent > 20 ? "Attention. Les plaisirs grignotent le trésor. Restez vigilant." :
-                         "Excellent. Vos ressources sont allouées à la survie et à la conquête."}
-                    </p>
+                    <div className="flex items-center gap-2 mb-2"><Shield className="w-4 h-4 text-gold" /><span className="text-xs font-bold text-gold uppercase tracking-widest">Rapport du Sergent</span></div>
+                    <p className="text-sm text-gray-300 italic leading-relaxed">{totalExpenses === 0 ? "Aucune donnée. L'Empire est immobile." : wantPercent > 50 ? "DISCIPLINE REQUISE ! Vous gaspillez plus de la moitié de vos ressources. L'Empire va s'effondrer." : wantPercent > 20 ? "Attention. Les plaisirs grignotent le trésor." : "Excellent. Vos ressources sont allouées à la survie et à la conquête."}</p>
                 </div>
             </div>
         </div>
@@ -305,7 +317,7 @@ function StatsScreen({ onBack }) {
 }
 
 // ==========================================
-// 4. ECRAN ARSENAL (Intelligent)
+// 4. ECRAN ARSENAL
 // ==========================================
 function SkillsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
