@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -79,7 +79,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v6.0</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v7.0</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -123,6 +123,7 @@ function MainOS() {
         {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
+        {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
     </>
   );
@@ -173,7 +174,8 @@ function Dashboard({ onNavigate }) {
   const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
   const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
   const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
-  const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } }); // NOUVEAU
+  const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
+  const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } }); // NOUVEAU
   
   const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
   const currency = localStorage.getItem('imperium_currency') || "€";
@@ -260,21 +262,25 @@ function Dashboard({ onNavigate }) {
             </div>
         </div>
 
-        {/* SECTION GRAND LIVRE (NOUVEAU) */}
+        {/* SECTION PROTOCOLES (NOUVEAU) */}
+        <div onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-900/20 text-indigo-500 rounded-lg"><Repeat className="w-5 h-5"/></div>
+                <div><h3 className="text-sm font-bold text-gray-200">Protocoles</h3><p className="text-[10px] text-gray-500">{protocols.length === 0 ? "Gérer abonnements & rentes" : `${protocols.length} Flux Automatiques`}</p></div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
+        </div>
+
         <div onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-900/20 text-purple-500 rounded-lg"><Scroll className="w-5 h-5"/></div>
-                <div><h3 className="text-sm font-bold text-gray-200">Registre (Grand Livre)</h3><p className="text-[10px] text-gray-500">Gérer mes Dettes & Créances</p></div>
+                <div><h3 className="text-sm font-bold text-gray-200">Registre</h3><p className="text-[10px] text-gray-500">Dettes & Créances</p></div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
         </div>
 
         <div onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
-            <div className="flex items-center gap-3"><div className="p-2 bg-blue-900/20 text-blue-500 rounded-lg"><Target className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Cibles de Conquête</h3><p className="text-[10px] text-gray-500">{goals.length === 0 ? "Définir un objectif" : `${goals.length} Cibles`}</p></div></div><ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
-        </div>
-
-        <div onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
-            <div className="flex items-center gap-3"><div className="p-2 bg-yellow-900/20 text-yellow-500 rounded-lg"><Medal className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Salle des Trophées</h3><p className="text-[10px] text-gray-500">Voir mes médailles</p></div></div><ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
+            <div className="flex items-center gap-3"><div className="p-2 bg-blue-900/20 text-blue-500 rounded-lg"><Target className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Cibles</h3><p className="text-[10px] text-gray-500">{goals.length === 0 ? "Définir un objectif" : `${goals.length} Cibles`}</p></div></div><ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -313,7 +319,93 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 8. LE GRAND LIVRE (DETTES & CRÉANCES) - NOUVEAU
+// 8. PROTOCOLES (REVENUS RÉCURRENTS) - NOUVEAU
+// ==========================================
+function ProtocolsScreen({ onBack }) {
+    const currency = localStorage.getItem('imperium_currency') || "€";
+    const [protocols, setProtocols] = useState(JSON.parse(localStorage.getItem('imperium_protocols') || "[]"));
+    const [newName, setNewName] = useState("");
+    const [newAmount, setNewAmount] = useState("");
+    const [type, setType] = useState('expense'); // expense (Charge) or income (Rente)
+
+    useEffect(() => { localStorage.setItem('imperium_protocols', JSON.stringify(protocols)); }, [protocols]);
+
+    const addProtocol = (e) => {
+        e.preventDefault();
+        if (!newName || !newAmount) return;
+        setProtocols([...protocols, { id: Date.now(), name: newName, amount: parseFloat(newAmount), type }]);
+        setNewName(""); setNewAmount("");
+    };
+
+    const deleteProtocol = (id) => { setProtocols(protocols.filter(p => p.id !== id)); };
+
+    const fixedExpenses = protocols.filter(p => p.type === 'expense').reduce((acc, p) => acc + p.amount, 0);
+    const fixedIncome = protocols.filter(p => p.type === 'income').reduce((acc, p) => acc + p.amount, 0);
+    const cashFlow = fixedIncome - fixedExpenses;
+
+    return (
+        <PageTransition>
+        <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col">
+            <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                <h1 className="text-2xl font-serif text-white font-bold">Protocoles</h1>
+            </div>
+
+            <div className="p-5 overflow-y-auto pb-48">
+                {/* Résumé Cash Flow */}
+                <div className="mb-6 bg-[#111] rounded-xl border border-white/10 p-5">
+                    <div className="flex items-center gap-2 mb-4 opacity-70"><Infinity className="w-4 h-4 text-gold" /><h3 className="text-xs font-bold uppercase tracking-widest">Projection Mensuelle</h3></div>
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs text-gray-500">Revenus Fixes</span>
+                        <span className="text-xs font-bold text-green-500">+{formatMoney(fixedIncome)} {currency}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-xs text-gray-500">Charges Fixes</span>
+                        <span className="text-xs font-bold text-red-500">-{formatMoney(fixedExpenses)} {currency}</span>
+                    </div>
+                    <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+                        <span className="text-xs font-bold text-white uppercase">Cash-Flow Net</span>
+                        <span className={`text-xl font-bold font-serif ${cashFlow >= 0 ? 'text-gold' : 'text-red-500'}`}>{cashFlow > 0 ? '+' : ''}{formatMoney(cashFlow)} <span className="text-xs">{currency}</span></span>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    {protocols.length === 0 && <p className="text-center text-gray-600 text-xs mt-10">Aucun protocole actif.</p>}
+                    {protocols.map(p => (
+                        <div key={p.id} className="bg-[#111] border border-white/5 p-4 rounded-xl flex justify-between items-center group">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${p.type === 'expense' ? 'bg-red-900/10 text-red-500' : 'bg-green-900/10 text-green-500'}`}>
+                                    {p.type === 'expense' ? <CalendarClock className="w-5 h-5"/> : <Briefcase className="w-5 h-5"/>}
+                                </div>
+                                <div><h3 className="text-sm font-bold text-gray-200">{p.name}</h3><p className="text-[10px] text-gray-500">Mensuel</p></div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className={`text-sm font-bold ${p.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{formatMoney(p.amount)}</span>
+                                <button onClick={() => deleteProtocol(p.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4"/></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
+                <div className="flex bg-black p-1 rounded-lg mb-3 border border-white/5">
+                    <button onClick={() => setType('expense')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Charge Fixe</button>
+                    <button onClick={() => setType('income')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Rente Fixe</button>
+                </div>
+                <form onSubmit={addProtocol} className="flex gap-2">
+                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Netflix)" className="flex-[2] bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
+                </form>
+            </div>
+        </div>
+        </PageTransition>
+    );
+}
+
+// ==========================================
+// 8. LE GRAND LIVRE (DETTES & CRÉANCES)
 // ==========================================
 function DebtsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -321,7 +413,7 @@ function DebtsScreen({ onBack }) {
     const [debts, setDebts] = useState(JSON.parse(localStorage.getItem('imperium_debts') || "[]"));
     const [newName, setNewName] = useState("");
     const [newAmount, setNewAmount] = useState("");
-    const [type, setType] = useState('owe'); // 'owe' (je dois) or 'owed' (on me doit)
+    const [type, setType] = useState('owe');
 
     useEffect(() => { localStorage.setItem('imperium_debts', JSON.stringify(debts)); }, [debts]);
     useEffect(() => { localStorage.setItem('imperium_balance', JSON.stringify(balance)); }, [balance]);
@@ -337,7 +429,6 @@ function DebtsScreen({ onBack }) {
         if(item.type === 'owe') {
             if(balance < item.amount) return alert("Trésorerie insuffisante pour honorer cette dette.");
             setBalance(balance - item.amount);
-            // Ajout transaction historique optionnel ici si voulu
         } else {
             setBalance(balance + item.amount);
         }
@@ -356,16 +447,9 @@ function DebtsScreen({ onBack }) {
             </div>
 
             <div className="p-5 overflow-y-auto pb-48">
-                {/* Résumé */}
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="bg-red-900/10 border border-red-500/20 p-4 rounded-xl">
-                        <p className="text-[10px] text-red-400 uppercase tracking-widest mb-1">Dettes (Tributs)</p>
-                        <p className="text-xl font-bold text-white">{formatMoney(totalOwe)} {currency}</p>
-                    </div>
-                    <div className="bg-green-900/10 border border-green-500/20 p-4 rounded-xl">
-                        <p className="text-[10px] text-green-400 uppercase tracking-widest mb-1">Créances (Butin)</p>
-                        <p className="text-xl font-bold text-white">{formatMoney(totalOwed)} {currency}</p>
-                    </div>
+                    <div className="bg-red-900/10 border border-red-500/20 p-4 rounded-xl"><p className="text-[10px] text-red-400 uppercase tracking-widest mb-1">Dettes (Tributs)</p><p className="text-xl font-bold text-white">{formatMoney(totalOwe)} {currency}</p></div>
+                    <div className="bg-green-900/10 border border-green-500/20 p-4 rounded-xl"><p className="text-[10px] text-green-400 uppercase tracking-widest mb-1">Créances (Butin)</p><p className="text-xl font-bold text-white">{formatMoney(totalOwed)} {currency}</p></div>
                 </div>
 
                 <div className="space-y-3">
@@ -373,14 +457,10 @@ function DebtsScreen({ onBack }) {
                     {debts.map(item => (
                         <div key={item.id} className={`p-4 rounded-xl border flex justify-between items-center ${item.type === 'owe' ? 'bg-[#111] border-red-500/20' : 'bg-[#111] border-green-500/20'}`}>
                             <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${item.type === 'owe' ? 'bg-red-900/20 text-red-500' : 'bg-green-900/20 text-green-500'}`}>
-                                    {item.type === 'owe' ? <UserMinus className="w-5 h-5"/> : <UserPlus className="w-5 h-5"/>}
-                                </div>
+                                <div className={`p-2 rounded-lg ${item.type === 'owe' ? 'bg-red-900/20 text-red-500' : 'bg-green-900/20 text-green-500'}`}>{item.type === 'owe' ? <UserMinus className="w-5 h-5"/> : <UserPlus className="w-5 h-5"/>}</div>
                                 <div><h3 className="text-sm font-bold text-gray-200">{item.name}</h3><p className="text-[10px] text-gray-500">{formatMoney(item.amount)} {currency}</p></div>
                             </div>
-                            <button onClick={() => settleEntry(item)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase border ${item.type === 'owe' ? 'border-red-500 text-red-500 hover:bg-red-900/20' : 'border-green-500 text-green-500 hover:bg-green-900/20'}`}>
-                                {item.type === 'owe' ? "Honorer" : "Encaisser"}
-                            </button>
+                            <button onClick={() => settleEntry(item)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase border ${item.type === 'owe' ? 'border-red-500 text-red-500 hover:bg-red-900/20' : 'border-green-500 text-green-500 hover:bg-green-900/20'}`}>{item.type === 'owe' ? "Honorer" : "Encaisser"}</button>
                         </div>
                     ))}
                 </div>
