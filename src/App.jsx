@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, Play, Volume2, Mic } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -52,6 +52,29 @@ const BUSINESS_IDEAS = {
   'ia': { title: 'Formation ChatGPT', price: 80, task: 'Forme une petite équipe à utiliser l\'IA pour gagner du temps.' },
 };
 
+const TUTORIAL_STEPS = [
+    {
+        title: "Ceci n'est pas un jeu",
+        text: "Bienvenue au Quartier Général. Écoutez bien. L'interface ressemble à un jeu, mais les chiffres sont réels. Ne confondez pas ce solde avec un score virtuel. C'est votre survie financière.",
+        icon: AlertTriangle
+    },
+    {
+        title: "Le Solde Disponible",
+        text: "Le chiffre en haut est votre argent de poche réel. Si vous le dépensez, il disparaît. Pour sécuriser votre argent, vous devrez le placer dans des Cibles.",
+        icon: Shield
+    },
+    {
+        title: "Action Immédiate",
+        text: "Le bouton jaune en bas est votre arme principale. Utilisez-le à chaque fois que vous dépensez ou gagnez un centime. La discipline est la clé.",
+        icon: Plus
+    },
+    {
+        title: "À vos ordres",
+        text: "L'Empire est prêt. Commencez par explorer, et n'oubliez jamais : le chaos règne dehors, mais ici, c'est la discipline qui commande. Rompez.",
+        icon: Star
+    }
+];
+
 const getRank = (balance, currency) => {
   let points = balance;
   if (currency.includes('FCFA')) points = balance / 650;
@@ -71,6 +94,27 @@ const formatMoney = (amount) => {
 };
 
 // ==========================================
+// SYSTEME VOCAL (TTS)
+// ==========================================
+const speak = (text) => {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop any previous speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR'; // French
+        utterance.pitch = 0.8; // Lower pitch for serious tone
+        utterance.rate = 0.95; // Slightly slower
+        utterance.volume = 1;
+        window.speechSynthesis.speak(utterance);
+    }
+};
+
+const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+};
+
+// ==========================================
 // COMPOSANTS UX
 // ==========================================
 function SplashScreen() {
@@ -79,7 +123,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v7.2</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v8.0</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -87,6 +131,79 @@ function SplashScreen() {
 
 function PageTransition({ children }) {
     return (<div className="animate-in slide-in-from-bottom-8 fade-in duration-500 w-full flex-1 flex flex-col">{children}</div>);
+}
+
+// ==========================================
+// COMPOSANT TUTORIEL
+// ==========================================
+function TutorialOverlay({ onComplete }) {
+    const [stepIndex, setStepIndex] = useState(0);
+    const [started, setStarted] = useState(false);
+    const step = TUTORIAL_STEPS[stepIndex];
+    const Icon = step.icon;
+
+    const startTutorial = () => {
+        setStarted(true);
+        speak(TUTORIAL_STEPS[0].text);
+    };
+
+    const nextStep = () => {
+        if (stepIndex < TUTORIAL_STEPS.length - 1) {
+            setStepIndex(stepIndex + 1);
+            speak(TUTORIAL_STEPS[stepIndex + 1].text);
+        } else {
+            stopSpeaking();
+            onComplete();
+        }
+    };
+
+    const skip = () => {
+        stopSpeaking();
+        onComplete();
+    };
+
+    if (!started) {
+        return (
+            <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-500">
+                <div className="bg-[#111] border border-gold/50 p-6 rounded-2xl max-w-sm w-full text-center shadow-[0_0_50px_rgba(212,175,55,0.2)]">
+                    <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-gold/30">
+                        <Volume2 className="w-8 h-8 text-gold animate-pulse" />
+                    </div>
+                    <h2 className="text-xl font-serif font-bold text-white mb-2">Briefing Audio</h2>
+                    <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                        Soldat. Avant de prendre le commandement, vous devez comprendre la nature de cet outil. Activez le son.
+                    </p>
+                    <button onClick={startTutorial} className="w-full bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs mb-3 hover:bg-yellow-400 transition-colors">
+                        Recevoir les ordres
+                    </button>
+                    <button onClick={skip} className="text-gray-600 text-xs hover:text-white uppercase tracking-widest">
+                        Passer l'initiation
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end justify-center pb-20 animate-in fade-in duration-300">
+            <div className="bg-[#161616] border-t border-gold/30 w-full rounded-t-3xl p-6 shadow-2xl relative max-w-md mx-auto">
+                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-black border-4 border-[#161616] rounded-full flex items-center justify-center z-10">
+                    <Icon className="w-8 h-8 text-gold" />
+                 </div>
+                 <div className="mt-8 text-center">
+                     <h3 className="text-gold font-serif text-lg font-bold mb-2 uppercase tracking-widest">{step.title}</h3>
+                     <p className="text-gray-300 text-sm leading-relaxed mb-8 min-h-[80px]">{step.text}</p>
+                     
+                     <div className="flex gap-3">
+                         <button onClick={skip} className="flex-1 bg-white/5 text-gray-500 font-bold py-3 rounded-lg uppercase tracking-widest text-xs">Passer</button>
+                         <button onClick={nextStep} className="flex-[2] bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                             {stepIndex === TUTORIAL_STEPS.length - 1 ? "Compris, Général" : "Suivant"} <ChevronRight className="w-4 h-4"/>
+                         </button>
+                     </div>
+                 </div>
+            </div>
+        </div>
+    );
 }
 
 // ==========================================
@@ -108,14 +225,30 @@ export default function App() {
 }
 
 // ==========================================
-// 0. GESTIONNAIRE DE VUES
+// 0. GESTIONNAIRE DE VUES & LOGIQUE PRINCIPALE
 // ==========================================
 function MainOS() {
   const [currentView, setCurrentView] = useState('dashboard');
+  const [showTutorial, setShowTutorial] = useState(false);
   const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
+
+  useEffect(() => {
+    // Vérifier si le tutoriel a déjà été vu
+    const tutorialDone = localStorage.getItem('imperium_tutorial_done') === 'true';
+    if (!tutorialDone) {
+        // Petit délai pour laisser l'interface charger
+        setTimeout(() => setShowTutorial(true), 500);
+    }
+  }, []);
+
+  const completeTutorial = () => {
+      localStorage.setItem('imperium_tutorial_done', 'true');
+      setShowTutorial(false);
+  };
 
   return (
     <>
+        {showTutorial && <TutorialOverlay onComplete={completeTutorial} />}
         {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
         {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
@@ -175,7 +308,7 @@ function Dashboard({ onNavigate }) {
   const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
   const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
   const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
-  const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } }); // NOUVEAU
+  const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
   
   const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
   const currency = localStorage.getItem('imperium_currency') || "€";
@@ -262,7 +395,7 @@ function Dashboard({ onNavigate }) {
             </div>
         </div>
 
-        {/* SECTION PROTOCOLES (NOUVEAU) */}
+        {/* SECTION PROTOCOLES */}
         <div onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-900/20 text-indigo-500 rounded-lg"><Repeat className="w-5 h-5"/></div>
@@ -319,14 +452,14 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 8. PROTOCOLES - CORRECTIF LAYOUT 2 LIGNES
+// 8. PROTOCOLES - LAYOUT 2 LIGNES
 // ==========================================
 function ProtocolsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
     const [protocols, setProtocols] = useState(JSON.parse(localStorage.getItem('imperium_protocols') || "[]"));
     const [newName, setNewName] = useState("");
     const [newAmount, setNewAmount] = useState("");
-    const [type, setType] = useState('expense'); // expense (Charge) or income (Rente)
+    const [type, setType] = useState('expense');
 
     useEffect(() => { localStorage.setItem('imperium_protocols', JSON.stringify(protocols)); }, [protocols]);
 
@@ -352,21 +485,11 @@ function ProtocolsScreen({ onBack }) {
             </div>
 
             <div className="p-5 overflow-y-auto pb-48">
-                {/* Résumé Cash Flow */}
                 <div className="mb-6 bg-[#111] rounded-xl border border-white/10 p-5">
                     <div className="flex items-center gap-2 mb-4 opacity-70"><Infinity className="w-4 h-4 text-gold" /><h3 className="text-xs font-bold uppercase tracking-widest">Projection Mensuelle</h3></div>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs text-gray-500">Revenus Fixes</span>
-                        <span className="text-xs font-bold text-green-500">+{formatMoney(fixedIncome)} {currency}</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-xs text-gray-500">Charges Fixes</span>
-                        <span className="text-xs font-bold text-red-500">-{formatMoney(fixedExpenses)} {currency}</span>
-                    </div>
-                    <div className="pt-4 border-t border-white/10 flex justify-between items-center">
-                        <span className="text-xs font-bold text-white uppercase">Cash-Flow Net</span>
-                        <span className={`text-xl font-bold font-serif ${cashFlow >= 0 ? 'text-gold' : 'text-red-500'}`}>{cashFlow > 0 ? '+' : ''}{formatMoney(cashFlow)} <span className="text-xs">{currency}</span></span>
-                    </div>
+                    <div className="flex justify-between items-center mb-2"><span className="text-xs text-gray-500">Revenus Fixes</span><span className="text-xs font-bold text-green-500">+{formatMoney(fixedIncome)} {currency}</span></div>
+                    <div className="flex justify-between items-center mb-4"><span className="text-xs text-gray-500">Charges Fixes</span><span className="text-xs font-bold text-red-500">-{formatMoney(fixedExpenses)} {currency}</span></div>
+                    <div className="pt-4 border-t border-white/10 flex justify-between items-center"><span className="text-xs font-bold text-white uppercase">Cash-Flow Net</span><span className={`text-xl font-bold font-serif ${cashFlow >= 0 ? 'text-gold' : 'text-red-500'}`}>{cashFlow > 0 ? '+' : ''}{formatMoney(cashFlow)} <span className="text-xs">{currency}</span></span></div>
                 </div>
 
                 <div className="space-y-3">
@@ -374,15 +497,10 @@ function ProtocolsScreen({ onBack }) {
                     {protocols.map(p => (
                         <div key={p.id} className="bg-[#111] border border-white/5 p-4 rounded-xl flex justify-between items-center group">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${p.type === 'expense' ? 'bg-red-900/10 text-red-500' : 'bg-green-900/10 text-green-500'}`}>
-                                    {p.type === 'expense' ? <CalendarClock className="w-5 h-5"/> : <Briefcase className="w-5 h-5"/>}
-                                </div>
+                                <div className={`p-2 rounded-lg ${p.type === 'expense' ? 'bg-red-900/10 text-red-500' : 'bg-green-900/10 text-green-500'}`}>{p.type === 'expense' ? <CalendarClock className="w-5 h-5"/> : <Briefcase className="w-5 h-5"/>}</div>
                                 <div><h3 className="text-sm font-bold text-gray-200">{p.name}</h3><p className="text-[10px] text-gray-500">Mensuel</p></div>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <span className={`text-sm font-bold ${p.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{formatMoney(p.amount)}</span>
-                                <button onClick={() => deleteProtocol(p.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4"/></button>
-                            </div>
+                            <div className="flex items-center gap-4"><span className={`text-sm font-bold ${p.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{formatMoney(p.amount)}</span><button onClick={() => deleteProtocol(p.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4"/></button></div>
                         </div>
                     ))}
                 </div>
@@ -393,7 +511,6 @@ function ProtocolsScreen({ onBack }) {
                     <button onClick={() => setType('expense')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Charge Fixe</button>
                     <button onClick={() => setType('income')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Rente Fixe</button>
                 </div>
-                {/* CORRECTIF ICI : FORMULAIRE SUR 2 LIGNES */}
                 <form onSubmit={addProtocol} className="flex flex-col gap-3">
                     <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Netflix)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
                     <div className="flex gap-2">
@@ -408,7 +525,7 @@ function ProtocolsScreen({ onBack }) {
 }
 
 // ==========================================
-// 8. LE GRAND LIVRE - CORRECTIF LAYOUT 2 LIGNES
+// 8. LE GRAND LIVRE - LAYOUT 2 LIGNES
 // ==========================================
 function DebtsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -474,7 +591,6 @@ function DebtsScreen({ onBack }) {
                     <button onClick={() => setType('owe')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owe' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Je Dois (Dette)</button>
                     <button onClick={() => setType('owed')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owed' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>On me Doit (Créance)</button>
                 </div>
-                {/* CORRECTIF ICI : FORMULAIRE SUR 2 LIGNES */}
                 <form onSubmit={addEntry} className="flex flex-col gap-3">
                     <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Moussa)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
                     <div className="flex gap-2">
@@ -489,7 +605,7 @@ function DebtsScreen({ onBack }) {
 }
 
 // ==========================================
-// 7. CIBLES DE CONQUÊTE - CORRECTIF LAYOUT 2 LIGNES
+// 7. CIBLES DE CONQUÊTE - LAYOUT 2 LIGNES
 // ==========================================
 function GoalsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -569,7 +685,6 @@ function GoalsScreen({ onBack }) {
                 </div>
             )}
 
-            {/* CORRECTIF ICI : FORMULAIRE SUR 2 LIGNES */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0a0a0a] border-t border-white/10 pb-[calc(2rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
                 <form onSubmit={addGoal} className="flex flex-col gap-3">
                     <input type="text" value={newGoalName} onChange={(e) => setNewGoalName(e.target.value)} placeholder="Nom (ex: PC Gamer)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
