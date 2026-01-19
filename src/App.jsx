@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -24,7 +24,7 @@ const ZONES = [
 ];
 
 const QUOTES = [
-  "On a deux vies. La deuxième commence quand on réalise qu'on n'en a qu'une.",
+  "Les dettes sont l'esclavage des hommes libres.",
   "La discipline est mère du succès.",
   "Ce n'est pas parce que les choses sont difficiles que nous n'osons pas, c'est parce que nous n'osons pas qu'elles sont difficiles.",
   "L'homme qui déplace une montagne commence par déplacer de petites pierres.",
@@ -79,7 +79,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v5.1</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v6.0</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -122,6 +122,7 @@ function MainOS() {
         {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
+        {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
     </>
   );
@@ -171,7 +172,9 @@ function OnboardingScreen({ onComplete }) {
 function Dashboard({ onNavigate }) {
   const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
   const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
-  const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } }); // NOUVEAU
+  const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
+  const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } }); // NOUVEAU
+  
   const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
   const currency = localStorage.getItem('imperium_currency') || "€";
   const tasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
@@ -204,7 +207,6 @@ function Dashboard({ onNavigate }) {
   const rank = getRank(balance, currency);
   const RankIcon = rank.icon;
 
-  // CALCULER LE CASH DISPONIBLE (Total - Cibles)
   const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
   const availableCash = balance - lockedCash;
 
@@ -258,14 +260,17 @@ function Dashboard({ onNavigate }) {
             </div>
         </div>
 
-        <div onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
+        {/* SECTION GRAND LIVRE (NOUVEAU) */}
+        <div onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
             <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-900/20 text-blue-500 rounded-lg"><Target className="w-5 h-5"/></div>
-                <div><h3 className="text-sm font-bold text-gray-200">Cibles de Conquête</h3><p className="text-[10px] text-gray-500">
-                    {goals.length === 0 ? "Définir un objectif d'épargne" : `${goals.length} Cibles • ${formatMoney(lockedCash)} ${currency} sécurisés`}
-                </p></div>
+                <div className="p-2 bg-purple-900/20 text-purple-500 rounded-lg"><Scroll className="w-5 h-5"/></div>
+                <div><h3 className="text-sm font-bold text-gray-200">Registre (Grand Livre)</h3><p className="text-[10px] text-gray-500">Gérer mes Dettes & Créances</p></div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
+        </div>
+
+        <div onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
+            <div className="flex items-center gap-3"><div className="p-2 bg-blue-900/20 text-blue-500 rounded-lg"><Target className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Cibles de Conquête</h3><p className="text-[10px] text-gray-500">{goals.length === 0 ? "Définir un objectif" : `${goals.length} Cibles`}</p></div></div><ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
         </div>
 
         <div onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
@@ -308,7 +313,97 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 7. CIBLES DE CONQUÊTE (GOALS) - NOUVEAU
+// 8. LE GRAND LIVRE (DETTES & CRÉANCES) - NOUVEAU
+// ==========================================
+function DebtsScreen({ onBack }) {
+    const currency = localStorage.getItem('imperium_currency') || "€";
+    const [balance, setBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+    const [debts, setDebts] = useState(JSON.parse(localStorage.getItem('imperium_debts') || "[]"));
+    const [newName, setNewName] = useState("");
+    const [newAmount, setNewAmount] = useState("");
+    const [type, setType] = useState('owe'); // 'owe' (je dois) or 'owed' (on me doit)
+
+    useEffect(() => { localStorage.setItem('imperium_debts', JSON.stringify(debts)); }, [debts]);
+    useEffect(() => { localStorage.setItem('imperium_balance', JSON.stringify(balance)); }, [balance]);
+
+    const addEntry = (e) => {
+        e.preventDefault();
+        if (!newName || !newAmount) return;
+        setDebts([...debts, { id: Date.now(), name: newName, amount: parseFloat(newAmount), type }]);
+        setNewName(""); setNewAmount("");
+    };
+
+    const settleEntry = (item) => {
+        if(item.type === 'owe') {
+            if(balance < item.amount) return alert("Trésorerie insuffisante pour honorer cette dette.");
+            setBalance(balance - item.amount);
+            // Ajout transaction historique optionnel ici si voulu
+        } else {
+            setBalance(balance + item.amount);
+        }
+        setDebts(debts.filter(d => d.id !== item.id));
+    };
+
+    const totalOwe = debts.filter(d => d.type === 'owe').reduce((acc, d) => acc + d.amount, 0);
+    const totalOwed = debts.filter(d => d.type === 'owed').reduce((acc, d) => acc + d.amount, 0);
+
+    return (
+        <PageTransition>
+        <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col">
+            <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                <h1 className="text-2xl font-serif text-white font-bold">Le Registre</h1>
+            </div>
+
+            <div className="p-5 overflow-y-auto pb-48">
+                {/* Résumé */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="bg-red-900/10 border border-red-500/20 p-4 rounded-xl">
+                        <p className="text-[10px] text-red-400 uppercase tracking-widest mb-1">Dettes (Tributs)</p>
+                        <p className="text-xl font-bold text-white">{formatMoney(totalOwe)} {currency}</p>
+                    </div>
+                    <div className="bg-green-900/10 border border-green-500/20 p-4 rounded-xl">
+                        <p className="text-[10px] text-green-400 uppercase tracking-widest mb-1">Créances (Butin)</p>
+                        <p className="text-xl font-bold text-white">{formatMoney(totalOwed)} {currency}</p>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    {debts.length === 0 && <p className="text-center text-gray-600 text-xs mt-10">Le registre est vierge.</p>}
+                    {debts.map(item => (
+                        <div key={item.id} className={`p-4 rounded-xl border flex justify-between items-center ${item.type === 'owe' ? 'bg-[#111] border-red-500/20' : 'bg-[#111] border-green-500/20'}`}>
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${item.type === 'owe' ? 'bg-red-900/20 text-red-500' : 'bg-green-900/20 text-green-500'}`}>
+                                    {item.type === 'owe' ? <UserMinus className="w-5 h-5"/> : <UserPlus className="w-5 h-5"/>}
+                                </div>
+                                <div><h3 className="text-sm font-bold text-gray-200">{item.name}</h3><p className="text-[10px] text-gray-500">{formatMoney(item.amount)} {currency}</p></div>
+                            </div>
+                            <button onClick={() => settleEntry(item)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase border ${item.type === 'owe' ? 'border-red-500 text-red-500 hover:bg-red-900/20' : 'border-green-500 text-green-500 hover:bg-green-900/20'}`}>
+                                {item.type === 'owe' ? "Honorer" : "Encaisser"}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
+                <div className="flex bg-black p-1 rounded-lg mb-3 border border-white/5">
+                    <button onClick={() => setType('owe')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owe' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Je Dois (Dette)</button>
+                    <button onClick={() => setType('owed')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owed' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>On me Doit (Créance)</button>
+                </div>
+                <form onSubmit={addEntry} className="flex gap-2">
+                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Moussa)" className="flex-[2] bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
+                </form>
+            </div>
+        </div>
+        </PageTransition>
+    );
+}
+
+// ==========================================
+// 7. CIBLES DE CONQUÊTE (GOALS)
 // ==========================================
 function GoalsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
