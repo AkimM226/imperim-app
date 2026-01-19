@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload } from 'lucide-react';
 
-// --- LISTE DES DEVISES (Base de données statique) ---
 const CURRENCIES = [
   { code: 'EUR', symbol: '€', name: 'Euro' },
   { code: 'USD', symbol: '$', name: 'Dollar Américain' },
@@ -40,47 +39,31 @@ export default function App() {
 // 0. GESTIONNAIRE DE VUES
 // ==========================================
 function MainOS() {
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'project', 'skills', 'settings'
 
   if (currentView === 'dashboard') return <Dashboard onNavigate={(view) => setCurrentView(view)} />;
   if (currentView === 'project') return <ProjectScreen onBack={() => setCurrentView('dashboard')} />;
   if (currentView === 'skills') return <SkillsScreen onBack={() => setCurrentView('dashboard')} />;
+  if (currentView === 'settings') return <SettingsScreen onBack={() => setCurrentView('dashboard')} />;
 }
 
 // ==========================================
-// 1. ONBOARDING (AVEC RECHERCHE DE DEVISE)
+// 1. ONBOARDING
 // ==========================================
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(1);
   const [initialBalance, setInitialBalance] = useState('');
   const [mainProject, setMainProject] = useState('');
-  
-  // Gestion Devise
   const [currency, setCurrency] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Gestion Pacte
   const [isHolding, setIsHolding] = useState(false);
   const holdTimer = useRef(null);
   const [progress, setProgress] = useState(0);
 
-  // Filtre les devises selon la recherche
-  const filteredCurrencies = CURRENCIES.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCurrencies = CURRENCIES.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()));
+  const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(4); };
 
-  const selectCurrency = (selected) => {
-    setCurrency(selected.symbol); // On garde le symbole (ex: € ou FCFA)
-    setStep(4); // On passe direct à l'étape suivante
-  };
-
-  const startHold = () => {
-    setIsHolding(true);
-    let p = 0;
-    holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30);
-  };
-
+  const startHold = () => { setIsHolding(true); let p = 0; holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30); };
   const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
 
   const finishOnboarding = () => {
@@ -111,52 +94,22 @@ function OnboardingScreen({ onComplete }) {
           <p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p>
         </div>
       )}
-      
-      {/* ÉTAPE 3 : SÉLECTEUR DE DEVISE (NOUVEAU) */}
       {step === 3 && (
         <div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]">
           <h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2>
-          
-          {/* Barre de recherche */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
-            <input 
-              type="text" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none"
-              placeholder="Rechercher (ex: Euro, FCFA...)"
-              autoFocus
-            />
+            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none" placeholder="Rechercher (ex: Euro, FCFA...)" autoFocus />
           </div>
-
-          {/* Liste déroulante */}
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
             {filteredCurrencies.map((c) => (
-              <button 
-                key={c.code}
-                onClick={() => selectCurrency(c)}
-                className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">
-                    {c.symbol.substring(0, 2)}
-                  </span>
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p>
-                    <p className="text-[10px] text-gray-500">{c.code}</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" />
+              <button key={c.code} onClick={() => selectCurrency(c)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]">
+                <div className="flex items-center gap-3"><span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">{c.symbol.substring(0, 2)}</span><div className="text-left"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p><p className="text-[10px] text-gray-500">{c.code}</p></div></div><ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" />
               </button>
             ))}
-            {filteredCurrencies.length === 0 && (
-               <p className="text-xs text-gray-500 mt-4">Aucune devise trouvée.</p>
-            )}
           </div>
         </div>
       )}
-
       {step === 4 && (
         <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs">
           <label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle ({currency})</label>
@@ -212,14 +165,13 @@ function Dashboard({ onNavigate }) {
     setAmount(''); setDescription(''); setIsModalOpen(false);
   };
 
-  const resetEmpire = () => { if(confirm("Attention : Reset complet ?")) { localStorage.clear(); window.location.reload(); } }
-
   return (
     <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-32 flex flex-col relative shadow-2xl animate-in fade-in duration-500">
       <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
          <div className="w-8"></div>
          <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
-         <button onClick={resetEmpire} className="w-8 flex justify-end text-gray-800 hover:text-red-900"><Trash2 className="w-4 h-4"/></button>
+         {/* Bouton Paramètres (Engrenage) */}
+         <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white"><Settings className="w-5 h-5"/></button>
       </header>
       <div className="w-full px-4 mt-6">
         <div className="bg-[#151515] border-l-2 border-gold p-4 rounded-r-lg flex items-center gap-4 shadow-lg w-full">
@@ -352,6 +304,113 @@ function SkillsScreen({ onBack }) {
                     <div className="flex gap-2"><input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Compétence..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-2 text-xs text-gold focus:border-gold focus:outline-none"><option>Apprenti</option><option>Soldat</option><option>Expert</option><option>Maître</option></select></div>
                     <button type="submit" disabled={!newSkill.trim()} className="w-full bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"><Plus className="w-4 h-4" /> AJOUTER À L'ARSENAL</button>
                 </form>
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// 5. ÉCRAN PARAMÈTRES (ARCHIVES) - NOUVEAU
+// ==========================================
+function SettingsScreen({ onBack }) {
+    const [importData, setImportData] = useState("");
+    
+    // Fonction d'Exportation
+    const handleExport = () => {
+        const data = {
+            balance: localStorage.getItem('imperium_balance'),
+            transactions: localStorage.getItem('imperium_transactions'),
+            project: localStorage.getItem('imperium_project_name'),
+            tasks: localStorage.getItem('imperium_tasks'),
+            skills: localStorage.getItem('imperium_skills'),
+            currency: localStorage.getItem('imperium_currency'),
+            onboarded: localStorage.getItem('imperium_onboarded'),
+        };
+        // Conversion en texte chiffré (Base64) pour faire "Pro"
+        const encoded = btoa(JSON.stringify(data));
+        navigator.clipboard.writeText(encoded);
+        alert("⚔️ ARCHIVES SÉCURISÉES ⚔️\n\nLe code de sauvegarde a été copié dans votre presse-papier.\nCollez-le dans un endroit sûr (Notes, Mail...).");
+    };
+
+    // Fonction d'Importation
+    const handleImport = () => {
+        try {
+            if(!importData) return;
+            const decoded = JSON.parse(atob(importData));
+            
+            // Restauration
+            if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance);
+            if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions);
+            if(decoded.project) localStorage.setItem('imperium_project_name', decoded.project);
+            if(decoded.tasks) localStorage.setItem('imperium_tasks', decoded.tasks);
+            if(decoded.skills) localStorage.setItem('imperium_skills', decoded.skills);
+            if(decoded.currency) localStorage.setItem('imperium_currency', decoded.currency);
+            if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded);
+
+            alert("✅ RESTAURATION RÉUSSIE.\nL'Empire est de retour.");
+            window.location.reload();
+        } catch (e) {
+            alert("❌ ERREUR : Ce code est invalide ou corrompu.");
+        }
+    };
+
+    const resetEmpire = () => {
+        if(confirm("DANGER : Voulez-vous vraiment TOUT effacer et repartir à zéro ? Cette action est irréversible.")) {
+            localStorage.clear();
+            window.location.reload();
+        }
+    }
+
+    return (
+        <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                <h1 className="text-2xl font-serif text-white font-bold">Archives</h1>
+            </div>
+
+            <div className="p-5 space-y-8">
+                
+                {/* Section Export */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3>
+                            <p className="text-[10px] text-gray-500">Générez un code unique pour ne rien perdre.</p>
+                        </div>
+                    </div>
+                    <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors">
+                        <Copy className="w-4 h-4" /> Copier le Code de Sauvegarde
+                    </button>
+                </div>
+
+                {/* Section Import */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div>
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-200">Restaurer les données</h3>
+                            <p className="text-[10px] text-gray-500">Collez ici un code de sauvegarde.</p>
+                        </div>
+                    </div>
+                    <textarea 
+                        value={importData}
+                        onChange={(e) => setImportData(e.target.value)}
+                        placeholder="Collez votre code ici..."
+                        className="w-full bg-black border border-white/10 rounded-lg p-3 text-xs text-gray-300 focus:border-gold focus:outline-none h-20 mb-3 font-mono"
+                    />
+                    <button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">
+                        Restaurer
+                    </button>
+                </div>
+
+                {/* Section Danger */}
+                <div className="pt-10 border-t border-white/5">
+                    <button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors">
+                        <Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)
+                    </button>
+                </div>
+
             </div>
         </div>
     );
