@@ -4,8 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0a0a" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <title>IMPERIUM</title>
     
@@ -20,30 +18,35 @@
               dark: '#0a0a0a',
               card: '#121212',
               danger: '#ef4444',
-              success: '#10b981', // Ajout du vert pour les gains
+              success: '#10b981',
             },
             fontFamily: {
               serif: ['Cinzel', 'serif'],
               sans: ['Inter', 'sans-serif'],
-            },
-            animation: {
-              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             }
           }
         }
       }
     </script>
     <style>
-      /* Correction du scroll et safe-area pour iPhone */
-      body { 
-        background-color: #0a0a0a; 
-        color: #e5e5e5; 
-        overscroll-behavior-y: none; /* Empêche le rebond élastique */
+      /* RESET TOTAL */
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #0a0a0a;
+        color: #e5e5e5;
+        overscroll-behavior-y: none; /* Empêche l'effet élastique */
         -webkit-tap-highlight-color: transparent;
       }
-      /* Pour cacher la scrollbar mais garder le scroll */
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      #root {
+        width: 100%;
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* C'EST LA CLÉ DU CENTRAGE */
+      }
     </style>
   </head>
   <body>
