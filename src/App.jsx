@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, Play, Volume2, Mic } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, Play, Volume2, Mic, RefreshCw, Radio, VolumeX } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -52,26 +52,34 @@ const BUSINESS_IDEAS = {
   'ia': { title: 'Formation ChatGPT', price: 80, task: 'Forme une petite équipe à utiliser l\'IA pour gagner du temps.' },
 };
 
-// TEXTE DU COMMANDANT (Ton Épique)
+// DONNÉES DU TUTORIEL (LIÉES AUX FICHIERS AUDIO MP3)
 const TUTORIAL_STEPS = [
     {
+        id: 'intro',
         title: "INITIALISATION",
-        text: "Soldat ! Ici le Commandement Central. Écoutez attentivement. Cette interface n'est pas un jeu. Les chiffres que vous voyez sont vos munitions réelles. Une erreur ici, et vous saignez dans la réalité. Compris ?",
+        text: "Soldat ! Ici le Commandement Central. Cette interface n'est pas un jeu. Les chiffres sont vos munitions réelles. Une erreur ici, et vous saignez dans la réalité.",
+        audioFile: "/audio/intro.mp3", // Mettre le fichier dans public/audio/
         icon: AlertTriangle
     },
     {
+        id: 'balance',
         title: "VOTRE MISSION",
-        text: "Regardez en haut. Ce solde est votre oxygène. Si il tombe à zéro, vous êtes mort. Votre mission est simple : Sécuriser les ressources, Éliminer les dépenses inutiles, et Bâtir un Empire.",
+        text: "Regardez en haut. Ce solde est votre oxygène. Si il tombe à zéro, vous êtes mort. Votre mission : Sécuriser les ressources et Bâtir un Empire.",
+        audioFile: "/audio/solde.mp3",
         icon: Shield
     },
     {
+        id: 'action',
         title: "L'ARME PRINCIPALE",
-        text: "Le bouton jaune en bas est votre détonateur. À chaque fois que vous sortez votre portefeuille, vous devez appuyer dessus. La discipline n'est pas une option, c'est une question de survie.",
+        text: "Le bouton jaune en bas est votre détonateur. À chaque fois que vous sortez votre portefeuille, appuyez dessus. La discipline n'est pas une option.",
+        audioFile: "/audio/action.mp3",
         icon: Plus
     },
     {
+        id: 'end',
         title: "EXÉCUTION",
-        text: "L'Empire est prêt à être déployé. Le chaos règne à l'extérieur, mais ici, c'est votre loi qui s'applique. Ne me décevez pas. Rompez !",
+        text: "L'Empire est prêt. Le chaos règne à l'extérieur, mais ici, c'est votre loi qui s'applique. Ne me décevez pas. Rompez !",
+        audioFile: "/audio/fin.mp3",
         icon: Star
     }
 ];
@@ -95,61 +103,6 @@ const formatMoney = (amount) => {
 };
 
 // ==========================================
-// SYSTEME VOCAL AVANCÉ (Commandant Voice)
-// ==========================================
-const speakCommand = (text) => {
-    if (!('speechSynthesis' in window)) return;
-
-    // Charger les voix (parfois asynchrone sur Chrome/Android)
-    const synth = window.speechSynthesis;
-    let voices = synth.getVoices();
-
-    const playVoice = () => {
-        synth.cancel(); // Stop précédent
-        const utterance = new SpeechSynthesisUtterance(text);
-        
-        // RECHERCHE DE LA MEILLEURE VOIX MASCULINE/PREMIUM
-        // 1. Thomas (iPhone - Excellent)
-        // 2. Google Français (Android - Très bon)
-        // 3. N'importe quelle voix fr-FR
-        const targetVoice = voices.find(v => v.name.includes('Thomas')) || 
-                            voices.find(v => v.name.includes('Google') && v.lang.includes('fr')) ||
-                            voices.find(v => v.lang === 'fr-FR');
-
-        if (targetVoice) {
-            utterance.voice = targetVoice;
-            // Ajustements pour effet "Commandant"
-            utterance.pitch = 0.9; // Un peu plus grave
-            utterance.rate = 0.9; // Un peu plus lent et autoritaire
-            utterance.volume = 1.0;
-        } else {
-            // Fallback
-            utterance.lang = 'fr-FR';
-            utterance.pitch = 0.8; 
-            utterance.rate = 0.9;
-        }
-
-        synth.speak(utterance);
-    };
-
-    if (voices.length === 0) {
-        // Attendre que les voix chargent (Chrome bug fix)
-        synth.onvoiceschanged = () => {
-            voices = synth.getVoices();
-            playVoice();
-        };
-    } else {
-        playVoice();
-    }
-};
-
-const stopSpeaking = () => {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-    }
-};
-
-// ==========================================
 // COMPOSANTS UX
 // ==========================================
 function SplashScreen() {
@@ -158,7 +111,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v8.1</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v9.0</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -169,34 +122,66 @@ function PageTransition({ children }) {
 }
 
 // ==========================================
-// COMPOSANT TUTORIEL
+// COMPOSANT TUTORIEL "STUDIO" (MP3)
 // ==========================================
 function TutorialOverlay({ onComplete }) {
     const [stepIndex, setStepIndex] = useState(0);
     const [started, setStarted] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const audioRef = useRef(null);
     const step = TUTORIAL_STEPS[stepIndex];
     const Icon = step.icon;
 
+    // Fonction pour jouer l'audio proprement
+    const playAudio = (file) => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+        
+        // Création de l'objet audio
+        const newAudio = new Audio(file);
+        audioRef.current = newAudio;
+        
+        newAudio.play().then(() => {
+            setIsPlaying(true);
+        }).catch(e => {
+            console.log("Lecture bloquée par le navigateur (attente interaction)", e);
+            setIsPlaying(false);
+        });
+
+        newAudio.onended = () => {
+            setIsPlaying(false);
+        };
+    };
+
     const startTutorial = () => {
         setStarted(true);
-        speakCommand(TUTORIAL_STEPS[0].text);
+        playAudio(TUTORIAL_STEPS[0].audioFile);
     };
 
     const nextStep = () => {
         if (stepIndex < TUTORIAL_STEPS.length - 1) {
             const nextIdx = stepIndex + 1;
             setStepIndex(nextIdx);
-            speakCommand(TUTORIAL_STEPS[nextIdx].text);
+            playAudio(TUTORIAL_STEPS[nextIdx].audioFile);
         } else {
-            stopSpeaking();
+            if (audioRef.current) audioRef.current.pause();
             onComplete();
         }
     };
 
     const skip = () => {
-        stopSpeaking();
+        if (audioRef.current) audioRef.current.pause();
         onComplete();
     };
+
+    // Nettoyage si le composant est démonté
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) audioRef.current.pause();
+        };
+    }, []);
 
     if (!started) {
         return (
@@ -207,10 +192,11 @@ function TutorialOverlay({ onComplete }) {
                     </div>
                     <h2 className="text-2xl font-serif font-bold text-white mb-2 tracking-widest uppercase">Briefing Vocal</h2>
                     <p className="text-gray-400 text-sm mb-8 leading-relaxed italic">
-                        "Activez le son. Le Général a des ordres pour vous."
+                        "Activez le son pour le briefing tactique."
                     </p>
-                    <button onClick={startTutorial} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs mb-3 hover:bg-yellow-400 transition-colors shadow-lg shadow-gold/20">
-                        RECEVOIR LES ORDRES
+                    
+                    <button onClick={startTutorial} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs mb-3 hover:bg-yellow-400 transition-colors shadow-lg shadow-gold/20 flex items-center justify-center gap-2">
+                        <Play className="w-4 h-4 fill-black" /> LANCER LA SÉQUENCE
                     </button>
                     <button onClick={skip} className="text-gray-600 text-[10px] hover:text-white uppercase tracking-widest mt-4">
                         Passer le briefing
@@ -223,17 +209,30 @@ function TutorialOverlay({ onComplete }) {
     return (
         <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-end justify-center pb-20 animate-in fade-in duration-300">
             <div className="bg-[#161616] border-t-2 border-gold w-full rounded-t-3xl p-6 shadow-2xl relative max-w-md mx-auto">
+                 {/* Visualizer animé simple */}
                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-black border-4 border-gold rounded-full flex items-center justify-center z-10 shadow-[0_0_20px_rgba(212,175,55,0.4)]">
-                    <Icon className="w-8 h-8 text-gold" />
+                    {isPlaying ? (
+                        <div className="flex gap-1 h-4 items-end">
+                            <div className="w-1 bg-gold animate-[bounce_1s_infinite] h-full"></div>
+                            <div className="w-1 bg-gold animate-[bounce_1.2s_infinite] h-2/3"></div>
+                            <div className="w-1 bg-gold animate-[bounce_0.8s_infinite] h-full"></div>
+                        </div>
+                    ) : (
+                        <Icon className="w-8 h-8 text-gold" />
+                    )}
                  </div>
+
                  <div className="mt-10 text-center">
                      <h3 className="text-gold font-serif text-xl font-bold mb-4 uppercase tracking-[0.2em]">{step.title}</h3>
-                     <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-6">
-                        <p className="text-gray-200 text-sm leading-relaxed font-medium italic">"{step.text}"</p>
+                     
+                     <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-6 min-h-[100px] flex items-center justify-center relative overflow-hidden">
+                        {/* Barre de progression subtile */}
+                        {isPlaying && <div className="absolute bottom-0 left-0 h-1 bg-gold/30 w-full animate-[loading-bar_10s_linear]"></div>}
+                        <p className="text-gray-200 text-sm leading-relaxed font-medium italic relative z-10">"{step.text}"</p>
                      </div>
                      
                      <div className="flex gap-3">
-                         <button onClick={skip} className="flex-1 bg-white/5 text-gray-500 font-bold py-3 rounded-lg uppercase tracking-widest text-[10px]">Abandonner</button>
+                         <button onClick={skip} className="flex-1 bg-white/5 text-gray-500 font-bold py-3 rounded-lg uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"><VolumeX className="w-3 h-3"/> Stop</button>
                          <button onClick={nextStep} className="flex-[2] bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-lg shadow-gold/20">
                              {stepIndex === TUTORIAL_STEPS.length - 1 ? "À VOS ORDRES" : "SUIVANT"} <ChevronRight className="w-4 h-4"/>
                          </button>
