@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap } from 'lucide-react';
 
 export default function App() {
   const [hasOnboarded, setHasOnboarded] = useState(localStorage.getItem('imperium_onboarded') === 'true');
@@ -15,17 +15,11 @@ export default function App() {
 // 0. GESTIONNAIRE DE VUES (Navigation)
 // ==========================================
 function MainOS() {
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' ou 'project'
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'project', 'skills'
 
-  // Si la vue est 'dashboard', on affiche le Dashboard
-  if (currentView === 'dashboard') {
-    return <Dashboard onNavigate={(view) => setCurrentView(view)} />;
-  }
-
-  // Si la vue est 'project', on affiche la Salle de Guerre
-  if (currentView === 'project') {
-    return <ProjectScreen onBack={() => setCurrentView('dashboard')} />;
-  }
+  if (currentView === 'dashboard') return <Dashboard onNavigate={(view) => setCurrentView(view)} />;
+  if (currentView === 'project') return <ProjectScreen onBack={() => setCurrentView('dashboard')} />;
+  if (currentView === 'skills') return <SkillsScreen onBack={() => setCurrentView('dashboard')} />;
 }
 
 // ==========================================
@@ -100,19 +94,19 @@ function OnboardingScreen({ onComplete }) {
 // 2. DASHBOARD PRINCIPAL
 // ==========================================
 function Dashboard({ onNavigate }) {
-  const savedBalance = localStorage.getItem('imperium_balance');
-  const savedTransactions = localStorage.getItem('imperium_transactions');
+  const [balance, setBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+  const [transactions, setTransactions] = useState(JSON.parse(localStorage.getItem('imperium_transactions') || "[]"));
   const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
   
-  // Calcul du % d'avancement du projet (Nouveau !)
-  const savedTasks = localStorage.getItem('imperium_tasks');
-  const tasks = savedTasks ? JSON.parse(savedTasks) : [];
-  const totalTasks = tasks.length;
+  // Données Projet
+  const tasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
   const completedTasks = tasks.filter(t => t.done).length;
-  const progressPercent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+  const progressPercent = tasks.length === 0 ? 0 : Math.round((completedTasks / tasks.length) * 100);
 
-  const [balance, setBalance] = useState(savedBalance ? JSON.parse(savedBalance) : 0);
-  const [transactions, setTransactions] = useState(savedTransactions ? JSON.parse(savedTransactions) : []);
+  // Données Skills (Nouveau)
+  const skills = JSON.parse(localStorage.getItem('imperium_skills') || "[]");
+  const mainSkill = skills.length > 0 ? skills[0] : null;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactionType, setTransactionType] = useState('expense');
   const [amount, setAmount] = useState('');
@@ -134,28 +128,19 @@ function Dashboard({ onNavigate }) {
     setAmount(''); setDescription(''); setIsModalOpen(false);
   };
 
-  const resetEmpire = () => {
-    if(confirm("Attention : Reset complet ?")) { localStorage.clear(); window.location.reload(); }
-  }
+  const resetEmpire = () => { if(confirm("Attention : Reset complet ?")) { localStorage.clear(); window.location.reload(); } }
 
   return (
     <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-32 flex flex-col relative shadow-2xl animate-in fade-in duration-500">
-      
-      {/* HEADER */}
       <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
          <div className="w-8"></div>
-         <div className="text-center flex-1">
-            <h1 className="text-xl font-serif text-gold tracking-widest font-bold">IMPERIUM</h1>
-         </div>
+         <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
          <button onClick={resetEmpire} className="w-8 flex justify-end text-gray-800 hover:text-red-900"><Trash2 className="w-4 h-4"/></button>
       </header>
 
-      {/* RAPPORT */}
       <div className="w-full px-4 mt-6">
         <div className="bg-[#151515] border-l-2 border-gold p-4 rounded-r-lg flex items-center gap-4 shadow-lg w-full">
-          <div className="p-2 bg-gold/10 rounded-full shrink-0">
-            <TrendingDown className="w-5 h-5 text-gold" />
-          </div>
+          <div className="p-2 bg-gold/10 rounded-full shrink-0"><TrendingDown className="w-5 h-5 text-gold" /></div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider">Allocation Survie</p>
             <p className="text-white font-bold text-lg">{(balance / 30).toFixed(2)} € <span className="text-gray-600 font-normal text-xs">/ jour</span></p>
@@ -163,90 +148,64 @@ function Dashboard({ onNavigate }) {
         </div>
       </div>
 
-      {/* GRILLE */}
       <main className="w-full px-4 grid gap-3 mt-4">
         {/* Trésorerie */}
         <div className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center">
-            <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4">
-                <Shield className="w-3 h-3 text-gold" />
-                <h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Trésorerie</h2>
-            </div>
-            <div className="text-center py-4 mt-2">
-                <span className={`text-5xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>
-                {balance.toFixed(2)} <span className="text-lg text-gray-500">€</span>
-                </span>
-            </div>
+            <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Trésorerie</h2></div>
+            <div className="text-center py-4 mt-2"><span className={`text-5xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{balance.toFixed(2)} <span className="text-lg text-gray-500">€</span></span></div>
         </div>
 
-        {/* Projet (Maintenant Clickable) */}
-        <div 
-            onClick={() => onNavigate('project')}
-            className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group"
-        >
-            <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors">
-                <ChevronRight className="w-5 h-5" />
-            </div>
-            <div className="flex items-center gap-2 mb-3 opacity-60">
-                <Castle className="w-3 h-3 text-gold" />
-                <h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Conquête</h2>
-            </div>
+        {/* Arsenal (Compétences - Clickable) */}
+        <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group">
+            <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors"><ChevronRight className="w-5 h-5" /></div>
+            <div className="flex items-center gap-2 mb-3 opacity-60"><Sword className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Arsenal</h2></div>
+            {mainSkill ? (
+              <div className="flex justify-between items-center">
+                 <span className="font-bold text-white text-sm">{mainSkill.name}</span>
+                 <span className="text-[10px] text-gold bg-gold/10 px-2 py-1 rounded uppercase">{mainSkill.level}</span>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 italic">Aucune arme. Cliquez pour forger.</p>
+            )}
+            {skills.length > 1 && <p className="text-[10px] text-gray-600 mt-2">+{skills.length - 1} autre(s) compétence(s)</p>}
+        </div>
+
+        {/* Projet (Clickable) */}
+        <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group">
+            <div className="absolute top-4 right-4 text-gray-600 group-hover:text-gold transition-colors"><ChevronRight className="w-5 h-5" /></div>
+            <div className="flex items-center gap-2 mb-3 opacity-60"><Castle className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Conquête</h2></div>
             <div className="flex justify-between items-center mb-2">
               <span className="font-bold text-white text-sm tracking-wide">{projectName}</span>
-              <span className="text-[10px] text-gold bg-gold/10 px-2 py-0.5 rounded">
-                {progressPercent === 100 ? 'Terminé' : `Niveau ${Math.floor(progressPercent/10) + 1}`}
-              </span>
+              <span className="text-[10px] text-gold bg-gold/10 px-2 py-0.5 rounded">{progressPercent}%</span>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-gold h-1.5 rounded-full shadow-[0_0_10px_#D4AF37] transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
-            </div>
-            <p className="text-[10px] text-gray-500 mt-2">
-                {totalTasks === 0 ? "Aucune mission définie. Cliquez pour planifier." : `${completedTasks}/${totalTasks} missions accomplies`}
-            </p>
+            <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-gold h-1.5 rounded-full shadow-[0_0_10px_#D4AF37]" style={{ width: `${progressPercent}%` }}></div></div>
         </div>
       </main>
 
-      {/* HISTORIQUE */}
       <section className="w-full px-4 mt-6 flex-1">
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <History className="w-3 h-3 text-gray-600" />
-          <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Derniers Mouvements</h3>
-        </div>
+        <div className="flex items-center gap-2 mb-4 px-1"><History className="w-3 h-3 text-gray-600" /><h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Derniers Mouvements</h3></div>
         <div className="space-y-2 pb-24">
             {transactions.length === 0 && <p className="text-center text-xs text-gray-800 italic py-8">Le calme avant la tempête.</p>}
             {transactions.map((t) => (
             <div key={t.id} className="bg-[#111] border-b border-white/5 p-3 flex justify-between items-center hover:bg-[#161616] transition-colors rounded-lg">
                 <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                        {t.type === 'income' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}
-                    </div>
-                    <div className="overflow-hidden">
-                        <p className="text-sm text-gray-300 font-medium truncate">{t.desc}</p>
-                        <p className="text-[10px] text-gray-600">{t.date}</p>
-                    </div>
+                    <div className={`p-1.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>{t.type === 'income' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}</div>
+                    <div className="overflow-hidden"><p className="text-sm text-gray-300 font-medium truncate">{t.desc}</p><p className="text-[10px] text-gray-600">{t.date}</p></div>
                 </div>
-                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                    {t.type === 'income' ? '+' : '-'} {t.amount}
-                </span>
+                <span className={`font-mono font-bold text-sm shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{t.type === 'income' ? '+' : '-'} {t.amount}</span>
             </div>
             ))}
         </div>
       </section>
 
-      {/* BOUTON D'ACTION */}
       <div className="fixed bottom-0 left-0 right-0 flex justify-center z-20 pointer-events-none pb-[calc(2rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-dark via-dark/80 to-transparent pt-10">
-        <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200">
-          <Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span>
-        </button>
+        <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200"><Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span></button>
       </div>
 
-      {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
-            <div className="flex justify-between items-center mb-6">
-               <h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Opération</h2>
-               <button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button>
-            </div>
+            <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Opération</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
             <div className="flex bg-black p-1 rounded-lg mb-6 border border-white/5">
                 <button onClick={() => setTransactionType('expense')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
                 <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
@@ -264,93 +223,113 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 3. ÉCRAN PROJET (SALLE DE GUERRE)
+// 3. ÉCRAN PROJET
 // ==========================================
 function ProjectScreen({ onBack }) {
     const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
     const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('imperium_tasks') || "[]"));
     const [newTask, setNewTask] = useState("");
 
-    // Sauvegarde auto
-    useEffect(() => {
-        localStorage.setItem('imperium_tasks', JSON.stringify(tasks));
-    }, [tasks]);
-
-    const addTask = (e) => {
-        e.preventDefault();
-        if (!newTask.trim()) return;
-        setTasks([...tasks, { id: Date.now(), text: newTask, done: false }]);
-        setNewTask("");
-    };
-
-    const toggleTask = (id) => {
-        setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
-    };
-
-    const deleteTask = (id) => {
-        setTasks(tasks.filter(t => t.id !== id));
-    };
-
-    // Calculs
-    const completed = tasks.filter(t => t.done).length;
-    const progress = tasks.length === 0 ? 0 : Math.round((completed / tasks.length) * 100);
+    useEffect(() => { localStorage.setItem('imperium_tasks', JSON.stringify(tasks)); }, [tasks]);
+    const addTask = (e) => { e.preventDefault(); if (!newTask.trim()) return; setTasks([...tasks, { id: Date.now(), text: newTask, done: false }]); setNewTask(""); };
+    const toggleTask = (id) => { setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)); };
+    const deleteTask = (id) => { setTasks(tasks.filter(t => t.id !== id)); };
+    const progress = tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.done).length / tasks.length) * 100);
 
     return (
         <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300">
-            {/* Header Projet */}
             <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
-                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2">
-                    <ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span>
-                </button>
+                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">{projectName}</h1>
-                <div className="flex items-center gap-4 mt-4">
-                    <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div>
-                    </div>
-                    <span className="text-gold font-bold text-sm">{progress}%</span>
+                <div className="flex items-center gap-4 mt-4"><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div></div><span className="text-gold font-bold text-sm">{progress}%</span></div>
+            </div>
+            <div className="flex-1 p-5 overflow-y-auto pb-32">
+                <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">Plan de Bataille</h3>
+                <div className="space-y-3">
+                    {tasks.length === 0 && <div className="text-center py-10 border border-dashed border-white/10 rounded-xl"><p className="text-gray-500 text-sm">Aucune mission.</p></div>}
+                    {tasks.map(task => (
+                        <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : 'bg-[#111] border-white/5'}`}>
+                            <button onClick={() => toggleTask(task.id)} className="mt-0.5 text-gold hover:scale-110 transition-transform">{task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</button>
+                            <p className={`flex-1 text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.text}</p>
+                            <button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4" /></button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
+                <form onSubmit={addTask} className="flex gap-2"><input type="text" value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Nouvelle mission..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button></form>
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// 4. ÉCRAN ARSENAL (COMPÉTENCES) - NOUVEAU
+// ==========================================
+function SkillsScreen({ onBack }) {
+    const [skills, setSkills] = useState(JSON.parse(localStorage.getItem('imperium_skills') || "[]"));
+    const [newSkill, setNewSkill] = useState("");
+    const [newLevel, setNewLevel] = useState("Apprenti");
+
+    useEffect(() => { localStorage.setItem('imperium_skills', JSON.stringify(skills)); }, [skills]);
+
+    const addSkill = (e) => {
+        e.preventDefault();
+        if (!newSkill.trim()) return;
+        setSkills([...skills, { id: Date.now(), name: newSkill, level: newLevel }]);
+        setNewSkill("");
+    };
+
+    const deleteSkill = (id) => { setSkills(skills.filter(s => s.id !== id)); };
+
+    return (
+        <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                <div className="flex justify-between items-end">
+                    <h1 className="text-2xl font-serif text-white font-bold">Arsenal</h1>
+                    <span className="text-gold text-sm font-bold">{skills.length} armes</span>
                 </div>
             </div>
 
-            {/* Liste des Tâches */}
-            <div className="flex-1 p-5 overflow-y-auto pb-32">
-                <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">Plan de Bataille</h3>
-                
+            <div className="flex-1 p-5 overflow-y-auto pb-40">
                 <div className="space-y-3">
-                    {tasks.length === 0 && (
+                    {skills.length === 0 && (
                         <div className="text-center py-10 border border-dashed border-white/10 rounded-xl">
-                            <p className="text-gray-500 text-sm">Aucune mission en cours.</p>
-                            <p className="text-gray-700 text-xs mt-1">Ajoutez votre première étape.</p>
+                            <Zap className="w-8 h-8 text-gray-700 mx-auto mb-2" />
+                            <p className="text-gray-500 text-sm">Arsenal vide.</p>
+                            <p className="text-gray-700 text-xs mt-1">Ajoutez vos compétences pour monétiser.</p>
                         </div>
                     )}
 
-                    {tasks.map(task => (
-                        <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : 'bg-[#111] border-white/5'}`}>
-                            <button onClick={() => toggleTask(task.id)} className="mt-0.5 text-gold hover:scale-110 transition-transform">
-                                {task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                            </button>
-                            <div className="flex-1">
-                                <p className={`text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.text}</p>
+                    {skills.map(skill => (
+                        <div key={skill.id} className="bg-[#111] border border-white/5 p-4 rounded-lg flex justify-between items-center group hover:border-gold/30 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gray-900 rounded-lg text-gold"><Star className="w-4 h-4 fill-current" /></div>
+                                <div>
+                                    <p className="text-sm font-bold text-gray-200">{skill.name}</p>
+                                    <p className="text-[10px] text-gold uppercase tracking-wider">{skill.level}</p>
+                                </div>
                             </div>
-                            <button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500">
-                                <X className="w-4 h-4" />
-                            </button>
+                            <button onClick={() => deleteSkill(skill.id)} className="text-gray-700 hover:text-red-500 p-2"><Trash2 className="w-4 h-4" /></button>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Input Ajout Tâche (Fixe en bas) */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
-                <form onSubmit={addTask} className="flex gap-2">
-                    <input 
-                        type="text" 
-                        value={newTask}
-                        onChange={(e) => setNewTask(e.target.value)}
-                        placeholder="Nouvelle mission..." 
-                        className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none"
-                    />
-                    <button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors">
-                        <Plus className="w-5 h-5" />
+                <form onSubmit={addSkill} className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                         <input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Compétence (ex: Anglais)" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                         <select value={newLevel} onChange={(e) => setNewLevel(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-2 text-xs text-gold focus:border-gold focus:outline-none">
+                             <option>Apprenti</option>
+                             <option>Soldat</option>
+                             <option>Expert</option>
+                             <option>Maître</option>
+                         </select>
+                    </div>
+                    <button type="submit" disabled={!newSkill.trim()} className="w-full bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2">
+                        <Plus className="w-4 h-4" /> AJOUTER À L'ARSENAL
                     </button>
                 </form>
             </div>
