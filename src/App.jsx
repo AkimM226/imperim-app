@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2 } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -71,42 +71,22 @@ const formatMoney = (amount) => {
 };
 
 // ==========================================
-// COMPOSANTS UX (Loading & Transitions)
+// COMPOSANTS UX
 // ==========================================
-
-// 1. ÉCRAN DE CHARGEMENT (SPLASH SCREEN)
 function SplashScreen() {
     return (
         <div className="fixed inset-0 bg-[#050505] z-[100] flex flex-col items-center justify-center animate-out fade-out duration-1000 fill-mode-forwards delay-[2500ms]">
-            <div className="relative mb-8">
-                <div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div>
-                <Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" />
-            </div>
-            <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">
-                IMPERIUM
-            </h1>
-            <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gold animate-loading-bar rounded-full"></div>
-            </div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v4.0</p>
-            
-            {/* Style pour l'animation de la barre */}
-            <style>{`
-                @keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }
-                .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; }
-                .animate-bounce-slow { animation: bounce 3s infinite; }
-            `}</style>
+            <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
+            <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
+            <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v5.1</p>
+            <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
 }
 
-// 2. WRAPPER DE TRANSITION DE PAGE
 function PageTransition({ children }) {
-    return (
-        <div className="animate-in slide-in-from-bottom-8 fade-in duration-500 w-full flex-1 flex flex-col">
-            {children}
-        </div>
-    );
+    return (<div className="animate-in slide-in-from-bottom-8 fade-in duration-500 w-full flex-1 flex flex-col">{children}</div>);
 }
 
 // ==========================================
@@ -117,18 +97,13 @@ export default function App() {
   const [hasOnboarded, setHasOnboarded] = useState(false);
 
   useEffect(() => {
-    // Simulation du temps de chargement initial (2.5 secondes)
-    const timer = setTimeout(() => {
-        setLoading(false);
-    }, 2500);
-    
+    const timer = setTimeout(() => { setLoading(false); }, 2500);
     setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
     return () => clearTimeout(timer);
   }, []);
 
   if (loading) return <SplashScreen />;
   if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
-  
   return <MainOS />;
 }
 
@@ -137,12 +112,7 @@ export default function App() {
 // ==========================================
 function MainOS() {
   const [currentView, setCurrentView] = useState('dashboard');
-  
-  // Fonction pour changer de vue avec un petit délai si besoin (ici instantané car l'anim est CSS)
-  const navigate = (view) => {
-      setCurrentView(view);
-      window.scrollTo(0, 0); // Remonter en haut de page à chaque changement
-  };
+  const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
   return (
     <>
@@ -151,6 +121,7 @@ function MainOS() {
         {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
+        {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
     </>
   );
@@ -169,7 +140,6 @@ function OnboardingScreen({ onComplete }) {
   const [isHolding, setIsHolding] = useState(false);
   const holdTimer = useRef(null);
   const [progress, setProgress] = useState(0);
-
   const filteredCurrencies = CURRENCIES.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()));
   const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(4); };
   const selectZone = (selectedZone) => { setZone(selectedZone); setStep(5); };
@@ -183,18 +153,15 @@ function OnboardingScreen({ onComplete }) {
     localStorage.setItem('imperium_onboarded', 'true');
     window.location.reload();
   };
-
   return (
-    <PageTransition>
-    <div className="fixed inset-0 bg-black text-gold flex flex-col items-center justify-center p-6 text-center z-50 overflow-hidden w-full h-full">
+    <PageTransition><div className="fixed inset-0 bg-black text-gold flex flex-col items-center justify-center p-6 text-center z-50 overflow-hidden w-full h-full">
       {step === 1 && (<div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs"><h1 className="text-4xl font-serif font-bold tracking-widest mb-6">IMPERIUM</h1><p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p><button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button></div>)}
       {step === 2 && (<div className="animate-in zoom-in duration-500 flex flex-col items-center w-full max-w-xs"><h2 className="text-xl font-serif mb-2">Le Pacte</h2><p className="text-gray-500 text-xs mb-12">Jurez-vous de ne rien cacher ?</p><div className="relative w-24 h-24 rounded-full border-2 border-white/10 flex items-center justify-center select-none cursor-pointer active:scale-95 transition-transform" onMouseDown={startHold} onMouseUp={stopHold} onTouchStart={startHold} onTouchEnd={stopHold}><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="48" cy="48" r="46" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-gold" strokeDasharray="289" strokeDashoffset={289 - (289 * progress) / 100} style={{ transition: 'stroke-dashoffset 0.1s linear' }} /></svg><Fingerprint className={`w-10 h-10 ${isHolding ? 'text-gold animate-pulse' : 'text-gray-600'}`} /></div><p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p></div>)}
       {step === 3 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2><div className="relative mb-4"><Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" /><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none" placeholder="Rechercher (ex: Euro, FCFA...)" autoFocus /></div><div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">{filteredCurrencies.map((c) => (<button key={c.code} onClick={() => selectCurrency(c)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"><div className="flex items-center gap-3"><span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">{c.symbol.substring(0, 2)}</span><div className="text-left"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p><p className="text-[10px] text-gray-500">{c.code}</p></div></div><ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" /></button>))}</div></div>)}
       {step === 4 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-2">Votre Terrain</h2><p className="text-xs text-gray-500 mb-6">Ajuste l'intelligence artificielle à votre marché.</p><div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">{ZONES.map((z) => (<button key={z.id} onClick={() => selectZone(z)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg text-left group transition-all active:scale-[0.98]"><div className="flex justify-between items-center mb-1"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{z.name}</p><Globe className="w-4 h-4 text-gray-600 group-hover:text-gold" /></div><p className="text-[10px] text-gray-500">{z.desc}</p></button>))}</div></div>)}
       {step === 5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle ({currency})</label><input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus /><button onClick={() => setStep(6)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button></div>)}
       {step === 6 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label><input type="text" value={mainProject} onChange={(e) => setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="Ex: Agence IA" autoFocus /><button onClick={finishOnboarding} disabled={!mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">LANCER L'EMPIRE</button></div>)}
-    </div>
-    </PageTransition>
+    </div></PageTransition>
   );
 }
 
@@ -204,6 +171,7 @@ function OnboardingScreen({ onComplete }) {
 function Dashboard({ onNavigate }) {
   const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
   const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
+  const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } }); // NOUVEAU
   const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
   const currency = localStorage.getItem('imperium_currency') || "€";
   const tasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
@@ -235,7 +203,12 @@ function Dashboard({ onNavigate }) {
   const streak = calculateStreak();
   const rank = getRank(balance, currency);
   const RankIcon = rank.icon;
-  const dailySurvivalCost = Math.max(balance / 30, 1);
+
+  // CALCULER LE CASH DISPONIBLE (Total - Cibles)
+  const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
+  const availableCash = balance - lockedCash;
+
+  const dailySurvivalCost = Math.max(availableCash / 30, 1);
   const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
 
   useEffect(() => {
@@ -260,61 +233,48 @@ function Dashboard({ onNavigate }) {
     <PageTransition>
     <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-32 flex flex-col relative shadow-2xl">
       <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
-         <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><BarChart3 className="w-5 h-5"/></button>
+         <div className="flex gap-2">
+             <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><BarChart3 className="w-5 h-5"/></button>
+             <button onClick={() => onNavigate('goals')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><Target className="w-5 h-5"/></button>
+         </div>
          <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
          <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white"><Settings className="w-5 h-5"/></button>
       </header>
 
       <div className="w-full px-4 mt-6">
-        <div className="mb-6 flex items-start gap-3 opacity-70">
-            <Quote className="w-4 h-4 text-gold shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-400 italic font-serif leading-relaxed">"{todaysQuote}"</p>
-        </div>
-
+        <div className="mb-6 flex items-start gap-3 opacity-70"><Quote className="w-4 h-4 text-gold shrink-0 mt-0.5" /><p className="text-xs text-gray-400 italic font-serif leading-relaxed">"{todaysQuote}"</p></div>
         <div className="flex justify-between items-end">
-            <div className="flex flex-col items-start">
-                <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Grade</p>
-                <div className="flex items-center gap-2">
-                    <RankIcon className={`w-4 h-4 ${rank.color}`} />
-                    <h2 className={`text-lg font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2>
-                </div>
-            </div>
-            
-            <div className="flex flex-col items-end">
-                <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Discipline</p>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}>
-                    <Flame className={`w-4 h-4 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
-                    <span className={`text-lg font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span>
-                </div>
-            </div>
+            <div className="flex flex-col items-start"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Grade</p><div className="flex items-center gap-2"><RankIcon className={`w-4 h-4 ${rank.color}`} /><h2 className={`text-lg font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2></div></div>
+            <div className="flex flex-col items-end"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Discipline</p><div className={`flex items-center gap-2 px-3 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}><Flame className={`w-4 h-4 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} /><span className={`text-lg font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span></div></div>
         </div>
       </div>
 
       <main className="w-full px-4 grid gap-3 mt-6">
-        <div className={`bg-[#111] border rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center transition-colors ${balance < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
-            <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Trésorerie</h2></div>
-            <div className="text-center py-4 mt-2"><span className={`text-4xl font-bold font-serif ${balance < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(balance)} <span className="text-lg text-gray-500">{currency}</span></span></div>
+        <div className={`bg-[#111] border rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
+            <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Solde Disponible</h2></div>
+            <div className="text-center py-4 mt-2">
+                <span className={`text-4xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-lg text-gray-500">{currency}</span></span>
+                {lockedCash > 0 && <p className="text-[10px] text-gray-500 mt-2 flex items-center justify-center gap-1"><Lock className="w-3 h-3"/> Fortune Totale : {formatMoney(balance)} {currency}</p>}
+            </div>
         </div>
 
-        <div onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
+        <div onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
             <div className="flex items-center gap-3">
-                <div className="p-2 bg-yellow-900/20 text-yellow-500 rounded-lg"><Medal className="w-5 h-5"/></div>
-                <div><h3 className="text-sm font-bold text-gray-200">Salle des Trophées</h3><p className="text-[10px] text-gray-500">Voir mes médailles et succès</p></div>
+                <div className="p-2 bg-blue-900/20 text-blue-500 rounded-lg"><Target className="w-5 h-5"/></div>
+                <div><h3 className="text-sm font-bold text-gray-200">Cibles de Conquête</h3><p className="text-[10px] text-gray-500">
+                    {goals.length === 0 ? "Définir un objectif d'épargne" : `${goals.length} Cibles • ${formatMoney(lockedCash)} ${currency} sécurisés`}
+                </p></div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
         </div>
 
+        <div onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
+            <div className="flex items-center gap-3"><div className="p-2 bg-yellow-900/20 text-yellow-500 rounded-lg"><Medal className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Salle des Trophées</h3><p className="text-[10px] text-gray-500">Voir mes médailles</p></div></div><ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
-            <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30">
-                <Sword className="w-5 h-5 text-gold mb-2 opacity-80" />
-                <h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3>
-                <p className="text-[9px] text-gray-500 mt-1">Générer du cash</p>
-            </div>
-            <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30">
-                <Castle className="w-5 h-5 text-gold mb-2 opacity-80" />
-                <h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3>
-                <p className="text-[9px] text-gray-500 mt-1">{progressPercent}% Terminé</p>
-            </div>
+            <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Sword className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3><p className="text-[9px] text-gray-500 mt-1">Générer du cash</p></div>
+            <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Castle className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">{progressPercent}% Terminé</p></div>
         </div>
       </main>
 
@@ -330,12 +290,7 @@ function Dashboard({ onNavigate }) {
                 <button onClick={() => setTransactionType('expense')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
                 <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
             </div>
-            {transactionType === 'expense' && (
-                <div className="flex gap-2 mb-4">
-                    <button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button>
-                    <button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button>
-                </div>
-            )}
+            {transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}
             {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (
                  <div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Avertissement du Sergent</p><p className="text-gray-300 text-xs leading-relaxed mt-1">Cette dépense équivaut à <span className="text-white font-bold">{daysLost} jours</span> de survie.<br/>Est-ce que ça en vaut vraiment la peine ?</p></div></div>
             )}
@@ -353,7 +308,100 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 3. STATISTIQUES
+// 7. CIBLES DE CONQUÊTE (GOALS) - NOUVEAU
+// ==========================================
+function GoalsScreen({ onBack }) {
+    const currency = localStorage.getItem('imperium_currency') || "€";
+    const [goals, setGoals] = useState(JSON.parse(localStorage.getItem('imperium_goals') || "[]"));
+    const [newGoalName, setNewGoalName] = useState("");
+    const [newGoalTarget, setNewGoalTarget] = useState("");
+    const [selectedGoal, setSelectedGoal] = useState(null);
+    const [allocAmount, setAllocAmount] = useState("");
+
+    useEffect(() => { localStorage.setItem('imperium_goals', JSON.stringify(goals)); }, [goals]);
+
+    const addGoal = (e) => {
+        e.preventDefault();
+        if (!newGoalName || !newGoalTarget) return;
+        setGoals([...goals, { id: Date.now(), title: newGoalName, target: parseFloat(newGoalTarget), current: 0 }]);
+        setNewGoalName(""); setNewGoalTarget("");
+    };
+
+    const deleteGoal = (id) => { setGoals(goals.filter(g => g.id !== id)); };
+
+    const handleAllocation = (type) => { // type = 'deposit' or 'withdraw'
+        if(!allocAmount || !selectedGoal) return;
+        const val = parseFloat(allocAmount);
+        const updatedGoals = goals.map(g => {
+            if (g.id === selectedGoal.id) {
+                return { ...g, current: type === 'deposit' ? g.current + val : Math.max(0, g.current - val) };
+            }
+            return g;
+        });
+        setGoals(updatedGoals);
+        setAllocAmount(""); setSelectedGoal(null);
+    };
+
+    return (
+        <PageTransition>
+        <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col">
+            <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                <h1 className="text-2xl font-serif text-white font-bold">Cibles</h1>
+            </div>
+
+            <div className="flex-1 p-5 overflow-y-auto pb-40">
+                <div className="space-y-4">
+                    {goals.map(goal => {
+                        const percent = Math.min(100, Math.round((goal.current / goal.target) * 100));
+                        return (
+                            <div key={goal.id} className="bg-[#111] border border-white/5 p-4 rounded-xl">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${percent >= 100 ? 'bg-green-900/20 text-green-500' : 'bg-blue-900/20 text-blue-500'}`}><Target className="w-5 h-5"/></div>
+                                        <div><h3 className="text-sm font-bold text-gray-200">{goal.title}</h3><p className="text-[10px] text-gray-500">{percent}% Sécurisé</p></div>
+                                    </div>
+                                    <button onClick={() => deleteGoal(goal.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4"/></button>
+                                </div>
+                                <div className="w-full bg-gray-900 rounded-full h-2 mb-2"><div className={`h-2 rounded-full transition-all duration-500 ${percent >= 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${percent}%` }}></div></div>
+                                <div className="flex justify-between items-center mb-4"><span className="text-xs font-bold text-white">{formatMoney(goal.current)} {currency}</span><span className="text-[10px] text-gray-500">Obj: {formatMoney(goal.target)}</span></div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setSelectedGoal(goal)} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-2 rounded text-xs font-bold uppercase">Gérer</button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {selectedGoal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 animate-in fade-in">
+                    <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+                        <button onClick={() => setSelectedGoal(null)} className="absolute top-4 right-4 text-gray-500"><X className="w-5 h-5"/></button>
+                        <h3 className="text-white font-serif text-lg mb-4 text-center">Gérer: {selectedGoal.title}</h3>
+                        <input type="number" value={allocAmount} onChange={(e) => setAllocAmount(e.target.value)} className="w-full bg-black border border-white/20 rounded-lg p-3 text-white text-center text-xl focus:border-gold focus:outline-none mb-4" placeholder="Montant" autoFocus />
+                        <div className="flex gap-3">
+                            <button onClick={() => handleAllocation('withdraw')} className="flex-1 bg-red-900/20 text-red-500 border border-red-500/30 py-3 rounded-lg font-bold text-xs uppercase flex items-center justify-center gap-2"><Unlock className="w-4 h-4"/> Retirer</button>
+                            <button onClick={() => handleAllocation('deposit')} className="flex-1 bg-green-900/20 text-green-500 border border-green-500/30 py-3 rounded-lg font-bold text-xs uppercase flex items-center justify-center gap-2"><Lock className="w-4 h-4"/> Verser</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
+                <form onSubmit={addGoal} className="flex gap-2">
+                    <input type="text" value={newGoalName} onChange={(e) => setNewGoalName(e.target.value)} placeholder="Nom (ex: PC Gamer)" className="flex-[2] bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <input type="number" value={newGoalTarget} onChange={(e) => setNewGoalTarget(e.target.value)} placeholder="Cible" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <button type="submit" disabled={!newGoalName || !newGoalTarget} className="bg-blue-600/80 text-white font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-blue-500 transition-colors"><Plus className="w-5 h-5" /></button>
+                </form>
+            </div>
+        </div>
+        </PageTransition>
+    );
+}
+
+// ==========================================
+// 3. STATISTIQUES (Inchangé)
 // ==========================================
 function StatsScreen({ onBack }) {
     const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
