@@ -50,10 +50,10 @@ const QUOTES = [
 
 const TUTORIAL_STEPS = [
     { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. Ici, la discipline est reine.", icon: Shield },
-    { title: "SURVIE & ALLOCATION", text: "Le système calcule votre budget quotidien strict. Ne dépassez jamais cette limite pour survivre.", icon: Flame },
-    { title: "NÉCESSITÉ VS FUTILITÉ", text: "Chaque dépense doit être jugée. Si c'est une futilité, le Sergent vous le fera savoir. Assumez vos choix.", icon: AlertTriangle },
-    { title: "PROTOCOLES & DETTES", text: "Gérez vos rentes et abattez vos dettes. L'IA vous signalera quand vous aurez assez de cash pour payer une dette.", icon: Scroll },
-    { title: "ARCHIVES", text: "Dans les Paramètres, générez un code de sauvegarde. C'est votre seule assurance vie.", icon: Save }
+    { title: "SURVIE & ALLOCATION", text: "Le système calcule votre budget quotidien strict (Solde / 30). Ne dépassez jamais cette limite.", icon: Flame },
+    { title: "LE JUGE (FUTILITÉS)", text: "Chaque dépense doit être jugée. Si c'est une futilité, le Sergent vous le fera savoir. Assumez vos choix.", icon: AlertTriangle },
+    { title: "PROTOCOLES & DETTES", text: "Gérez vos rentes et abattez vos dettes. L'IA vous signalera quand payer une dette.", icon: Scroll },
+    { title: "ARCHIVES", text: "Sauvegardez votre Empire via les Paramètres. C'est votre seule assurance vie.", icon: Save }
 ];
 
 const getRank = (balance, currency) => {
@@ -81,7 +81,7 @@ function SplashScreen() {
         <div className="fixed inset-0 bg-[#050505] z-[100] flex flex-col items-center justify-center">
             <Fingerprint className="w-20 h-20 text-gold animate-pulse mb-6" />
             <h1 className="text-3xl font-serif font-bold text-gold tracking-[0.3em]">IMPERIUM</h1>
-            <p className="text-[10px] text-gray-600 mt-2 tracking-widest uppercase">Version 14.0 Ultimate</p>
+            <p className="text-[10px] text-gray-600 mt-2 tracking-widest uppercase">Version 15.0 Final</p>
         </div>
     );
 }
@@ -182,7 +182,6 @@ function Dashboard({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('expense');
-  // Rétablissement de la catégorie de dépense
   const [expenseCategory, setExpenseCategory] = useState('need'); 
   const [desc, setDesc] = useState('');
   const [todaysQuote, setTodaysQuote] = useState("");
@@ -200,7 +199,6 @@ function Dashboard({ onNavigate }) {
   
   const debtToPay = debts.find(d => d.type === 'owe' && d.amount <= availableCash * 0.4);
 
-  // CALCUL DES FLAMMES (STREAK) - BASÉ SUR LES "WANTS"
   const calculateStreak = () => {
     if (transactions.length === 0) return 0;
     const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want');
@@ -217,7 +215,6 @@ function Dashboard({ onNavigate }) {
     if (!val) return;
     const newBal = type === 'expense' ? balance - val : balance + val;
     
-    // Ajout du petit symbole d'alerte dans la description si c'est une futilité
     let finalDesc = desc;
     if (type === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${desc || 'Futilité'}`;
     else if (!desc) finalDesc = type === 'expense' ? 'Dépense' : 'Revenu';
@@ -226,7 +223,7 @@ function Dashboard({ onNavigate }) {
         id: Date.now(), 
         amount: val, 
         type, 
-        category: expenseCategory, // On sauvegarde la catégorie
+        category: expenseCategory, 
         desc: finalDesc, 
         rawDate: new Date().toISOString() 
     };
@@ -248,19 +245,16 @@ function Dashboard({ onNavigate }) {
         </header>
 
         <div className="p-6 space-y-5">
-            {/* CITATION */}
             <div className="flex items-start gap-3 opacity-80">
                 <Quote className="w-4 h-4 text-gold shrink-0 mt-1"/>
                 <p className="text-xs text-gray-400 italic leading-relaxed">"{todaysQuote}"</p>
             </div>
 
-            {/* EN-TÊTE GRADE & FLAMMES */}
             <div className="flex justify-between items-end">
                 <div><p className="text-[10px] text-gray-500 uppercase">Grade</p><div className={`flex items-center gap-2 ${rank.color}`}><RankIcon className="w-5 h-5"/><span className="font-bold font-serif text-lg">{rank.title}</span></div></div>
                 <div><p className="text-[10px] text-gray-500 uppercase text-right">Discipline</p><div className={`flex items-center gap-2 px-3 py-1 rounded border ${streak > 2 ? 'border-orange-500/30 bg-orange-900/10 text-orange-500' : 'border-gray-800 bg-gray-900 text-gray-600'}`}><Flame className={`w-4 h-4 ${streak > 0 ? 'animate-pulse' : ''}`}/><span className="font-bold">{streak} Jours</span></div></div>
             </div>
 
-            {/* CARTE PRINCIPALE : SOLDE */}
             <div className="bg-[#111] p-6 rounded-2xl border border-white/10 text-center relative overflow-hidden group shadow-lg shadow-gold/5">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent opacity-50"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent opacity-20"></div>
@@ -269,7 +263,6 @@ function Dashboard({ onNavigate }) {
                 {lockedCash > 0 && <p className="text-[10px] text-gray-600 flex items-center justify-center gap-1 relative z-10"><Lock className="w-3 h-3"/> +{formatMoney(lockedCash)} sécurisés</p>}
             </div>
 
-            {/* ALLOCATION QUOTIDIENNE */}
             <div className="bg-[#0f1210] p-4 rounded-xl border border-green-900/30 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-900/20 text-green-500 rounded-lg"><Flame className="w-4 h-4"/></div>
@@ -280,7 +273,6 @@ function Dashboard({ onNavigate }) {
                 </div>
             </div>
 
-            {/* RADAR DE DETTES */}
             {debtToPay && (
                 <div className="bg-[#1a0f0f] p-4 rounded-xl border border-red-900/30 animate-in slide-in-from-right">
                     <div className="flex items-start gap-3">
@@ -294,7 +286,6 @@ function Dashboard({ onNavigate }) {
                 </div>
             )}
 
-            {/* NAVIGATION OLD SCHOOL */}
             <div className="grid grid-cols-1 gap-3 mt-4">
                 <div onClick={() => onNavigate('protocols')} className="bg-[#111] p-5 rounded-xl border border-white/5 active:scale-[0.98] transition-transform flex items-center justify-between cursor-pointer group">
                     <div className="flex items-center gap-4">
@@ -339,7 +330,6 @@ function Dashboard({ onNavigate }) {
             <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black w-14 h-14 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(212,175,55,0.4)] active:scale-90 transition-transform border-2 border-yellow-300"><Plus className="w-6 h-6"/></button>
         </div>
         
-        {/* MODALE RESTAURÉE AVEC CHOIX NÉCESSITÉ/FUTILITÉ ET COACH */}
         {isModalOpen && (
             <div className="fixed inset-0 bg-black/90 flex items-end z-50 animate-in fade-in duration-200">
                 <div className="bg-[#161616] w-full p-8 rounded-t-3xl border-t border-white/10 animate-in slide-in-from-bottom duration-300">
@@ -348,7 +338,6 @@ function Dashboard({ onNavigate }) {
                         <button onClick={() => setType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded-lg transition-colors ${type === 'income' ? 'bg-green-900 text-white shadow-[0_0_15px_rgba(22,101,52,0.4)]' : 'bg-gray-900 text-gray-600'}`}>REVENU</button>
                     </div>
 
-                    {/* CHOIX NÉCESSITÉ vs FUTILITÉ (RESTAURÉ) */}
                     {type === 'expense' && (
                         <div className="flex gap-2 mb-4 animate-in fade-in">
                             <button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button>
@@ -356,7 +345,6 @@ function Dashboard({ onNavigate }) {
                         </div>
                     )}
 
-                    {/* MESSAGE DU COACH CULPABILISANT (RESTAURÉ) */}
                     {type === 'expense' && expenseCategory === 'want' && amount > 0 && (
                         <div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                             <Clock className="w-5 h-5 text-red-500 shrink-0" />
@@ -425,7 +413,7 @@ function ProtocolsScreen({ onBack }) {
 }
 
 function StatsScreen({ onBack }) { 
-    // RESTAURATION DES STATS AVEC LE JUGE
+    // === LE JUGE RESTAURÉ & AGRANDI ===
     const tx = JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); 
     const currency = localStorage.getItem('imperium_currency') || "€";
     const total = tx.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0); 
@@ -434,29 +422,52 @@ function StatsScreen({ onBack }) {
     const wantPercent = total ? Math.round((wants/total)*100) : 0; 
     const needPercent = total ? Math.round((needs/total)*100) : 0; 
 
+    // Message du Coach (Le Sergent)
+    let coachMessage = "";
+    let statusColor = "";
+    
+    if (total === 0) {
+        coachMessage = "Aucune donnée. L'Empire est immobile. Passez à l'action.";
+        statusColor = "text-gray-500";
+    } else if (wantPercent > 50) {
+        coachMessage = "C'EST UNE CATASTROPHE. Vous financez votre propre chute. Plus de la moitié de vos ressources partent en fumée. RESSAISISSEZ-VOUS !";
+        statusColor = "text-red-600";
+    } else if (wantPercent > 30) {
+        coachMessage = "Attention soldat. La discipline se relâche. Les plaisirs grignotent le trésor de guerre. Soyez plus strict.";
+        statusColor = "text-orange-500";
+    } else {
+        coachMessage = "Discipline exemplaire. Vos ressources sont allouées à la survie et à la conquête. Continuez ainsi.";
+        statusColor = "text-green-500";
+    }
+
     return (
         <PageTransition>
-            <div className="min-h-screen bg-black text-white p-6">
+            <div className="min-h-screen bg-black text-white p-6 flex flex-col">
                 <button onClick={onBack} className="text-gray-500 text-xs mb-6 uppercase tracking-widest flex items-center gap-2"><ArrowLeft className="w-4 h-4"/> Retour</button>
                 <h1 className="text-2xl font-serif text-white font-bold mb-6">Salle des Cartes</h1>
                 
-                <div className="bg-[#111] p-6 rounded-xl border border-white/10 mb-6">
-                    <p className="text-xs text-gray-500 uppercase">Ratio de Futilité</p>
-                    <h2 className={`text-4xl font-bold ${wantPercent>30?'text-red-500':'text-green-500'}`}>{wantPercent}%</h2>
-                    <p className="text-gray-400 text-xs mt-1">Total dépensé: {formatMoney(total)} {currency}</p>
+                {/* BLOC PRINCIPAL : RATIO */}
+                <div className={`bg-[#111] p-6 rounded-xl border ${wantPercent > 30 ? 'border-red-900/50' : 'border-green-900/50'} mb-6 text-center relative overflow-hidden`}>
+                    <div className={`absolute inset-0 opacity-10 ${wantPercent > 30 ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Ratio de Futilité</p>
+                    <h2 className={`text-6xl font-bold ${wantPercent > 30 ? 'text-red-500' : 'text-green-500'}`}>{wantPercent}%</h2>
+                    <p className="text-gray-400 text-xs mt-2">du budget total gaspillé</p>
                 </div>
 
-                <div className="bg-[#111] border border-white/5 rounded-xl p-6 mb-6">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Répartition Stratégique</h3>
-                    <div className="mb-4">
+                {/* DÉTAILS */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-6 mb-6 space-y-4">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Répartition Stratégique</h3>
+                    
+                    <div>
                         <div className="flex justify-between text-xs mb-2">
-                            <span className="text-white font-bold">Nécessités</span>
+                            <span className="text-white font-bold">Nécessités (Survie)</span>
                             <span className="text-gray-400">{formatMoney(needs)} {currency}</span>
                         </div>
                         <div className="w-full bg-gray-900 rounded-full h-2">
                             <div className="bg-white h-2 rounded-full" style={{ width: `${needPercent}%` }}></div>
                         </div>
                     </div>
+
                     <div>
                         <div className="flex justify-between text-xs mb-2">
                             <span className="text-red-400 font-bold">Futilités (Plaisirs)</span>
@@ -466,12 +477,21 @@ function StatsScreen({ onBack }) {
                             <div className="bg-red-500 h-2 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]" style={{ width: `${wantPercent}%` }}></div>
                         </div>
                     </div>
+                    
+                    <div className="pt-4 border-t border-white/5 flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Total Dépensé</span>
+                        <span className="font-bold text-white">{formatMoney(total)} {currency}</span>
+                    </div>
                 </div>
 
-                <div className="bg-[#1a1a1a] border-l-2 border-gold p-4 rounded-r-lg">
-                    <div className="flex items-center gap-2 mb-2"><Shield className="w-4 h-4 text-gold" /><span className="text-xs font-bold text-gold uppercase tracking-widest">Rapport du Sergent</span></div>
-                    <p className="text-sm text-gray-300 italic leading-relaxed">
-                        "{total === 0 ? "Aucune donnée. L'Empire est immobile." : wantPercent > 50 ? "DISCIPLINE REQUISE ! Vous gaspillez plus de la moitié de vos ressources. L'Empire va s'effondrer." : wantPercent > 20 ? "Attention. Les plaisirs grignotent le trésor." : "Excellent. Vos ressources sont allouées à la survie et à la conquête."}"
+                {/* LE JUGE (SERGENT) */}
+                <div className="bg-[#1a1a1a] border-l-4 border-gold p-6 rounded-r-lg flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Shield className="w-5 h-5 text-gold" />
+                        <span className="text-sm font-bold text-gold uppercase tracking-widest">Jugement du Sergent</span>
+                    </div>
+                    <p className={`text-sm italic leading-relaxed font-medium ${statusColor}`}>
+                        "{coachMessage}"
                     </p>
                 </div>
             </div>
@@ -480,7 +500,7 @@ function StatsScreen({ onBack }) {
 }
 
 function SettingsScreen({ onBack }) { 
-    // RESTAURATION DES PARAMÈTRES COMPLETS
+    // === PARAMÈTRES COMPLETS RESTAURÉS ===
     const [importData, setImportData] = useState("");
     
     const handleExport = () => { 
@@ -522,31 +542,43 @@ function SettingsScreen({ onBack }) {
 
     return (
         <PageTransition>
-            <div className="min-h-screen bg-black text-white p-6">
+            <div className="min-h-screen bg-black text-white p-6 flex flex-col">
                 <button onClick={onBack} className="text-gray-500 text-xs mb-6 uppercase tracking-widest flex items-center gap-2"><ArrowLeft className="w-4 h-4"/> Retour</button>
                 <h1 className="text-2xl font-serif text-white font-bold mb-6">Paramètres</h1>
                 
-                <div className="space-y-6">
+                <div className="space-y-6 flex-1 overflow-y-auto">
+                    {/* SAUVEGARDE */}
                     <div className="bg-[#111] p-6 rounded-xl border border-white/10">
                         <div className="flex items-center gap-2 mb-4 text-blue-400">
                             <Download className="w-5 h-5"/>
-                            <h3 className="text-sm font-bold">Sauvegarde Tactique</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-wide">Sauvegarde Tactique</h3>
                         </div>
-                        <button onClick={handleExport} className="w-full bg-blue-900/20 text-blue-400 border border-blue-500/30 py-3 font-bold rounded uppercase text-xs hover:bg-blue-900/40 transition-colors">Copier le Code de Sécurité</button>
-                        <p className="text-[10px] text-gray-500 mt-2">Ce code contient tout votre Empire. Gardez-le secret.</p>
+                        <p className="text-[10px] text-gray-500 mb-4 leading-relaxed">Générez un code crypté contenant l'intégralité de votre Empire. Copiez-le et gardez-le en lieu sûr (Notes, Mail...).</p>
+                        <button onClick={handleExport} className="w-full bg-blue-900/20 text-blue-400 border border-blue-500/30 py-4 font-bold rounded-lg uppercase text-xs hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
+                            <Copy className="w-4 h-4"/> Copier le Code
+                        </button>
                     </div>
 
+                    {/* RESTAURATION */}
                     <div className="bg-[#111] p-6 rounded-xl border border-white/10">
                         <div className="flex items-center gap-2 mb-4 text-green-400">
                             <Upload className="w-5 h-5"/>
-                            <h3 className="text-sm font-bold">Restauration</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-wide">Restauration</h3>
                         </div>
-                        <textarea value={importData} onChange={e => setImportData(e.target.value)} placeholder="Collez le code ici..." className="w-full bg-black border border-white/10 rounded-lg p-3 text-xs text-gray-300 focus:border-gold outline-none h-20 mb-3"/>
-                        <button onClick={handleImport} className="w-full bg-green-900/20 text-green-400 border border-green-500/30 py-3 font-bold rounded uppercase text-xs hover:bg-green-900/40 transition-colors">Restaurer l'Empire</button>
+                        <p className="text-[10px] text-gray-500 mb-4">Collez ici un code de sauvegarde pour rétablir votre Empire sur cet appareil.</p>
+                        <textarea value={importData} onChange={e => setImportData(e.target.value)} placeholder="Collez le code ici..." className="w-full bg-black border border-white/10 rounded-lg p-3 text-xs text-gray-300 focus:border-green-500 outline-none h-24 mb-4 font-mono"/>
+                        <button onClick={handleImport} className="w-full bg-green-900/20 text-green-400 border border-green-500/30 py-4 font-bold rounded-lg uppercase text-xs hover:bg-green-900/40 transition-colors">
+                            Restaurer l'Empire
+                        </button>
                     </div>
 
-                    <div className="mt-8 text-center pt-8 border-t border-white/5">
-                        <button onClick={()=>{if(confirm("DANGER: Ceci effacera TOUT l'historique. Continuer ?")) {localStorage.clear(); window.location.reload();}}} className="text-red-500 text-xs uppercase font-bold flex items-center justify-center gap-2 w-full hover:bg-red-900/10 py-4 rounded transition-colors">
+                    {/* DANGER ZONE */}
+                    <div className="mt-8 pt-8 border-t border-white/10">
+                         <div className="flex items-center gap-2 mb-4 text-red-500 opacity-80">
+                            <AlertTriangle className="w-4 h-4"/>
+                            <h3 className="text-[10px] font-bold uppercase tracking-wide">Zone de Danger</h3>
+                        </div>
+                        <button onClick={()=>{if(confirm("ATTENTION COMMANDANT !\n\nCette action effacera définitivement toutes vos données.\n\nÊtes-vous certain de vouloir détruire l'Empire ?")) {localStorage.clear(); window.location.reload();}}} className="text-red-500 text-xs uppercase font-bold flex items-center justify-center gap-2 w-full bg-red-900/10 hover:bg-red-900/20 py-4 rounded-lg transition-colors border border-red-900/30">
                             <Trash2 className="w-4 h-4"/>
                             Détruire l'Empire (Reset Total)
                         </button>
