@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, Play, Volume2, Mic, RefreshCw, Radio, VolumeX } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -53,41 +53,17 @@ const BUSINESS_IDEAS = {
 };
 
 // ==========================================
-// C'EST ICI QU'IL FAUT COLLER VOS LIENS
+// MANUEL DE FORMATION (TUTORIEL)
 // ==========================================
 const TUTORIAL_STEPS = [
-    {
-        id: 'intro',
-        title: "INITIALISATION",
-        text: "Soldat ! Ici le Commandement Central. Cette interface n'est pas un jeu. Les chiffres sont vos munitions réelles. Une erreur ici, et vous saignez dans la réalité.",
-        // REMPLACEZ CE LIEN PAR LE VÔTRE (ex: lien Discord, Dropbox, etc.)
-        audioFile: "https://votre-lien-ici.com/intro.mp3", 
-        icon: AlertTriangle
-    },
-    {
-        id: 'balance',
-        title: "VOTRE MISSION",
-        text: "Regardez en haut. Ce solde est votre oxygène. Si il tombe à zéro, vous êtes mort. Votre mission : Sécuriser les ressources et Bâtir un Empire.",
-        // REMPLACEZ CE LIEN
-        audioFile: "https://votre-lien-ici.com/solde.mp3",
-        icon: Shield
-    },
-    {
-        id: 'action',
-        title: "L'ARME PRINCIPALE",
-        text: "Le bouton jaune en bas est votre détonateur. À chaque fois que vous sortez votre portefeuille, appuyez dessus. La discipline n'est pas une option.",
-        // REMPLACEZ CE LIEN
-        audioFile: "https://votre-lien-ici.com/action.mp3",
-        icon: Plus
-    },
-    {
-        id: 'end',
-        title: "EXÉCUTION",
-        text: "L'Empire est prêt. Le chaos règne à l'extérieur, mais ici, c'est votre loi qui s'applique. Ne me décevez pas. Rompez !",
-        // REMPLACEZ CE LIEN
-        audioFile: "https://votre-lien-ici.com/fin.mp3",
-        icon: Star
-    }
+    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. Ici, chaque unité de monnaie est un soldat sous vos ordres. La discipline est votre seule arme.", icon: Shield },
+    { title: "LE SOLDE VIRTUEL", text: "Le chiffre central est votre 'Solde Disponible'. S'il est positif, vous survivez. S'il vire au rouge, vous êtes à découvert tactique.", icon: PiggyBank },
+    { title: "LES PROTOCOLES", text: "Gérez vos abonnements (charges) et vos revenus passifs. Le système calculera votre cash-flow net mensuel automatiquement.", icon: Repeat },
+    { title: "LE REGISTRE", text: "Traquez ce que vous devez (Tributs) et ce qu'on vous doit (Butin). Un Empire solide ne laisse personne oublier ses dettes.", icon: Scroll },
+    { title: "LES CIBLES", text: "Une Cible est un objectif d'épargne. L'argent alloué à une cible est 'verrouillé' et retiré du solde disponible pour vous protéger.", icon: Target },
+    { title: "ARSENAL & CONQUÊTE", text: "L'Arsenal liste vos compétences. La section Conquête gère vos projets. C'est ici que vous bâtissez votre infrastructure.", icon: Sword },
+    { title: "GRADE & CARTES", text: "Votre Grade évolue selon votre fortune. La Salle des Cartes (Stats) analyse si vous dépensez trop en futilités.", icon: Medal },
+    { title: "ARCHIVES", text: "Dans les Paramètres, générez un code d'exportation. Il permet de restaurer toute votre progression sur n'importe quel appareil.", icon: Download }
 ];
 
 const getRank = (balance, currency) => {
@@ -117,7 +93,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v9.1</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.0</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -128,124 +104,43 @@ function PageTransition({ children }) {
 }
 
 // ==========================================
-// COMPOSANT TUTORIEL "STUDIO" (MP3 VIA URL)
+// COMPOSANT TUTORIEL
 // ==========================================
 function TutorialOverlay({ onComplete }) {
     const [stepIndex, setStepIndex] = useState(0);
-    const [started, setStarted] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const audioRef = useRef(null);
     const step = TUTORIAL_STEPS[stepIndex];
     const Icon = step.icon;
 
-    // Fonction pour jouer l'audio proprement
-    const playAudio = (url) => {
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-        }
-        
-        // Création de l'objet audio
-        const newAudio = new Audio(url);
-        audioRef.current = newAudio;
-        
-        // Gestion d'erreur si le lien est mauvais
-        newAudio.onerror = () => {
-             console.log("Erreur de chargement audio. Vérifiez le lien.");
-             setIsPlaying(false);
-        };
-
-        newAudio.play().then(() => {
-            setIsPlaying(true);
-        }).catch(e => {
-            console.log("Lecture bloquée par le navigateur (attente interaction)", e);
-            setIsPlaying(false);
-        });
-
-        newAudio.onended = () => {
-            setIsPlaying(false);
-        };
-    };
-
-    const startTutorial = () => {
-        setStarted(true);
-        playAudio(TUTORIAL_STEPS[0].audioFile);
-    };
-
     const nextStep = () => {
         if (stepIndex < TUTORIAL_STEPS.length - 1) {
-            const nextIdx = stepIndex + 1;
-            setStepIndex(nextIdx);
-            playAudio(TUTORIAL_STEPS[nextIdx].audioFile);
+            setStepIndex(stepIndex + 1);
         } else {
-            if (audioRef.current) audioRef.current.pause();
             onComplete();
         }
     };
 
-    const skip = () => {
-        if (audioRef.current) audioRef.current.pause();
-        onComplete();
-    };
-
-    useEffect(() => {
-        return () => {
-            if (audioRef.current) audioRef.current.pause();
-        };
-    }, []);
-
-    if (!started) {
-        return (
-            <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-500">
-                <div className="bg-[#111] border border-gold/50 p-6 rounded-2xl max-w-sm w-full text-center shadow-[0_0_50px_rgba(212,175,55,0.2)]">
-                    <div className="w-20 h-20 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-gold animate-pulse">
-                        <Volume2 className="w-10 h-10 text-gold" />
-                    </div>
-                    <h2 className="text-2xl font-serif font-bold text-white mb-2 tracking-widest uppercase">Briefing Vocal</h2>
-                    <p className="text-gray-400 text-sm mb-8 leading-relaxed italic">
-                        "Activez le son pour le briefing tactique."
-                    </p>
-                    
-                    <button onClick={startTutorial} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs mb-3 hover:bg-yellow-400 transition-colors shadow-lg shadow-gold/20 flex items-center justify-center gap-2">
-                        <Play className="w-4 h-4 fill-black" /> LANCER LA SÉQUENCE
-                    </button>
-                    <button onClick={skip} className="text-gray-600 text-[10px] hover:text-white uppercase tracking-widest mt-4">
-                        Passer le briefing
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-end justify-center pb-20 animate-in fade-in duration-300">
-            <div className="bg-[#161616] border-t-2 border-gold w-full rounded-t-3xl p-6 shadow-2xl relative max-w-md mx-auto">
-                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-black border-4 border-gold rounded-full flex items-center justify-center z-10 shadow-[0_0_20px_rgba(212,175,55,0.4)]">
-                    {isPlaying ? (
-                        <div className="flex gap-1 h-4 items-end">
-                            <div className="w-1 bg-gold animate-[bounce_1s_infinite] h-full"></div>
-                            <div className="w-1 bg-gold animate-[bounce_1.2s_infinite] h-2/3"></div>
-                            <div className="w-1 bg-gold animate-[bounce_0.8s_infinite] h-full"></div>
-                        </div>
-                    ) : (
+        <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="bg-[#111] border border-gold/30 w-full max-w-sm rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+                 <div className="absolute top-0 right-0 p-4 opacity-10"><BookOpen className="w-24 h-24 text-gold" /></div>
+                 
+                 <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mb-6 border border-gold/40">
                         <Icon className="w-8 h-8 text-gold" />
-                    )}
-                 </div>
-
-                 <div className="mt-10 text-center">
-                     <h3 className="text-gold font-serif text-xl font-bold mb-4 uppercase tracking-[0.2em]">{step.title}</h3>
-                     
-                     <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-6 min-h-[100px] flex items-center justify-center relative overflow-hidden">
-                        {isPlaying && <div className="absolute bottom-0 left-0 h-1 bg-gold/30 w-full animate-[loading-bar_10s_linear]"></div>}
-                        <p className="text-gray-200 text-sm leading-relaxed font-medium italic relative z-10">"{step.text}"</p>
-                     </div>
-                     
-                     <div className="flex gap-3">
-                         <button onClick={skip} className="flex-1 bg-white/5 text-gray-500 font-bold py-3 rounded-lg uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"><VolumeX className="w-3 h-3"/> Stop</button>
-                         <button onClick={nextStep} className="flex-[2] bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-lg shadow-gold/20">
-                             {stepIndex === TUTORIAL_STEPS.length - 1 ? "À VOS ORDRES" : "SUIVANT"} <ChevronRight className="w-4 h-4"/>
-                         </button>
-                     </div>
+                    </div>
+                    
+                    <p className="text-[10px] text-gold font-bold uppercase tracking-[0.3em] mb-2">Opération {stepIndex + 1}/{TUTORIAL_STEPS.length}</p>
+                    <h3 className="text-white font-serif text-xl font-bold mb-4 tracking-wide uppercase">{step.title}</h3>
+                    
+                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 mb-8">
+                        <p className="text-gray-300 text-sm leading-relaxed">{step.text}</p>
+                    </div>
+                    
+                    <div className="flex flex-col gap-3">
+                        <button onClick={nextStep} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all active:scale-95">
+                            {stepIndex === TUTORIAL_STEPS.length - 1 ? "PRENDRE LE COMMANDEMENT" : "SUIVANT"} <ChevronRight className="w-4 h-4"/>
+                        </button>
+                    </div>
                  </div>
             </div>
         </div>
@@ -282,7 +177,6 @@ function MainOS() {
     // Vérifier si le tutoriel a déjà été vu
     const tutorialDone = localStorage.getItem('imperium_tutorial_done') === 'true';
     if (!tutorialDone) {
-        // Petit délai pour laisser l'interface charger
         setTimeout(() => setShowTutorial(true), 500);
     }
   }, []);
