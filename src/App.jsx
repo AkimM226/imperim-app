@@ -49,11 +49,12 @@ const QUOTES = [
 ];
 
 const TUTORIAL_STEPS = [
-    { title: "BIENVENUE, COMMANDANT", text: "Imperium v12 est chargé. Analyse financière tactique prête.", icon: Shield },
-    { title: "ALLOCATION DE SURVIE", text: "Le système calcule désormais votre budget quotidien strict. Ne dépassez jamais cette limite journalière pour garantir la pérennité de l'Empire.", icon: Flame },
-    { title: "PROTOCOLES FLEXIBLES", text: "Déclarez vos rentes quotidiennes ou mensuelles. Le système normalise tout pour vous donner votre véritable Cash-Flow.", icon: Repeat },
-    { title: "RADAR DE DETTES", text: "Si votre trésorerie le permet, l'IA vous ordonnera d'abattre une dette spécifique. Obéissez pour regagner votre liberté.", icon: Scroll },
-    { title: "CENTRE DE PROJETS", text: "Gérez plusieurs conquêtes simultanément. Utilisez l'assistant Stratège pour auditer la viabilité de vos plans.", icon: BrainCircuit },
+    { title: "BIENVENUE, COMMANDANT", text: "Imperium v13 est chargé. L'interface hybride est active.", icon: Shield },
+    { title: "ALLOCATION DE SURVIE", text: "Le système calcule votre budget quotidien strict (Solde / 30). Ne dépassez jamais cette limite.", icon: Flame },
+    { title: "FLAMMES & DISCIPLINE", text: "En haut à droite, la flamme indique votre série de jours sans dépenses futiles (Wants). Maintenez-la allumée.", icon: Zap },
+    { title: "PROTOCOLES FLEXIBLES", text: "Déclarez vos rentes quotidiennes ou mensuelles. Le système normalise tout en Cash-Flow mensuel.", icon: Repeat },
+    { title: "RADAR DE DETTES", text: "Si votre trésorerie le permet, l'IA vous suggérera une dette à abattre immédiatement.", icon: Scroll },
+    { title: "CENTRE DE PROJETS", text: "Gérez plusieurs conquêtes. Utilisez le Stratège IA pour auditer vos plans.", icon: BrainCircuit },
 ];
 
 const getRank = (balance, currency) => {
@@ -81,7 +82,7 @@ function SplashScreen() {
         <div className="fixed inset-0 bg-[#050505] z-[100] flex flex-col items-center justify-center">
             <Fingerprint className="w-20 h-20 text-gold animate-pulse mb-6" />
             <h1 className="text-3xl font-serif font-bold text-gold tracking-[0.3em]">IMPERIUM</h1>
-            <p className="text-[10px] text-gray-600 mt-2 tracking-widest uppercase">Version 12.0 Stratège</p>
+            <p className="text-[10px] text-gray-600 mt-2 tracking-widest uppercase">Version 13.0 Hybride</p>
         </div>
     );
 }
@@ -158,7 +159,6 @@ function OnboardingScreen({ onComplete }) {
   const [currency, setCurrency] = useState('€');
   const finish = () => {
     localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(balance) || 0));
-    // Initialisation d'un projet par défaut dans le nouveau format
     const defaultProject = { id: Date.now(), title: "Projet Alpha", tasks: [], strategy: [] };
     localStorage.setItem('imperium_projects', JSON.stringify([defaultProject]));
     localStorage.setItem('imperium_currency', currency);
@@ -184,26 +184,36 @@ function Dashboard({ onNavigate }) {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('expense');
   const [desc, setDesc] = useState('');
+  const [todaysQuote, setTodaysQuote] = useState("");
+
+  useEffect(() => { setTodaysQuote(QUOTES[new Date().getDate() % QUOTES.length]); }, []);
 
   const rank = getRank(balance, currency);
   const RankIcon = rank.icon;
 
   const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
   const availableCash = balance - lockedCash;
-  
-  // CALCUL DE L'ALLOCATION QUOTIDIENNE (SURVIE)
-  // On divise le solde disponible par 30 jours pour donner une limite réaliste.
   const dailyAllocation = Math.max(0, Math.floor(availableCash / 30));
-
-  // LOGIQUE DE SUGGESTION DE DETTE
-  // Si le solde dispo est supérieur à 30% de plus que la plus petite dette, on suggère de payer.
   const debtToPay = debts.find(d => d.type === 'owe' && d.amount <= availableCash * 0.4);
+
+  // CALCUL DES FLAMMES (STREAK)
+  const calculateStreak = () => {
+    if (transactions.length === 0) return 0;
+    const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want'); // Supposons 'want' category
+    // Pour simplifier ici, on compte juste les jours sans dépense ou depuis la création
+    const lastDate = lastSin ? new Date(lastSin.rawDate) : new Date(transactions[transactions.length-1].rawDate);
+    const diffTime = Math.abs(new Date() - lastDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays; 
+  };
+  const streak = calculateStreak();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const val = parseFloat(amount);
     if (!val) return;
     const newBal = type === 'expense' ? balance - val : balance + val;
+    // Par défaut on catégorise 'need' si pas spécifié, pour simplifier la modale rapide
     const newTx = { id: Date.now(), amount: val, type, desc: desc || (type==='expense'?'Dépense':'Revenu'), rawDate: new Date().toISOString() };
     
     setBalance(newBal);
@@ -216,74 +226,114 @@ function Dashboard({ onNavigate }) {
   return (
     <PageTransition>
       <div className="min-h-screen bg-black text-white pb-32">
-        <header className="p-6 flex justify-between items-center border-b border-white/5">
+        <header className="p-6 flex justify-between items-center border-b border-white/5 bg-[#050505]">
             <button onClick={() => onNavigate('stats')}><BarChart3 className="w-5 h-5 text-gray-500 hover:text-gold"/></button>
             <h1 className="text-gold font-serif font-bold tracking-widest">IMPERIUM</h1>
             <button onClick={() => onNavigate('settings')}><Settings className="w-5 h-5 text-gray-500 hover:text-white"/></button>
         </header>
 
-        <div className="p-6 space-y-4">
-            {/* EN-TÊTE GRADE */}
+        <div className="p-6 space-y-5">
+            {/* CITATION DU JOUR */}
+            <div className="flex items-start gap-3 opacity-80">
+                <Quote className="w-4 h-4 text-gold shrink-0 mt-1"/>
+                <p className="text-xs text-gray-400 italic leading-relaxed">"{todaysQuote}"</p>
+            </div>
+
+            {/* EN-TÊTE GRADE & FLAMMES */}
             <div className="flex justify-between items-end">
-                <div><p className="text-[10px] text-gray-500 uppercase">Grade Actuel</p><div className={`flex items-center gap-2 ${rank.color}`}><RankIcon className="w-5 h-5"/><span className="font-bold font-serif text-lg">{rank.title}</span></div></div>
+                <div><p className="text-[10px] text-gray-500 uppercase">Grade</p><div className={`flex items-center gap-2 ${rank.color}`}><RankIcon className="w-5 h-5"/><span className="font-bold font-serif text-lg">{rank.title}</span></div></div>
+                <div><p className="text-[10px] text-gray-500 uppercase text-right">Discipline</p><div className="flex items-center gap-2 px-3 py-1 rounded border border-orange-500/30 bg-orange-900/10 text-orange-500"><Flame className="w-4 h-4 animate-pulse"/><span className="font-bold">{streak} Jours</span></div></div>
             </div>
 
-            {/* CARTE PRINCIPALE : SOLDE */}
-            <div className="bg-[#111] p-6 rounded-2xl border border-white/10 text-center relative overflow-hidden group">
+            {/* CARTE PRINCIPALE : NOUVEAU DESIGN GRADIENT (GARDÉ) */}
+            <div className="bg-[#111] p-6 rounded-2xl border border-white/10 text-center relative overflow-hidden group shadow-lg shadow-gold/5">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent opacity-50"></div>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2 flex items-center justify-center gap-2"><Shield className="w-3 h-3 text-gold"/> Solde Disponible</p>
-                <h2 className="text-4xl font-serif font-bold text-white mb-2">{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></h2>
-                {lockedCash > 0 && <p className="text-[10px] text-gray-600 flex items-center justify-center gap-1"><Lock className="w-3 h-3"/> +{formatMoney(lockedCash)} sécurisés</p>}
+                <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent opacity-20"></div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2 flex items-center justify-center gap-2 relative z-10"><Shield className="w-3 h-3 text-gold"/> Solde Disponible</p>
+                <h2 className="text-4xl font-serif font-bold text-white mb-2 relative z-10">{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></h2>
+                {lockedCash > 0 && <p className="text-[10px] text-gray-600 flex items-center justify-center gap-1 relative z-10"><Lock className="w-3 h-3"/> +{formatMoney(lockedCash)} sécurisés</p>}
             </div>
 
-            {/* NOUVEAU : ALLOCATION QUOTIDIENNE */}
+            {/* ALLOCATION QUOTIDIENNE */}
             <div className="bg-[#0f1210] p-4 rounded-xl border border-green-900/30 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-900/20 text-green-500 rounded-lg"><Flame className="w-4 h-4"/></div>
                     <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Allocation Quotidienne</p>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Survie Journalière</p>
                         <p className="text-sm font-bold text-white">Max {formatMoney(dailyAllocation)} {currency} / jour</p>
                     </div>
                 </div>
             </div>
 
-            {/* NOUVEAU : SUGGESTION DE DETTE (S'AFFICHE SI PERTINENT) */}
+            {/* RADAR DE DETTES */}
             {debtToPay && (
                 <div className="bg-[#1a0f0f] p-4 rounded-xl border border-red-900/30 animate-in slide-in-from-right">
                     <div className="flex items-start gap-3">
                         <div className="p-2 bg-red-900/20 text-red-500 rounded-lg shrink-0"><AlertTriangle className="w-4 h-4"/></div>
                         <div>
-                            <p className="text-[10px] text-red-400 uppercase tracking-widest font-bold mb-1">Opportunité Stratégique</p>
-                            <p className="text-xs text-gray-300 leading-relaxed mb-2">Commandant, vos réserves permettent d'éliminer la dette envers <span className="text-white font-bold">{debtToPay.name}</span> ({formatMoney(debtToPay.amount)}). Honorer cette dette renforcera votre structure.</p>
-                            <button onClick={() => onNavigate('debts')} className="bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/50 text-[10px] font-bold uppercase py-2 px-4 rounded transition-colors">Accéder au Registre</button>
+                            <p className="text-[10px] text-red-400 uppercase tracking-widest font-bold mb-1">Alerte Dette</p>
+                            <p className="text-xs text-gray-300 leading-relaxed mb-2">Solde suffisant pour éliminer la cible : <span className="text-white font-bold">{debtToPay.name}</span> ({formatMoney(debtToPay.amount)}).</p>
+                            <button onClick={() => onNavigate('debts')} className="bg-red-900/20 text-red-400 border border-red-900/50 text-[10px] font-bold uppercase py-1 px-3 rounded">Régler</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* NAVIGATION RAPIDE */}
-            <div className="grid grid-cols-2 gap-3 mt-4">
-                <div onClick={() => onNavigate('protocols')} className="bg-[#111] p-4 rounded-xl border border-white/5 hover:border-gold/30 cursor-pointer transition-colors"><div className="flex items-center gap-2 mb-2"><Repeat className="w-4 h-4 text-indigo-500"/> <span className="text-xs font-bold text-gray-300">Protocoles</span></div><p className="text-[10px] text-gray-600">Flux & Rentes</p></div>
-                <div onClick={() => onNavigate('debts')} className="bg-[#111] p-4 rounded-xl border border-white/5 hover:border-gold/30 cursor-pointer transition-colors"><div className="flex items-center gap-2 mb-2"><Scroll className="w-4 h-4 text-purple-500"/> <span className="text-xs font-bold text-gray-300">Registre</span></div><p className="text-[10px] text-gray-600">Dettes</p></div>
-                <div onClick={() => onNavigate('project')} className="bg-[#111] p-4 rounded-xl border border-white/5 hover:border-gold/30 cursor-pointer transition-colors"><div className="flex items-center gap-2 mb-2"><Castle className="w-4 h-4 text-gold"/> <span className="text-xs font-bold text-gray-300">Conquête</span></div><p className="text-[10px] text-gray-600">Projets & IA</p></div>
-                <div onClick={() => onNavigate('goals')} className="bg-[#111] p-4 rounded-xl border border-white/5 hover:border-gold/30 cursor-pointer transition-colors"><div className="flex items-center gap-2 mb-2"><Target className="w-4 h-4 text-blue-500"/> <span className="text-xs font-bold text-gray-300">Cibles</span></div><p className="text-[10px] text-gray-600">Épargne</p></div>
+            {/* NAVIGATION : RETOUR AU DESIGN "OLD SCHOOL" (Icônes Colorées) */}
+            <div className="grid grid-cols-1 gap-3 mt-4">
+                <div onClick={() => onNavigate('protocols')} className="bg-[#111] p-5 rounded-xl border border-white/5 active:scale-[0.98] transition-transform flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-indigo-900/20 text-indigo-500 rounded-lg border border-indigo-500/20"><Repeat className="w-6 h-6"/></div>
+                        <div><h3 className="font-bold text-gray-200">Protocoles</h3><p className="text-[10px] text-gray-500 uppercase tracking-wider">Flux & Rentes</p></div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-700 group-hover:text-indigo-500"/>
+                </div>
+
+                <div onClick={() => onNavigate('debts')} className="bg-[#111] p-5 rounded-xl border border-white/5 active:scale-[0.98] transition-transform flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-purple-900/20 text-purple-500 rounded-lg border border-purple-500/20"><Scroll className="w-6 h-6"/></div>
+                        <div><h3 className="font-bold text-gray-200">Registre</h3><p className="text-[10px] text-gray-500 uppercase tracking-wider">Dettes & Créances</p></div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-700 group-hover:text-purple-500"/>
+                </div>
+
+                <div onClick={() => onNavigate('goals')} className="bg-[#111] p-5 rounded-xl border border-white/5 active:scale-[0.98] transition-transform flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-900/20 text-blue-500 rounded-lg border border-blue-500/20"><Target className="w-6 h-6"/></div>
+                        <div><h3 className="font-bold text-gray-200">Cibles</h3><p className="text-[10px] text-gray-500 uppercase tracking-wider">Épargne Verrouillée</p></div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-700 group-hover:text-blue-500"/>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                     <div onClick={() => onNavigate('skills')} className="bg-[#111] p-4 rounded-xl border border-white/5 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30">
+                        <div className="p-2 bg-yellow-900/20 text-gold rounded-lg w-fit mb-3"><Sword className="w-5 h-5"/></div>
+                        <h3 className="font-bold text-white text-sm">Arsenal</h3>
+                        <p className="text-[9px] text-gray-500 mt-1">Gagner plus</p>
+                     </div>
+                     <div onClick={() => onNavigate('project')} className="bg-[#111] p-4 rounded-xl border border-white/5 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30">
+                        <div className="p-2 bg-yellow-900/20 text-gold rounded-lg w-fit mb-3"><Castle className="w-5 h-5"/></div>
+                        <h3 className="font-bold text-white text-sm">Conquête</h3>
+                        <p className="text-[9px] text-gray-500 mt-1">Projets & IA</p>
+                     </div>
+                </div>
             </div>
         </div>
 
         <div className="fixed bottom-10 left-0 right-0 flex justify-center pointer-events-none">
-            <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black w-14 h-14 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(212,175,55,0.4)] active:scale-90 transition-transform"><Plus className="w-6 h-6"/></button>
+            <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black w-14 h-14 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(212,175,55,0.4)] active:scale-90 transition-transform border-2 border-yellow-300"><Plus className="w-6 h-6"/></button>
         </div>
         
         {isModalOpen && (
             <div className="fixed inset-0 bg-black/90 flex items-end z-50 animate-in fade-in duration-200">
                 <div className="bg-[#161616] w-full p-8 rounded-t-3xl border-t border-white/10 animate-in slide-in-from-bottom duration-300">
                     <div className="flex gap-2 mb-6">
-                        <button onClick={() => setType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded-lg transition-colors ${type === 'expense' ? 'bg-red-900 text-white' : 'bg-gray-900 text-gray-600'}`}>DÉPENSE</button>
-                        <button onClick={() => setType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded-lg transition-colors ${type === 'income' ? 'bg-green-900 text-white' : 'bg-gray-900 text-gray-600'}`}>REVENU</button>
+                        <button onClick={() => setType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded-lg transition-colors ${type === 'expense' ? 'bg-red-900 text-white shadow-[0_0_15px_rgba(153,27,27,0.4)]' : 'bg-gray-900 text-gray-600'}`}>DÉPENSE</button>
+                        <button onClick={() => setType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded-lg transition-colors ${type === 'income' ? 'bg-green-900 text-white shadow-[0_0_15px_rgba(22,101,52,0.4)]' : 'bg-gray-900 text-gray-600'}`}>REVENU</button>
                     </div>
                     <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-800 text-4xl text-center mb-6 outline-none font-serif text-white placeholder-gray-800" placeholder="0" autoFocus/>
                     <input type="text" value={desc} onChange={e => setDesc(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 p-3 rounded-lg text-white text-sm mb-6 outline-none" placeholder="Description (optionnel)"/>
-                    <button onClick={handleSubmit} className="w-full bg-white text-black py-4 font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-gray-200">CONFIRMER</button>
+                    <button onClick={handleSubmit} className="w-full bg-white text-black py-4 font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-gray-200 shadow-lg">CONFIRMER</button>
                     <button onClick={() => setIsModalOpen(false)} className="w-full text-gray-500 mt-4 text-xs uppercase tracking-widest py-2">ANNULER</button>
                 </div>
             </div>
@@ -298,7 +348,6 @@ function Dashboard({ onNavigate }) {
 // ==========================================
 
 function ProjectScreen({ onBack }) {
-    // Migration automatique pour les anciens utilisateurs
     const [projects, setProjects] = useState(() => {
         const stored = localStorage.getItem('imperium_projects');
         if (stored) return JSON.parse(stored);
@@ -440,7 +489,6 @@ function ProtocolsScreen({ onBack }) {
         setName(""); setAmount("");
     };
 
-    // Calcul du cashflow mensuel normalisé
     const calculateMonthly = (p) => {
         const f = FREQUENCIES.find(fr => fr.id === p.freq) || FREQUENCIES[2];
         return p.amount * f.factor;
@@ -500,7 +548,7 @@ function ProtocolsScreen({ onBack }) {
 }
 
 // ==========================================
-// AUTRES ECRANS (RESTANTS, SIMPLIFIÉS MAIS FONCTIONNELS)
+// AUTRES ECRANS
 // ==========================================
 function SkillsScreen({ onBack }) { const [skills, setSkills] = useState(JSON.parse(localStorage.getItem('imperium_skills') || "[]")); const [newSkill, setNewSkill] = useState(""); useEffect(() => localStorage.setItem('imperium_skills', JSON.stringify(skills)), [skills]); return (<PageTransition><div className="min-h-screen bg-black text-white p-6"><button onClick={onBack} className="text-gray-500 text-xs mb-6 uppercase tracking-widest flex items-center gap-2"><ArrowLeft className="w-4 h-4"/> Retour</button><h1 className="text-2xl font-serif text-white font-bold mb-6">Arsenal</h1><div className="space-y-2">{skills.map(s => <div key={s.id} className="bg-[#111] p-3 rounded border border-white/5 flex justify-between"><span className="text-gray-200">{s.name}</span><Trash2 onClick={() => setSkills(skills.filter(x=>x.id!==s.id))} className="w-4 h-4 text-gray-700 cursor-pointer"/></div>)}</div><div className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-white/10 flex gap-2"><input value={newSkill} onChange={e=>setNewSkill(e.target.value)} className="flex-1 bg-[#111] p-3 rounded text-white" placeholder="Compétence..."/><button onClick={()=>{if(newSkill)setSkills([...skills,{id:Date.now(),name:newSkill}]);setNewSkill("")}} className="bg-gold text-black p-3 rounded"><Plus/></button></div></div></PageTransition>); }
 function StatsScreen({ onBack }) { const tx = JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); const total = tx.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0); const wants = tx.filter(t=>t.type==='expense'&&t.category==='want').reduce((a,b)=>a+b.amount,0); const ratio = total ? Math.round((wants/total)*100) : 0; return (<PageTransition><div className="min-h-screen bg-black text-white p-6"><button onClick={onBack} className="text-gray-500 text-xs mb-6 uppercase tracking-widest flex items-center gap-2"><ArrowLeft className="w-4 h-4"/> Retour</button><h1 className="text-2xl font-serif text-white font-bold mb-6">Salle des Cartes</h1><div className="bg-[#111] p-6 rounded-xl border border-white/10 mb-4"><p className="text-xs text-gray-500 uppercase">Ratio de Futilité</p><h2 className={`text-4xl font-bold ${ratio>30?'text-red-500':'text-green-500'}`}>{ratio}%</h2></div><p className="text-gray-400 text-sm italic">"{ratio > 30 ? "Attention soldat, trop de plaisirs affaiblissent l'Empire." : "Discipline exemplaire."}"</p></div></PageTransition>); }
