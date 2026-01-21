@@ -1,25 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Wallet, Smartphone, Banknote } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.1"; // LA VERSION ACTUELLE
+const APP_VERSION = "15.1";
 
 const RELEASE_NOTES = [
     {
-        version: "14.1",
-        title: "Le Grand Bond",
-        desc: "Mise à jour majeure des infrastructures de l'Empire.",
+        version: "15.1",
+        title: "Calibrage Tactique",
+        desc: "Correction de la répartition des fonds.",
         changes: [
-            { icon: Landmark, text: "Le Bunker : Sécurisez votre argent de guerre hors de la ration quotidienne." },
-            { icon: Coins, text: "Impôt Impérial : Prélèvement automatique de 20% sur les revenus." },
-            { icon: Activity, text: "Courbe de Puissance : Visualisez votre ascension financière (Stats)." },
-            { icon: Trophy, text: "Hall of Fame : Accès rétabli aux trophées et grades." },
-            { icon: Castle, text: "Multi-Fronts : Gestion de plusieurs projets en simultané." }
+            { icon: Edit3, text: "Répartition Manuelle : Allez dans Paramètres pour ajuster le solde exact de chaque compte (Wave, Cash, OM)." },
+            { icon: Wallet, text: "Correction Migration : Vos fonds ne sont plus bloqués uniquement en espèces." }
         ]
     }
+];
+
+const DEFAULT_WALLETS = [
+    { id: 'cash', name: 'Espèces / Main', type: 'cash', balance: 0, bunker: 0 },
+    { id: 'wave', name: 'Wave', type: 'mobile', balance: 0, bunker: 0 },
+    { id: 'om', name: 'Orange Money', type: 'mobile', balance: 0, bunker: 0 },
 ];
 
 const CURRENCIES = [
@@ -73,11 +76,9 @@ const BUSINESS_IDEAS = {
 };
 
 const TUTORIAL_STEPS = [
-    { title: "BIENVENUE, COMMANDANT", text: "Imperium v14.1 est opérationnel.", icon: Shield },
-    { title: "TROPHÉES & GRADE", text: "Cliquez sur votre Grade (Haut-Gauche) ou le bouton Trophées dans le menu pour voir vos succès.", icon: Medal },
-    { title: "LA COURBE DE PUISSANCE", text: "Dans la Salle des Cartes (Stats), visualisez l'évolution de votre fortune.", icon: Activity },
-    { title: "LE BUNKER", text: "Votre réserve de guerre. Sécurisée et invisible pour la ration.", icon: Landmark },
-    { title: "CONQUÊTE", text: "Gérez vos projets et fixez des deadlines.", icon: Castle },
+    { title: "BIENVENUE, COMMANDANT", text: "Imperium v15.1 corrige le tir.", icon: Shield },
+    { title: "CALIBRAGE", text: "Allez dans PARAMÈTRES (Roue dentée en haut à droite).", icon: Settings },
+    { title: "RÉPARTITION", text: "Vous pourrez y définir manuellement combien vous avez sur Wave, OM et en Cash.", icon: LayoutGrid },
 ];
 
 const getRank = (balance, currency) => {
@@ -153,41 +154,19 @@ function PageTransition({ children }) {
 }
 
 function PatchNotesModal({ onAck }) {
-    const note = RELEASE_NOTES[0]; // On affiche le dernier patch note
+    const note = RELEASE_NOTES[0];
     return (
         <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
              <div className="bg-[#151515] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5"><FileText className="w-32 h-32 text-gold" /></div>
-                
                 <div className="relative z-10">
                      <div className="flex items-center gap-3 mb-6">
                          <div className="w-10 h-10 bg-gold/10 rounded-full flex items-center justify-center border border-gold/20"><Info className="w-5 h-5 text-gold"/></div>
-                         <div>
-                             <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Rapport de Mise à Jour</p>
-                             <h2 className="text-white font-serif font-bold text-lg">Version {note.version}</h2>
-                         </div>
+                         <div><p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Rapport de Mise à Jour</p><h2 className="text-white font-serif font-bold text-lg">Version {note.version}</h2></div>
                      </div>
-
-                     <div className="mb-6">
-                         <h3 className="text-gold font-bold text-sm uppercase mb-1">{note.title}</h3>
-                         <p className="text-gray-400 text-xs italic">{note.desc}</p>
-                     </div>
-
-                     <div className="space-y-3 mb-8">
-                         {note.changes.map((change, idx) => {
-                             const Icon = change.icon;
-                             return (
-                                 <div key={idx} className="flex gap-3 items-start bg-black/40 p-3 rounded-lg border border-white/5">
-                                     <Icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                                     <p className="text-xs text-gray-200 leading-relaxed">{change.text}</p>
-                                 </div>
-                             )
-                         })}
-                     </div>
-
-                     <button onClick={onAck} className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all active:scale-95 shadow-[0_0_20px_rgba(212,175,55,0.2)]">
-                         Reçu, Retour au combat
-                     </button>
+                     <div className="mb-6"><h3 className="text-gold font-bold text-sm uppercase mb-1">{note.title}</h3><p className="text-gray-400 text-xs italic">{note.desc}</p></div>
+                     <div className="space-y-3 mb-8">{note.changes.map((change, idx) => { const Icon = change.icon; return ( <div key={idx} className="flex gap-3 items-start bg-black/40 p-3 rounded-lg border border-white/5"><Icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" /><p className="text-xs text-gray-200 leading-relaxed">{change.text}</p></div> ) })}</div>
+                     <button onClick={onAck} className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all active:scale-95 shadow-[0_0_20px_rgba(212,175,55,0.2)]">Reçu, Retour au combat</button>
                 </div>
              </div>
         </div>
@@ -221,13 +200,7 @@ function TutorialOverlay({ onComplete }) {
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-  
-  useEffect(() => { 
-      const timer = setTimeout(() => { setLoading(false); }, 2500); 
-      setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true'); 
-      return () => clearTimeout(timer); 
-  }, []);
-
+  useEffect(() => { const timer = setTimeout(() => { setLoading(false); }, 2500); setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true'); return () => clearTimeout(timer); }, []);
   if (loading) return <SplashScreen />;
   if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
   return <MainOS />;
@@ -237,34 +210,17 @@ function MainOS() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [showTutorial, setShowTutorial] = useState(false);
   const [showPatchNotes, setShowPatchNotes] = useState(false);
-
   const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
   
-  // GESTION DU TUTORIEL ET DU PATCH NOTE
   useEffect(() => { 
       const tutorialDone = localStorage.getItem('imperium_tutorial_done') === 'true'; 
       const lastVersion = localStorage.getItem('imperium_version');
-      
-      // Si c'est un nouvel utilisateur (pas de tuto), on lance le tuto
-      if (!tutorialDone) { 
-          setTimeout(() => setShowTutorial(true), 500); 
-      } 
-      // Si c'est un ancien utilisateur mais nouvelle version, on lance le Patch Note
-      else if (lastVersion !== APP_VERSION) {
-           setTimeout(() => setShowPatchNotes(true), 500);
-      }
+      if (!tutorialDone) { setTimeout(() => setShowTutorial(true), 500); } 
+      else if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
   }, []);
   
-  const completeTutorial = () => { 
-      localStorage.setItem('imperium_tutorial_done', 'true'); 
-      localStorage.setItem('imperium_version', APP_VERSION); // Tuto fini = on est à jour
-      setShowTutorial(false); 
-  };
-
-  const ackPatchNotes = () => {
-      localStorage.setItem('imperium_version', APP_VERSION);
-      setShowPatchNotes(false);
-  };
+  const completeTutorial = () => { localStorage.setItem('imperium_tutorial_done', 'true'); localStorage.setItem('imperium_version', APP_VERSION); setShowTutorial(false); };
+  const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
 
   return (
     <>
@@ -304,17 +260,16 @@ function OnboardingScreen({ onComplete }) {
   const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
   
   const finishOnboarding = () => {
-    localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(initialBalance) || 0));
-    // MIGRATION POUR LE NOUVEAU SYSTÈME DE PROJETS
-    const firstProject = {
-        id: Date.now(),
-        title: mainProject || "Empire Naissant",
-        deadline: "", // Ajout deadline
-        tasks: [],
-        answers: {}
-    };
-    localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
+    // INIT WALLETS
+    const totalBal = parseFloat(initialBalance) || 0;
+    // On met tout dans le Cash par défaut, l'utilisateur dispatchera après
+    const initWallets = DEFAULT_WALLETS.map(w => w.id === 'cash' ? { ...w, balance: totalBal } : w);
     
+    localStorage.setItem('imperium_wallets', JSON.stringify(initWallets));
+    localStorage.setItem('imperium_balance', JSON.stringify(totalBal)); // Gardé pour compatibilité legacy
+    
+    const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
+    localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
     localStorage.setItem('imperium_currency', currency || "€");
     localStorage.setItem('imperium_zone', JSON.stringify(zone || ZONES[0]));
     localStorage.setItem('imperium_onboarded', 'true');
@@ -337,29 +292,57 @@ function OnboardingScreen({ onComplete }) {
 // 2. DASHBOARD
 // ==========================================
 function Dashboard({ onNavigate }) {
-  const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
+  // GESTION DES WALLETS (NOUVEAU COEUR DU SYSTÈME)
+  const [wallets, setWallets] = useState(() => {
+      try { 
+          const saved = JSON.parse(localStorage.getItem('imperium_wallets'));
+          if (saved) return saved;
+          // MIGRATION V14 -> V15 (Si pas de wallets, on prend le solde global et on le met en cash)
+          const oldBalance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
+          const oldBunker = JSON.parse(localStorage.getItem('imperium_bunker') || "0");
+          return DEFAULT_WALLETS.map(w => w.id === 'cash' ? { ...w, balance: oldBalance, bunker: oldBunker } : w);
+      } catch { return DEFAULT_WALLETS; }
+  });
+
   const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
   const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
   const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
   const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
   const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_projects') || "[]"); } catch { return []; } });
-  const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
 
   const currency = localStorage.getItem('imperium_currency') || "€";
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
-  
-  // ETATS POUR L'IMPOT IMPERIAL
   const [showTaxModal, setShowTaxModal] = useState(false);
   const [pendingTransaction, setPendingTransaction] = useState(null);
 
   const [transactionType, setTransactionType] = useState('expense');
   const [expenseCategory, setExpenseCategory] = useState('need'); 
   const [amount, setAmount] = useState('');
-  const [bunkerAmount, setBunkerAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [selectedWalletId, setSelectedWalletId] = useState('cash'); // Pour la transaction
   
+  // Bunker State Local pour Modal
+  const [bunkerAmount, setBunkerAmount] = useState('');
+  const [bunkerWalletId, setBunkerWalletId] = useState('cash');
+
+  // CALCULS AGRÉGÉS
+  const totalBalance = wallets.reduce((acc, w) => acc + w.balance, 0); // Tout l'argent que je possède
+  const totalBunker = wallets.reduce((acc, w) => acc + (w.bunker || 0), 0);
+  const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
+  const availableCash = totalBalance - lockedCash - totalBunker;
+
+  // Sync Storage
+  useEffect(() => {
+    localStorage.setItem('imperium_wallets', JSON.stringify(wallets));
+    localStorage.setItem('imperium_balance', JSON.stringify(totalBalance)); // Legacy sync
+    localStorage.setItem('imperium_bunker', JSON.stringify(totalBunker)); // Legacy sync
+    localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
+    localStorage.setItem('imperium_projects', JSON.stringify(projects));
+    localStorage.setItem('imperium_goals', JSON.stringify(goals));
+  }, [wallets, transactions, projects, goals]);
+
   // --- LOGIQUE TEMPORELLE & RATION ---
   const today = new Date();
   const currentDay = today.getDate();
@@ -383,12 +366,8 @@ function Dashboard({ onNavigate }) {
   };
   
   const streak = calculateStreak();
-  const rank = getRank(balance, currency);
+  const rank = getRank(totalBalance, currency);
   const RankIcon = rank.icon;
-
-  const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
-  // CALCUL CRUCIAL : Disponible = Total - Cibles - Bunker
-  const availableCash = balance - lockedCash - bunker;
   const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
 
   // ANALYSE DU COMPORTEMENT DU JOUR
@@ -403,18 +382,7 @@ function Dashboard({ onNavigate }) {
 
   const dailySurvivalCost = Math.max(availableCash / 30, 1);
   const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
-
-  const debtToPay = debts
-    .filter(d => d.type === 'owe' && d.amount <= availableCash)
-    .sort((a, b) => a.amount - b.amount)[0];
-
-  useEffect(() => {
-    localStorage.setItem('imperium_balance', JSON.stringify(balance));
-    localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-    localStorage.setItem('imperium_projects', JSON.stringify(projects));
-    localStorage.setItem('imperium_goals', JSON.stringify(goals));
-    localStorage.setItem('imperium_bunker', JSON.stringify(bunker));
-  }, [balance, transactions, projects, goals, bunker]);
+  const debtToPay = debts.filter(d => d.type === 'owe' && d.amount <= availableCash).sort((a, b) => a.amount - b.amount)[0];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -422,22 +390,28 @@ function Dashboard({ onNavigate }) {
     const value = parseFloat(amount);
     
     // INTERCEPTION DE L'IMPÔT IMPÉRIAL
-    if (transactionType === 'income' && (goals.length > 0 || bunker >= 0)) {
-        setPendingTransaction({ value, description });
+    if (transactionType === 'income' && (goals.length > 0 || totalBunker >= 0)) {
+        setPendingTransaction({ value, description, walletId: selectedWalletId }); // On garde le wallet sélectionné
         setShowTaxModal(true);
         setIsModalOpen(false);
         setAmount(''); setDescription('');
         return;
     }
 
-    // TRAITEMENT NORMAL (DEPENSE ou REVENU SANS CIBLE)
-    const newBalance = transactionType === 'expense' ? balance - value : balance + value;
+    // UPDATE WALLET SPECIFIQUE
+    const updatedWallets = wallets.map(w => {
+        if (w.id === selectedWalletId) {
+            return { ...w, balance: transactionType === 'expense' ? w.balance - value : w.balance + value };
+        }
+        return w;
+    });
+
     let finalDesc = description;
     if (transactionType === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${description}`;
     
-    const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+    const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString(), walletId: selectedWalletId };
     
-    setBalance(newBalance);
+    setWallets(updatedWallets);
     setTransactions([newTransaction, ...transactions]);
     setAmount(''); setDescription(''); setIsModalOpen(false);
   };
@@ -445,22 +419,26 @@ function Dashboard({ onNavigate }) {
   const processIncomeWithTax = (applyTax) => {
       if (!pendingTransaction) return;
       const totalIncome = pendingTransaction.value;
-      const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0; // 20% TAX
+      const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0;
       const incomeDesc = pendingTransaction.description || "Revenu";
+      const wId = pendingTransaction.walletId;
 
-      // 1. Ajouter le revenu total à la balance
-      setBalance(balance + totalIncome);
+      // 1. Ajouter le revenu total au wallet concerné
+      let updatedWallets = wallets.map(w => {
+          if (w.id === wId) {
+              // Ajout revenu + Calcul Bunker Local
+              const newBalance = w.balance + totalIncome;
+              const newBunker = applyTax ? (w.bunker || 0) + taxAmount : (w.bunker || 0);
+              return { ...w, balance: newBalance, bunker: newBunker };
+          }
+          return w;
+      });
 
       // 2. Créer la transaction de revenu
-      const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+      const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString(), walletId: wId };
       let newTransactions = [incomeTx, ...transactions];
 
-      // 3. Si Taxe appliquée, verser au Bunker (par défaut plus sûr)
-      if (applyTax && taxAmount > 0) {
-          // Priorité : Bunker pour la sécurité absolue
-          setBunker(bunker + taxAmount);
-      }
-
+      setWallets(updatedWallets);
       setTransactions(newTransactions);
       setPendingTransaction(null);
       setShowTaxModal(false);
@@ -470,13 +448,21 @@ function Dashboard({ onNavigate }) {
       if (!bunkerAmount) return;
       const val = parseFloat(bunkerAmount);
       
+      const targetWallet = wallets.find(w => w.id === bunkerWalletId);
+      if (!targetWallet) return;
+
       if (action === 'deposit') {
-          if (val > availableCash) return alert("Fonds insuffisants.");
-          setBunker(bunker + val);
-          // L'argent est techniquement "toujours là" dans balance, mais retiré de availableCash par le calcul
+          // On vérifie le dispo DU WALLET SPECIFIQUE
+          const availableInWallet = targetWallet.balance - (targetWallet.bunker || 0);
+          if (val > availableInWallet) return alert(`Fonds insuffisants sur ${targetWallet.name}.`);
+          
+          const updatedWallets = wallets.map(w => w.id === bunkerWalletId ? { ...w, bunker: (w.bunker || 0) + val } : w);
+          setWallets(updatedWallets);
+
       } else if (action === 'withdraw') {
-          if (val > bunker) return alert("Fonds insuffisants dans le Bunker.");
-          setBunker(bunker - val);
+          if (val > (targetWallet.bunker || 0)) return alert(`Fonds insuffisants dans le Bunker de ${targetWallet.name}.`);
+          const updatedWallets = wallets.map(w => w.id === bunkerWalletId ? { ...w, bunker: (w.bunker || 0) - val } : w);
+          setWallets(updatedWallets);
       }
       setBunkerAmount('');
       setIsBunkerModalOpen(false);
@@ -521,7 +507,7 @@ function Dashboard({ onNavigate }) {
                  <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
                  <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Solde Disponible</p>
                  <span className={`text-3xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></span>
-                 <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Lock className="w-2 h-2"/> Total (Tout compris): {formatMoney(balance)}</p>
+                 <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Lock className="w-2 h-2"/> Total (Tout compris): {formatMoney(totalBalance)}</p>
             </div>
 
             <div className="w-full h-1 bg-gray-900 mt-2">
@@ -544,14 +530,37 @@ function Dashboard({ onNavigate }) {
              </div>
         </div>
 
+        {/* === SECTION SILOS (NOUVEAU) === */}
+        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar snap-x">
+             {wallets.map(w => {
+                 const avail = w.balance - (w.bunker || 0);
+                 const hasBunker = (w.bunker || 0) > 0;
+                 return (
+                     <div key={w.id} className="snap-center min-w-[140px] bg-[#1a1a1a] border border-white/5 rounded-xl p-3 flex flex-col justify-between group">
+                         <div className="flex items-start justify-between mb-2">
+                             <div className={`p-1.5 rounded-lg ${w.type === 'cash' ? 'bg-green-900/20 text-green-500' : 'bg-blue-900/20 text-blue-500'}`}>
+                                 {w.type === 'cash' ? <Banknote className="w-3 h-3"/> : <Smartphone className="w-3 h-3"/>}
+                             </div>
+                             {hasBunker && <Lock className="w-3 h-3 text-gold opacity-50"/>}
+                         </div>
+                         <div>
+                             <p className="text-[9px] text-gray-400 font-bold uppercase truncate mb-1">{w.name}</p>
+                             <p className="text-white font-bold text-sm">{formatMoney(avail)}</p>
+                             {hasBunker && <p className="text-[9px] text-gold mt-1">+{formatMoney(w.bunker)} Securisé</p>}
+                         </div>
+                     </div>
+                 )
+             })}
+        </div>
+
         {/* === CARTE BUNKER === */}
         <div onClick={() => setIsBunkerModalOpen(true)} className="bg-[#1a1505] border border-gold/30 rounded-xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:bg-[#251e08] group relative overflow-hidden">
              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
              <div className="flex items-center gap-4 relative z-10">
                  <div className="p-3 bg-gold/10 rounded-full border border-gold/20 text-gold"><Landmark className="w-6 h-6"/></div>
                  <div>
-                     <p className="text-[9px] text-gold uppercase tracking-widest font-bold mb-1">Réserve de Guerre</p>
-                     <h3 className="text-xl font-bold text-white font-serif tracking-wide">{formatMoney(bunker)} {currency}</h3>
+                     <p className="text-[9px] text-gold uppercase tracking-widest font-bold mb-1">Réserve de Guerre Totale</p>
+                     <h3 className="text-xl font-bold text-white font-serif tracking-wide">{formatMoney(totalBunker)} {currency}</h3>
                  </div>
              </div>
              <ChevronRight className="w-5 h-5 text-gold/50 group-hover:text-gold relative z-10" />
@@ -604,10 +613,24 @@ function Dashboard({ onNavigate }) {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
             <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Opération</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
-            <div className="flex bg-black p-1 rounded-lg mb-6 border border-white/5">
+            
+            <div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5">
                 <button onClick={() => setTransactionType('expense')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
                 <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
             </div>
+            
+            {/* SELECTION DU WALLET */}
+            <div className="mb-4">
+                 <label className="text-[10px] text-gray-500 uppercase font-bold mb-2 block">Compte concerné</label>
+                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                     {wallets.map(w => (
+                         <button key={w.id} onClick={() => setSelectedWalletId(w.id)} className={`px-4 py-2 rounded-lg border text-xs font-bold whitespace-nowrap transition-all ${selectedWalletId === w.id ? 'border-gold bg-gold/10 text-white' : 'border-white/10 bg-[#111] text-gray-500'}`}>
+                             {w.name}
+                         </button>
+                     ))}
+                 </div>
+             </div>
+
             {transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}
             {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (
                  <div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Avertissement du Sergent</p><p className="text-gray-300 text-xs leading-relaxed mt-1">Cette dépense équivaut à <span className="text-white font-bold">{daysLost} jours</span> de survie.<br/>Est-ce que ça en vaut vraiment la peine ?</p></div></div>
@@ -635,10 +658,22 @@ function Dashboard({ onNavigate }) {
                  <button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button>
              </div>
 
-             <div className="text-center mb-8">
-                 <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Fonds Sécurisés</p>
-                 <h2 className="text-4xl font-bold text-white font-serif">{formatMoney(bunker)} {currency}</h2>
-                 <p className="text-xs text-gray-500 mt-2 px-6">Cet argent est exclu de votre ration quotidienne. C'est votre dernier rempart.</p>
+             <div className="text-center mb-4">
+                 <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Sécurisé</p>
+                 <h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2>
+                 <p className="text-xs text-gray-500 mt-2 px-6">Sélectionnez le compte où l'argent doit être verrouillé.</p>
+             </div>
+
+             {/* CHOIX DU COMPTE POUR LE BUNKER */}
+             <div className="mb-6">
+                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar justify-center">
+                     {wallets.map(w => (
+                         <button key={w.id} onClick={() => setBunkerWalletId(w.id)} className={`px-4 py-3 rounded-xl border text-xs font-bold whitespace-nowrap transition-all flex flex-col items-center gap-1 ${bunkerWalletId === w.id ? 'border-gold bg-gold/10 text-white' : 'border-white/10 bg-[#111] text-gray-500'}`}>
+                             <span>{w.name}</span>
+                             <span className="text-[9px] opacity-70">Dispo: {formatMoney(w.balance - (w.bunker || 0))}</span>
+                         </button>
+                     ))}
+                 </div>
              </div>
 
              <div className="space-y-4">
@@ -647,11 +682,11 @@ function Dashboard({ onNavigate }) {
                  <div className="flex gap-3">
                      <button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 hover:bg-red-900/20 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-colors">
                          <Unlock className="w-4 h-4"/>
-                         <span>Retirer (Urgence)</span>
+                         <span>Libérer</span>
                      </button>
                      <button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-gold text-black py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 hover:bg-yellow-400 transition-colors shadow-[0_0_20px_rgba(212,175,55,0.2)]">
                          <Lock className="w-4 h-4"/>
-                         <span>Sécuriser</span>
+                         <span>Verrouiller Ici</span>
                      </button>
                  </div>
              </div>
@@ -675,7 +710,7 @@ function Dashboard({ onNavigate }) {
                       
                       <div className="w-full bg-gray-900 rounded-lg p-4 mb-6 border border-white/5">
                           <div className="flex justify-between text-xs mb-2">
-                              <span className="text-gray-500">Revenu Total</span>
+                              <span className="text-gray-500">Revenu Total ({wallets.find(w => w.id === pendingTransaction.walletId)?.name})</span>
                               <span className="text-white font-bold">{formatMoney(pendingTransaction.value)} {currency}</span>
                           </div>
                           <div className="flex justify-between text-sm">
@@ -1339,10 +1374,23 @@ function ProjectScreen({ onBack }) {
 
 function SettingsScreen({ onBack }) { 
     const [importData, setImportData] = useState("");
-    const [currentBalance, setCurrentBalance] = useState(() => JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+    const [wallets, setWallets] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('imperium_wallets') || JSON.stringify(DEFAULT_WALLETS)); } catch { return DEFAULT_WALLETS; }
+    });
+
+    const handleWalletUpdate = (id, newVal) => {
+        const val = parseFloat(newVal);
+        const updated = wallets.map(w => w.id === id ? { ...w, balance: isNaN(val) ? 0 : val } : w);
+        setWallets(updated);
+        localStorage.setItem('imperium_wallets', JSON.stringify(updated));
+        // UPDATE GLOBAL BALANCE FOR LEGACY COMPAT
+        const total = updated.reduce((acc, w) => acc + w.balance, 0);
+        localStorage.setItem('imperium_balance', JSON.stringify(total));
+    };
 
     const handleExport = () => { 
         const data = { 
+            wallets: localStorage.getItem('imperium_wallets'),
             balance: localStorage.getItem('imperium_balance'), 
             transactions: localStorage.getItem('imperium_transactions'), 
             projects: localStorage.getItem('imperium_projects'),
@@ -1363,6 +1411,7 @@ function SettingsScreen({ onBack }) {
         try { 
             if(!importData) return; 
             const decoded = JSON.parse(atob(importData)); 
+            if(decoded.wallets) localStorage.setItem('imperium_wallets', decoded.wallets);
             if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); 
             if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); 
             if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects);
@@ -1380,12 +1429,6 @@ function SettingsScreen({ onBack }) {
     }; 
     
     const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; 
-    
-    const handleBalanceUpdate = () => {
-        localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(currentBalance)));
-        alert("✅ Trésorerie calibrée.");
-        window.location.reload();
-    };
 
     return (
         <PageTransition>
@@ -1397,15 +1440,24 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="p-5 space-y-8 flex-1 overflow-y-auto">
                     
+                    {/* CALIBRAGE DES SILOS (Correctif) */}
                     <div className="bg-[#111] p-5 rounded-xl border border-white/5">
-                         <div className="flex items-center gap-3 mb-3">
+                         <div className="flex items-center gap-3 mb-4">
                             <div className="p-2 bg-yellow-900/20 text-gold rounded-lg"><Edit3 className="w-5 h-5"/></div>
-                            <div><h3 className="text-sm font-bold text-gray-200">Calibrage Financier</h3><p className="text-[10px] text-gray-500">Correction d'erreur de saisie.</p></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Calibrage des Silos</h3><p className="text-[10px] text-gray-500">Ajustez manuellement chaque compte.</p></div>
                         </div>
-                        <p className="text-[10px] text-gray-500 mb-3 leading-relaxed">Utilisez ceci uniquement si votre solde actuel ne reflète pas la réalité (erreur lors de l'Onboarding).</p>
-                        <div className="flex gap-2">
-                             <input type="number" value={currentBalance} onChange={(e) => setCurrentBalance(e.target.value)} className="flex-1 bg-black border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold outline-none" placeholder="Nouveau Solde" />
-                             <button onClick={handleBalanceUpdate} className="bg-white/10 text-white font-bold px-4 rounded-lg text-xs uppercase hover:bg-white/20">Corriger</button>
+                        <div className="space-y-3">
+                            {wallets.map(w => (
+                                <div key={w.id}>
+                                    <label className="text-[10px] text-gray-500 uppercase font-bold block mb-1">{w.name}</label>
+                                    <input 
+                                        type="number" 
+                                        value={w.balance || 0} 
+                                        onChange={(e) => handleWalletUpdate(w.id, e.target.value)}
+                                        className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold outline-none" 
+                                    />
+                                </div>
+                            ))}
                         </div>
                     </div>
 
