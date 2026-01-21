@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -65,11 +65,11 @@ const BUSINESS_IDEAS = {
 };
 
 const TUTORIAL_STEPS = [
-    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. Ici, chaque décision a une conséquence immédiate.", icon: Shield },
-    { title: "LA LOI DE L'IMPACT (Nouveau)", text: "Votre ration quotidienne est calculée selon les jours restants. Si vous dépensez MOINS aujourd'hui, votre ration de demain AUGMENTE. Si vous dépensez trop, elle chute.", icon: TrendingUp },
-    { title: "SURVEILLANCE ACTIVE", text: "L'application compare en temps réel vos dépenses du jour avec votre ration. Restez dans le vert pour survivre.", icon: Zap },
+    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. L'interface a été optimisée pour une clarté maximale.", icon: Shield },
+    { title: "LE HUD (Nouveau)", text: "Votre Solde, votre Ration et vos Dépenses du jour sont maintenant regroupés en une seule carte principale en haut de l'écran.", icon: LayoutGrid },
+    { title: "LA LOI DE L'IMPACT", text: "Votre ration est dynamique. Moins vous dépensez aujourd'hui, plus votre ration de demain augmente.", icon: TrendingUp },
+    { title: "NAVIGATION RAPIDE", text: "Les Protocoles, Dettes et Cibles sont accessibles via la barre d'icônes compacte au centre.", icon: Zap },
     { title: "CONQUÊTE", text: "Gérez vos projets et fixez des deadlines. L'Empire ne tolère pas la procrastination.", icon: Castle },
-    { title: "LE RADAR DE DETTES", text: "L'IA surveille votre trésorerie et vous ordonne de payer vos dettes quand le moment est venu.", icon: AlertTriangle },
     { title: "ARCHIVES", text: "Sauvegardez votre Empire via les Paramètres.", icon: Save }
 ];
 
@@ -107,7 +107,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.8</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.9 HUD</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -239,10 +239,7 @@ function Dashboard({ onNavigate }) {
   const [expenseCategory, setExpenseCategory] = useState('need'); 
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [todaysQuote, setTodaysQuote] = useState("");
-
-  useEffect(() => { const dayIndex = new Date().getDate() % QUOTES.length; setTodaysQuote(QUOTES[dayIndex]); }, []);
-
+  
   // --- LOGIQUE TEMPORELLE & RATION ---
   const today = new Date();
   const currentDay = today.getDate();
@@ -273,17 +270,16 @@ function Dashboard({ onNavigate }) {
   const availableCash = balance - lockedCash;
   
   // ALLOCATION DYNAMIQUE "FIN DE MOIS"
-  // On divise le solde disponible par les jours restants
   const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
 
   // ANALYSE DU COMPORTEMENT DU JOUR
-  let dailyStatus = { text: "Journée Vierge", color: "text-gray-500" };
+  let dailyStatus = { text: "Stable", color: "text-gray-500" };
   if (spentToday > dailyAllocation) {
-      dailyStatus = { text: "Ration Dépassée ⚠️", color: "text-red-500", desc: "Votre ration de demain va diminuer." };
+      dailyStatus = { text: "Critique ⚠️", color: "text-red-500" };
   } else if (spentToday > dailyAllocation * 0.8) {
-      dailyStatus = { text: "Zone Critique", color: "text-orange-500", desc: "Attention, vous frôlez la limite." };
+      dailyStatus = { text: "Attention", color: "text-orange-500" };
   } else if (spentToday > 0) {
-      dailyStatus = { text: "Discipline Active", color: "text-green-500", desc: "Excellent. Votre ration de demain augmentera." };
+      dailyStatus = { text: "Excellent", color: "text-green-500" };
   }
 
   const dailySurvivalCost = Math.max(availableCash / 30, 1);
@@ -314,97 +310,89 @@ function Dashboard({ onNavigate }) {
 
   return (
     <PageTransition>
-    <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-32 flex flex-col relative shadow-2xl">
+    <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-40 flex flex-col relative shadow-2xl">
       
       <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
          <div className="flex gap-2">
              <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><BarChart3 className="w-5 h-5"/></button>
-             <button onClick={() => onNavigate('goals')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><Target className="w-5 h-5"/></button>
          </div>
          <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
          <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white"><Settings className="w-5 h-5"/></button>
       </header>
 
-      <div className="w-full px-4 mt-6">
-        <div className="flex justify-between items-center mb-4">
-             <p className="text-[10px] text-gray-500 uppercase tracking-widest flex items-center gap-1"><Hourglass className="w-3 h-3"/> Jour {currentDay}/{daysInMonth}</p>
-             <p className="text-[10px] text-gray-500 uppercase tracking-widest">{Math.round(monthProgress)}% du mois écoulé</p>
-        </div>
-
-        <div className="mb-6 flex items-start gap-3 opacity-70"><Quote className="w-4 h-4 text-gold shrink-0 mt-0.5" /><p className="text-xs text-gray-400 italic font-serif leading-relaxed">"{todaysQuote}"</p></div>
-        <div className="flex justify-between items-end">
-            <div className="flex flex-col items-start"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Grade</p><div className="flex items-center gap-2"><RankIcon className={`w-4 h-4 ${rank.color}`} /><h2 className={`text-lg font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2></div></div>
-            <div className="flex flex-col items-end"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Discipline</p><div className={`flex items-center gap-2 px-3 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}><Flame className={`w-4 h-4 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} /><span className={`text-lg font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span></div></div>
+      <div className="w-full px-4 mt-4">
+        <div className="flex justify-between items-end mb-4">
+            <div className="flex flex-col items-start"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Grade</p><div className="flex items-center gap-2"><RankIcon className={`w-4 h-4 ${rank.color}`} /><h2 className={`text-sm font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2></div></div>
+            <div className="flex flex-col items-end"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Discipline</p><div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}><Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} /><span className={`text-sm font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span></div></div>
         </div>
       </div>
 
-      <main className="w-full px-4 grid gap-3 mt-6">
-        <div className={`bg-[#111] border rounded-xl p-5 relative overflow-hidden flex flex-col items-center justify-center transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
-            <div className="flex items-center gap-2 mb-2 opacity-60 absolute top-4 left-4"><Shield className="w-3 h-3 text-gold" /><h2 className="font-serif text-gray-400 tracking-wide text-[9px] font-bold uppercase">Solde Disponible</h2></div>
-            <div className="text-center py-4 mt-2">
-                <span className={`text-4xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-lg text-gray-500">{currency}</span></span>
-                {lockedCash > 0 && <p className="text-[10px] text-gray-500 mt-2 flex items-center justify-center gap-1"><Lock className="w-3 h-3"/> Fortune Totale : {formatMoney(balance)} {currency}</p>}
-            </div>
-            
-            {/* NOUVELLE SECTION: RATION DYNAMIQUE & FEEDBACK */}
-            <div className="w-full mt-4 pt-4 border-t border-white/10">
-                 <div className="flex justify-between items-center mb-2">
-                     <span className="text-[10px] text-gray-500 uppercase tracking-widest">Ration Journalière (J-{daysRemaining})</span>
-                     <div className="flex items-center gap-2">
-                         <Flame className={`w-4 h-4 ${dailyAllocation < 500 ? 'text-orange-500' : 'text-gold'}`}/>
-                         <span className="font-bold text-white font-serif">{formatMoney(dailyAllocation)} {currency}</span>
-                     </div>
-                 </div>
+      <main className="w-full px-4 grid gap-3">
+        {/* === LE HUD (HEADS UP DISPLAY) - FUSION DE SOLDE, RATION & FEEDBACK === */}
+        <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
+            <div className="p-5 pb-2 text-center relative">
+                 {/* Indicateur de mois discret */}
+                 <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
                  
-                 <div className="bg-black/40 rounded-lg p-3 flex items-center justify-between border border-white/5">
-                     <div className="flex flex-col">
-                         <span className="text-[9px] text-gray-500 uppercase mb-1">Dépensé Aujourd'hui</span>
-                         <span className={`text-sm font-bold ${spentToday > dailyAllocation ? 'text-red-500' : 'text-white'}`}>{formatMoney(spentToday)} {currency}</span>
-                     </div>
-                     <div className="text-right">
-                         <span className={`text-[10px] font-bold uppercase ${dailyStatus.color}`}>{dailyStatus.text}</span>
-                         {dailyStatus.desc && <p className="text-[9px] text-gray-500 mt-0.5">{dailyStatus.desc}</p>}
-                     </div>
-                 </div>
+                 <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Solde Disponible</p>
+                 <span className={`text-3xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></span>
+                 {lockedCash > 0 && <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Lock className="w-2 h-2"/> Total: {formatMoney(balance)}</p>}
             </div>
+
+            {/* BARRE DE PROGRESSION DU MOIS */}
+            <div className="w-full h-1 bg-gray-900 mt-2">
+                <div className="h-full bg-blue-500/30" style={{ width: `${monthProgress}%` }}></div>
+            </div>
+
+            {/* RATION & SPENT SPLIT VIEW */}
+            <div className="grid grid-cols-2 divide-x divide-white/10 bg-white/5">
+                <div className="p-3 text-center">
+                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Ration (J-{daysRemaining})</p>
+                     <p className={`text-lg font-bold ${dailyAllocation < 500 ? 'text-orange-500' : 'text-white'}`}>{formatMoney(dailyAllocation)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
+                </div>
+                <div className="p-3 text-center relative">
+                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Dépensé 24h</p>
+                     <p className={`text-lg font-bold ${spentToday > dailyAllocation ? 'text-red-500' : 'text-white'}`}>{formatMoney(spentToday)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
+                     <span className={`absolute top-2 right-2 w-2 h-2 rounded-full ${dailyStatus.color === 'text-green-500' ? 'bg-green-500' : dailyStatus.color === 'text-red-500' ? 'bg-red-500' : 'bg-gray-700'}`}></span>
+                </div>
+            </div>
+            {/* MESSAGE DU SERGENT */}
+             <div className="p-2 text-center bg-black/40 border-t border-white/5">
+                <p className={`text-[10px] ${dailyStatus.color} font-bold uppercase tracking-widest`}>STATUT : {dailyStatus.text}</p>
+             </div>
         </div>
 
         {debtToPay && (
-            <div className="bg-[#1a0f0f] p-4 rounded-xl border border-red-900/30 animate-in slide-in-from-right">
-                <div className="flex items-start gap-3">
-                    <div className="p-2 bg-red-900/20 text-red-500 rounded-lg shrink-0"><AlertTriangle className="w-4 h-4"/></div>
-                    <div className="flex-1">
-                        <p className="text-[10px] text-red-400 uppercase tracking-widest font-bold mb-1">Opportunité Stratégique</p>
-                        <p className="text-xs text-gray-300 leading-relaxed mb-3">Commandant, vos réserves permettent d'éliminer la dette envers <span className="text-white font-bold">{debtToPay.name}</span> ({formatMoney(debtToPay.amount)} {currency}). Honorer cette dette renforcera votre structure.</p>
-                        <button onClick={() => onNavigate('debts')} className="bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/50 text-[10px] font-bold uppercase py-2 px-4 rounded transition-colors w-full">Accéder au Registre</button>
-                    </div>
+            <div className="bg-[#1a0f0f] p-3 rounded-xl border border-red-900/30 animate-in slide-in-from-right flex items-center gap-3">
+                <div className="p-2 bg-red-900/20 text-red-500 rounded-lg shrink-0"><AlertTriangle className="w-4 h-4"/></div>
+                <div className="flex-1">
+                    <p className="text-[9px] text-red-400 uppercase tracking-widest font-bold">Dette Prioritaire</p>
+                    <p className="text-xs text-white font-bold">{debtToPay.name} : {formatMoney(debtToPay.amount)} {currency}</p>
                 </div>
+                <button onClick={() => onNavigate('debts')} className="text-xs text-red-400 font-bold uppercase border border-red-900/50 px-3 py-1.5 rounded bg-red-900/10">Payer</button>
             </div>
         )}
 
-        <div onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-900/20 text-indigo-500 rounded-lg"><Repeat className="w-5 h-5"/></div>
-                <div><h3 className="text-sm font-bold text-gray-200">Protocoles</h3><p className="text-[10px] text-gray-500">{protocols.length === 0 ? "Gérer abonnements & rentes" : `${protocols.length} Flux Automatiques`}</p></div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
+        {/* === MENU RAPIDE HORIZONTAL (GAIN DE PLACE) === */}
+        <div className="grid grid-cols-3 gap-2 mt-2">
+            <button onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
+                <div className="text-indigo-500"><Repeat className="w-5 h-5"/></div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Protocoles</span>
+            </button>
+            <button onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
+                 <div className="text-purple-500"><Scroll className="w-5 h-5"/></div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Registre</span>
+            </button>
+            <button onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
+                 <div className="text-blue-500"><Target className="w-5 h-5"/></div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Cibles</span>
+            </button>
         </div>
 
-        <div onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-900/20 text-purple-500 rounded-lg"><Scroll className="w-5 h-5"/></div>
-                <div><h3 className="text-sm font-bold text-gray-200">Registre</h3><p className="text-[10px] text-gray-500">Dettes & Créances</p></div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
-        </div>
-
-        <div onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
-            <div className="flex items-center gap-3"><div className="p-2 bg-blue-900/20 text-blue-500 rounded-lg"><Target className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Cibles</h3><p className="text-[10px] text-gray-500">{goals.length === 0 ? "Définir un objectif" : `${goals.length} Cibles`}</p></div></div><ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-            <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Sword className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3><p className="text-[9px] text-gray-500 mt-1">Générer du cash</p></div>
-            <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Castle className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">{projects.length} Front(s) Actif(s)</p></div>
+        {/* === GRILLE PRINCIPALE === */}
+        <div className="grid grid-cols-2 gap-3 mt-1">
+            <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Sword className="w-5 h-5 text-gold opacity-80" /></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3><p className="text-[9px] text-gray-500 mt-1">Compétences & Business</p></div></div>
+            <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Castle className="w-5 h-5 text-gold opacity-80" /><span className="text-[10px] font-bold text-gray-500">{projects.length}</span></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">Projets Stratégiques</p></div></div>
         </div>
       </main>
 
