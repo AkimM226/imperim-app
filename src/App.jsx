@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -38,10 +38,9 @@ const STRATEGIC_QUESTIONS = [
 
 const QUOTES = [
   "Le temps est la seule ressource qu'on ne peut pas récupérer.",
-  "Les dettes sont l'esclavage des hommes libres.",
-  "La discipline est mère du succès.",
-  "Ce n'est pas parce que les choses sont difficiles que nous n'osons pas, c'est parce que nous n'osons pas qu'elles sont difficiles.",
-  "L'homme qui déplace une montagne commence par déplacer de petites pierres.",
+  "La discipline d'aujourd'hui achète la liberté de demain.",
+  "Contrôle ton argent, ou c'est lui qui te contrôlera.",
+  "Chaque pièce économisée est un soldat qui rejoint tes rangs.",
   "La richesse consiste bien plus dans l'usage qu'on en fait que dans la possession.",
   "Fais ce que tu dois, advienne que pourra."
 ];
@@ -66,12 +65,11 @@ const BUSINESS_IDEAS = {
 };
 
 const TUTORIAL_STEPS = [
-    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. Ici, chaque unité de monnaie est un soldat sous vos ordres.", icon: Shield },
-    { title: "LE TEMPS C'EST DE L'ARGENT (Nouveau)", text: "Observez la barre en haut du Dashboard. Elle montre la progression du mois. Adaptez vos dépenses au temps qu'il reste.", icon: Hourglass },
-    { title: "ALLOCATION DE SURVIE", text: "Le système calcule votre budget quotidien strict (Solde / 30). C'est votre limite absolue pour ne pas sombrer.", icon: Flame },
-    { title: "CONQUÊTE & DEADLINES", text: "Fixez des dates limites à vos projets. L'Empire ne tolère pas la procrastination.", icon: Castle },
+    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. Ici, chaque décision a une conséquence immédiate.", icon: Shield },
+    { title: "LA LOI DE L'IMPACT (Nouveau)", text: "Votre ration quotidienne est calculée selon les jours restants. Si vous dépensez MOINS aujourd'hui, votre ration de demain AUGMENTE. Si vous dépensez trop, elle chute.", icon: TrendingUp },
+    { title: "SURVEILLANCE ACTIVE", text: "L'application compare en temps réel vos dépenses du jour avec votre ration. Restez dans le vert pour survivre.", icon: Zap },
+    { title: "CONQUÊTE", text: "Gérez vos projets et fixez des deadlines. L'Empire ne tolère pas la procrastination.", icon: Castle },
     { title: "LE RADAR DE DETTES", text: "L'IA surveille votre trésorerie et vous ordonne de payer vos dettes quand le moment est venu.", icon: AlertTriangle },
-    { title: "LES PROTOCOLES", text: "Définissez vos rentes et charges avec leur fréquence. Le système calculera votre vraie puissance mensuelle.", icon: Repeat },
     { title: "ARCHIVES", text: "Sauvegardez votre Empire via les Paramètres.", icon: Save }
 ];
 
@@ -109,7 +107,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.6</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.8</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -232,25 +230,10 @@ function Dashboard({ onNavigate }) {
   const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
   const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
   const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
-  
-  // CHARGEMENT DES PROJETS
-  const [projects, setProjects] = useState(() => {
-     const saved = localStorage.getItem('imperium_projects');
-     if (saved) return JSON.parse(saved);
-     const oldName = localStorage.getItem('imperium_project_name');
-     const oldTasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
-     if (oldName) {
-         return [{ id: 1, title: oldName, deadline: "", tasks: oldTasks, answers: {} }];
-     }
-     return [];
-  });
+  const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_projects') || "[]"); } catch { return []; } });
 
   const currency = localStorage.getItem('imperium_currency') || "€";
   
-  const totalTasks = projects.reduce((acc, p) => acc + (p.tasks ? p.tasks.length : 0), 0);
-  const doneTasks = projects.reduce((acc, p) => acc + (p.tasks ? p.tasks.filter(t => t.done).length : 0), 0);
-  const progressPercent = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactionType, setTransactionType] = useState('expense');
   const [expenseCategory, setExpenseCategory] = useState('need'); 
@@ -260,11 +243,17 @@ function Dashboard({ onNavigate }) {
 
   useEffect(() => { const dayIndex = new Date().getDate() % QUOTES.length; setTodaysQuote(QUOTES[dayIndex]); }, []);
 
-  // CALCUL DE LA NOTION DU TEMPS (MOIS)
+  // --- LOGIQUE TEMPORELLE & RATION ---
   const today = new Date();
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const currentDay = today.getDate();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const daysRemaining = Math.max(1, daysInMonth - currentDay + 1); // +1 pour inclure aujourd'hui
   const monthProgress = (currentDay / daysInMonth) * 100;
+
+  const todayStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const spentToday = transactions
+      .filter(t => t.type === 'expense' && t.date === todayStr)
+      .reduce((acc, t) => acc + t.amount, 0);
 
   const calculateStreak = () => {
     if (transactions.length === 0) return 0;
@@ -282,7 +271,20 @@ function Dashboard({ onNavigate }) {
 
   const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
   const availableCash = balance - lockedCash;
-  const dailyAllocation = Math.max(0, Math.floor(availableCash / 30));
+  
+  // ALLOCATION DYNAMIQUE "FIN DE MOIS"
+  // On divise le solde disponible par les jours restants
+  const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
+
+  // ANALYSE DU COMPORTEMENT DU JOUR
+  let dailyStatus = { text: "Journée Vierge", color: "text-gray-500" };
+  if (spentToday > dailyAllocation) {
+      dailyStatus = { text: "Ration Dépassée ⚠️", color: "text-red-500", desc: "Votre ration de demain va diminuer." };
+  } else if (spentToday > dailyAllocation * 0.8) {
+      dailyStatus = { text: "Zone Critique", color: "text-orange-500", desc: "Attention, vous frôlez la limite." };
+  } else if (spentToday > 0) {
+      dailyStatus = { text: "Discipline Active", color: "text-green-500", desc: "Excellent. Votre ration de demain augmentera." };
+  }
 
   const dailySurvivalCost = Math.max(availableCash / 30, 1);
   const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
@@ -314,12 +316,7 @@ function Dashboard({ onNavigate }) {
     <PageTransition>
     <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-32 flex flex-col relative shadow-2xl">
       
-      {/* NOUVELLE BARRE DE TEMPS (Mois) */}
-      <div className="w-full bg-gray-900 h-1 fixed top-0 z-50">
-        <div className="h-full bg-blue-500/50" style={{ width: `${monthProgress}%` }}></div>
-      </div>
-
-      <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[calc(env(safe-area-inset-top)+4px)]">
+      <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
          <div className="flex gap-2">
              <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><BarChart3 className="w-5 h-5"/></button>
              <button onClick={() => onNavigate('goals')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><Target className="w-5 h-5"/></button>
@@ -329,10 +326,9 @@ function Dashboard({ onNavigate }) {
       </header>
 
       <div className="w-full px-4 mt-6">
-        {/* INDICATEUR DE TEMPS */}
         <div className="flex justify-between items-center mb-4">
              <p className="text-[10px] text-gray-500 uppercase tracking-widest flex items-center gap-1"><Hourglass className="w-3 h-3"/> Jour {currentDay}/{daysInMonth}</p>
-             <p className="text-[10px] text-gray-500 uppercase tracking-widest">{Math.round(monthProgress)}% du mois déployé</p>
+             <p className="text-[10px] text-gray-500 uppercase tracking-widest">{Math.round(monthProgress)}% du mois écoulé</p>
         </div>
 
         <div className="mb-6 flex items-start gap-3 opacity-70"><Quote className="w-4 h-4 text-gold shrink-0 mt-0.5" /><p className="text-xs text-gray-400 italic font-serif leading-relaxed">"{todaysQuote}"</p></div>
@@ -350,12 +346,26 @@ function Dashboard({ onNavigate }) {
                 {lockedCash > 0 && <p className="text-[10px] text-gray-500 mt-2 flex items-center justify-center gap-1"><Lock className="w-3 h-3"/> Fortune Totale : {formatMoney(balance)} {currency}</p>}
             </div>
             
-            <div className="w-full mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
-                <span className="text-[10px] text-gray-500 uppercase tracking-widest">Ration Journalière Max</span>
-                <div className="flex items-center gap-2">
-                     <Flame className={`w-4 h-4 ${dailyAllocation < 500 ? 'text-orange-500' : 'text-green-500'}`}/>
-                     <span className="font-bold text-white font-serif">{formatMoney(dailyAllocation)} {currency}</span>
-                </div>
+            {/* NOUVELLE SECTION: RATION DYNAMIQUE & FEEDBACK */}
+            <div className="w-full mt-4 pt-4 border-t border-white/10">
+                 <div className="flex justify-between items-center mb-2">
+                     <span className="text-[10px] text-gray-500 uppercase tracking-widest">Ration Journalière (J-{daysRemaining})</span>
+                     <div className="flex items-center gap-2">
+                         <Flame className={`w-4 h-4 ${dailyAllocation < 500 ? 'text-orange-500' : 'text-gold'}`}/>
+                         <span className="font-bold text-white font-serif">{formatMoney(dailyAllocation)} {currency}</span>
+                     </div>
+                 </div>
+                 
+                 <div className="bg-black/40 rounded-lg p-3 flex items-center justify-between border border-white/5">
+                     <div className="flex flex-col">
+                         <span className="text-[9px] text-gray-500 uppercase mb-1">Dépensé Aujourd'hui</span>
+                         <span className={`text-sm font-bold ${spentToday > dailyAllocation ? 'text-red-500' : 'text-white'}`}>{formatMoney(spentToday)} {currency}</span>
+                     </div>
+                     <div className="text-right">
+                         <span className={`text-[10px] font-bold uppercase ${dailyStatus.color}`}>{dailyStatus.text}</span>
+                         {dailyStatus.desc && <p className="text-[9px] text-gray-500 mt-0.5">{dailyStatus.desc}</p>}
+                     </div>
+                 </div>
             </div>
         </div>
 
