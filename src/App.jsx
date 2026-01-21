@@ -1,9 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
+
+const APP_VERSION = "14.1"; // LA VERSION ACTUELLE
+
+const RELEASE_NOTES = [
+    {
+        version: "14.1",
+        title: "Le Grand Bond",
+        desc: "Mise à jour majeure des infrastructures de l'Empire.",
+        changes: [
+            { icon: Landmark, text: "Le Bunker : Sécurisez votre argent de guerre hors de la ration quotidienne." },
+            { icon: Coins, text: "Impôt Impérial : Prélèvement automatique de 20% sur les revenus." },
+            { icon: Activity, text: "Courbe de Puissance : Visualisez votre ascension financière (Stats)." },
+            { icon: Trophy, text: "Hall of Fame : Accès rétabli aux trophées et grades." },
+            { icon: Castle, text: "Multi-Fronts : Gestion de plusieurs projets en simultané." }
+        ]
+    }
+];
 
 const CURRENCIES = [
   { code: 'XOF', symbol: 'FCFA', name: 'Franc CFA (BCEAO)' }, 
@@ -36,15 +53,6 @@ const STRATEGIC_QUESTIONS = [
     { id: 'first_step', q: "Quelle est la toute première action (gratuite) à faire ?" }
 ];
 
-const QUOTES = [
-  "Le temps est la seule ressource qu'on ne peut pas récupérer.",
-  "La discipline d'aujourd'hui achète la liberté de demain.",
-  "Contrôle ton argent, ou c'est lui qui te contrôlera.",
-  "Chaque pièce économisée est un soldat qui rejoint tes rangs.",
-  "La richesse consiste bien plus dans l'usage qu'on en fait que dans la possession.",
-  "Fais ce que tu dois, advienne que pourra."
-];
-
 const TROPHIES_DATA = [
     { id: 'savings_1', title: 'Première Pierre', desc: 'Avoir un solde positif.', icon: Shield, condition: (bal, str, projects) => bal > 0 },
     { id: 'streak_3', title: 'L\'Éveil', desc: '3 Jours de discipline sans futilités.', icon: Flame, condition: (bal, str, projects) => str >= 3 },
@@ -65,12 +73,11 @@ const BUSINESS_IDEAS = {
 };
 
 const TUTORIAL_STEPS = [
-    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. L'interface a été optimisée pour une clarté maximale.", icon: Shield },
-    { title: "LE HUD (Nouveau)", text: "Votre Solde, votre Ration et vos Dépenses du jour sont maintenant regroupés en une seule carte principale en haut de l'écran.", icon: LayoutGrid },
-    { title: "LA LOI DE L'IMPACT", text: "Votre ration est dynamique. Moins vous dépensez aujourd'hui, plus votre ration de demain augmente.", icon: TrendingUp },
-    { title: "NAVIGATION RAPIDE", text: "Les Protocoles, Dettes et Cibles sont accessibles via la barre d'icônes compacte au centre.", icon: Zap },
-    { title: "CONQUÊTE", text: "Gérez vos projets et fixez des deadlines. L'Empire ne tolère pas la procrastination.", icon: Castle },
-    { title: "ARCHIVES", text: "Sauvegardez votre Empire via les Paramètres.", icon: Save }
+    { title: "BIENVENUE, COMMANDANT", text: "Imperium v14.1 est opérationnel.", icon: Shield },
+    { title: "TROPHÉES & GRADE", text: "Cliquez sur votre Grade (Haut-Gauche) ou le bouton Trophées dans le menu pour voir vos succès.", icon: Medal },
+    { title: "LA COURBE DE PUISSANCE", text: "Dans la Salle des Cartes (Stats), visualisez l'évolution de votre fortune.", icon: Activity },
+    { title: "LE BUNKER", text: "Votre réserve de guerre. Sécurisée et invisible pour la ration.", icon: Landmark },
+    { title: "CONQUÊTE", text: "Gérez vos projets et fixez des deadlines.", icon: Castle },
 ];
 
 const getRank = (balance, currency) => {
@@ -99,6 +106,34 @@ const getDaysLeft = (targetDate) => {
 };
 
 // ==========================================
+// COMPOSANT GRAPHIQUE SVG
+// ==========================================
+const PowerChart = ({ data, color = "#D4AF37" }) => {
+    if (!data || data.length < 2) return <div className="h-32 flex items-center justify-center text-gray-600 text-xs">Données insuffisantes</div>;
+    const height = 100;
+    const width = 300;
+    const maxVal = Math.max(...data);
+    const minVal = Math.min(...data);
+    const range = maxVal - minVal || 1; 
+    const points = data.map((val, index) => {
+        const x = (index / (data.length - 1)) * width;
+        const y = height - ((val - minVal) / range) * height * 0.8 - 10; 
+        return `${x},${y}`;
+    }).join(' ');
+    const fillPoints = `${points} ${width},${height} 0,${height}`;
+    return (
+        <div className="w-full h-32 relative overflow-hidden rounded-lg bg-[#0a0a0a] border border-white/5">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full p-2">
+                <defs><linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+                <polygon points={fillPoints} fill="url(#chartGradient)" />
+                <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div className="absolute top-2 right-2 text-[9px] text-gray-500 font-mono bg-black/50 px-1 rounded">30 Jours</div>
+        </div>
+    );
+};
+
+// ==========================================
 // COMPOSANTS UX
 // ==========================================
 function SplashScreen() {
@@ -107,7 +142,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.9 HUD</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v{APP_VERSION}</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -115,6 +150,48 @@ function SplashScreen() {
 
 function PageTransition({ children }) {
     return (<div className="animate-in slide-in-from-bottom-8 fade-in duration-500 w-full flex-1 flex flex-col">{children}</div>);
+}
+
+function PatchNotesModal({ onAck }) {
+    const note = RELEASE_NOTES[0]; // On affiche le dernier patch note
+    return (
+        <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+             <div className="bg-[#151515] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5"><FileText className="w-32 h-32 text-gold" /></div>
+                
+                <div className="relative z-10">
+                     <div className="flex items-center gap-3 mb-6">
+                         <div className="w-10 h-10 bg-gold/10 rounded-full flex items-center justify-center border border-gold/20"><Info className="w-5 h-5 text-gold"/></div>
+                         <div>
+                             <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Rapport de Mise à Jour</p>
+                             <h2 className="text-white font-serif font-bold text-lg">Version {note.version}</h2>
+                         </div>
+                     </div>
+
+                     <div className="mb-6">
+                         <h3 className="text-gold font-bold text-sm uppercase mb-1">{note.title}</h3>
+                         <p className="text-gray-400 text-xs italic">{note.desc}</p>
+                     </div>
+
+                     <div className="space-y-3 mb-8">
+                         {note.changes.map((change, idx) => {
+                             const Icon = change.icon;
+                             return (
+                                 <div key={idx} className="flex gap-3 items-start bg-black/40 p-3 rounded-lg border border-white/5">
+                                     <Icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                                     <p className="text-xs text-gray-200 leading-relaxed">{change.text}</p>
+                                 </div>
+                             )
+                         })}
+                     </div>
+
+                     <button onClick={onAck} className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all active:scale-95 shadow-[0_0_20px_rgba(212,175,55,0.2)]">
+                         Reçu, Retour au combat
+                     </button>
+                </div>
+             </div>
+        </div>
+    );
 }
 
 function TutorialOverlay({ onComplete }) {
@@ -144,7 +221,13 @@ function TutorialOverlay({ onComplete }) {
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-  useEffect(() => { const timer = setTimeout(() => { setLoading(false); }, 2500); setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true'); return () => clearTimeout(timer); }, []);
+  
+  useEffect(() => { 
+      const timer = setTimeout(() => { setLoading(false); }, 2500); 
+      setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true'); 
+      return () => clearTimeout(timer); 
+  }, []);
+
   if (loading) return <SplashScreen />;
   if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
   return <MainOS />;
@@ -153,12 +236,41 @@ export default function App() {
 function MainOS() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showPatchNotes, setShowPatchNotes] = useState(false);
+
   const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
-  useEffect(() => { const tutorialDone = localStorage.getItem('imperium_tutorial_done') === 'true'; if (!tutorialDone) { setTimeout(() => setShowTutorial(true), 500); } }, []);
-  const completeTutorial = () => { localStorage.setItem('imperium_tutorial_done', 'true'); setShowTutorial(false); };
+  
+  // GESTION DU TUTORIEL ET DU PATCH NOTE
+  useEffect(() => { 
+      const tutorialDone = localStorage.getItem('imperium_tutorial_done') === 'true'; 
+      const lastVersion = localStorage.getItem('imperium_version');
+      
+      // Si c'est un nouvel utilisateur (pas de tuto), on lance le tuto
+      if (!tutorialDone) { 
+          setTimeout(() => setShowTutorial(true), 500); 
+      } 
+      // Si c'est un ancien utilisateur mais nouvelle version, on lance le Patch Note
+      else if (lastVersion !== APP_VERSION) {
+           setTimeout(() => setShowPatchNotes(true), 500);
+      }
+  }, []);
+  
+  const completeTutorial = () => { 
+      localStorage.setItem('imperium_tutorial_done', 'true'); 
+      localStorage.setItem('imperium_version', APP_VERSION); // Tuto fini = on est à jour
+      setShowTutorial(false); 
+  };
+
+  const ackPatchNotes = () => {
+      localStorage.setItem('imperium_version', APP_VERSION);
+      setShowPatchNotes(false);
+  };
+
   return (
     <>
         {showTutorial && <TutorialOverlay onComplete={completeTutorial} />}
+        {showPatchNotes && !showTutorial && <PatchNotesModal onAck={ackPatchNotes} />}
+        
         {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
         {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
@@ -231,20 +343,28 @@ function Dashboard({ onNavigate }) {
   const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
   const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
   const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_projects') || "[]"); } catch { return []; } });
+  const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
 
   const currency = localStorage.getItem('imperium_currency') || "€";
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
+  
+  // ETATS POUR L'IMPOT IMPERIAL
+  const [showTaxModal, setShowTaxModal] = useState(false);
+  const [pendingTransaction, setPendingTransaction] = useState(null);
+
   const [transactionType, setTransactionType] = useState('expense');
   const [expenseCategory, setExpenseCategory] = useState('need'); 
   const [amount, setAmount] = useState('');
+  const [bunkerAmount, setBunkerAmount] = useState('');
   const [description, setDescription] = useState('');
   
   // --- LOGIQUE TEMPORELLE & RATION ---
   const today = new Date();
   const currentDay = today.getDate();
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const daysRemaining = Math.max(1, daysInMonth - currentDay + 1); // +1 pour inclure aujourd'hui
+  const daysRemaining = Math.max(1, daysInMonth - currentDay + 1); 
   const monthProgress = (currentDay / daysInMonth) * 100;
 
   const todayStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
@@ -267,9 +387,8 @@ function Dashboard({ onNavigate }) {
   const RankIcon = rank.icon;
 
   const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
-  const availableCash = balance - lockedCash;
-  
-  // ALLOCATION DYNAMIQUE "FIN DE MOIS"
+  // CALCUL CRUCIAL : Disponible = Total - Cibles - Bunker
+  const availableCash = balance - lockedCash - bunker;
   const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
 
   // ANALYSE DU COMPORTEMENT DU JOUR
@@ -293,19 +412,74 @@ function Dashboard({ onNavigate }) {
     localStorage.setItem('imperium_balance', JSON.stringify(balance));
     localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
     localStorage.setItem('imperium_projects', JSON.stringify(projects));
-  }, [balance, transactions, projects]);
+    localStorage.setItem('imperium_goals', JSON.stringify(goals));
+    localStorage.setItem('imperium_bunker', JSON.stringify(bunker));
+  }, [balance, transactions, projects, goals, bunker]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!amount) return;
     const value = parseFloat(amount);
+    
+    // INTERCEPTION DE L'IMPÔT IMPÉRIAL
+    if (transactionType === 'income' && (goals.length > 0 || bunker >= 0)) {
+        setPendingTransaction({ value, description });
+        setShowTaxModal(true);
+        setIsModalOpen(false);
+        setAmount(''); setDescription('');
+        return;
+    }
+
+    // TRAITEMENT NORMAL (DEPENSE ou REVENU SANS CIBLE)
     const newBalance = transactionType === 'expense' ? balance - value : balance + value;
     let finalDesc = description;
     if (transactionType === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${description}`;
+    
     const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+    
     setBalance(newBalance);
     setTransactions([newTransaction, ...transactions]);
     setAmount(''); setDescription(''); setIsModalOpen(false);
+  };
+
+  const processIncomeWithTax = (applyTax) => {
+      if (!pendingTransaction) return;
+      const totalIncome = pendingTransaction.value;
+      const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0; // 20% TAX
+      const incomeDesc = pendingTransaction.description || "Revenu";
+
+      // 1. Ajouter le revenu total à la balance
+      setBalance(balance + totalIncome);
+
+      // 2. Créer la transaction de revenu
+      const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+      let newTransactions = [incomeTx, ...transactions];
+
+      // 3. Si Taxe appliquée, verser au Bunker (par défaut plus sûr)
+      if (applyTax && taxAmount > 0) {
+          // Priorité : Bunker pour la sécurité absolue
+          setBunker(bunker + taxAmount);
+      }
+
+      setTransactions(newTransactions);
+      setPendingTransaction(null);
+      setShowTaxModal(false);
+  };
+
+  const handleBunkerAction = (action) => {
+      if (!bunkerAmount) return;
+      const val = parseFloat(bunkerAmount);
+      
+      if (action === 'deposit') {
+          if (val > availableCash) return alert("Fonds insuffisants.");
+          setBunker(bunker + val);
+          // L'argent est techniquement "toujours là" dans balance, mais retiré de availableCash par le calcul
+      } else if (action === 'withdraw') {
+          if (val > bunker) return alert("Fonds insuffisants dans le Bunker.");
+          setBunker(bunker - val);
+      }
+      setBunkerAmount('');
+      setIsBunkerModalOpen(false);
   };
 
   return (
@@ -321,30 +495,39 @@ function Dashboard({ onNavigate }) {
       </header>
 
       <div className="w-full px-4 mt-4">
+        {/* === HEADER CLICKABLE POUR LES TROPHÉES === */}
         <div className="flex justify-between items-end mb-4">
-            <div className="flex flex-col items-start"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Grade</p><div className="flex items-center gap-2"><RankIcon className={`w-4 h-4 ${rank.color}`} /><h2 className={`text-sm font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2></div></div>
-            <div className="flex flex-col items-end"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Discipline</p><div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}><Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} /><span className={`text-sm font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span></div></div>
+            <button onClick={() => onNavigate('trophies')} className="flex flex-col items-start group active:scale-95 transition-transform">
+                <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-gold transition-colors">Grade</p>
+                <div className="flex items-center gap-2">
+                    <RankIcon className={`w-4 h-4 ${rank.color}`} />
+                    <h2 className={`text-sm font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2>
+                </div>
+            </button>
+            <button onClick={() => onNavigate('trophies')} className="flex flex-col items-end group active:scale-95 transition-transform">
+                <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-orange-500 transition-colors">Discipline</p>
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}>
+                    <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
+                    <span className={`text-sm font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span>
+                </div>
+            </button>
         </div>
       </div>
 
       <main className="w-full px-4 grid gap-3">
-        {/* === LE HUD (HEADS UP DISPLAY) - FUSION DE SOLDE, RATION & FEEDBACK === */}
+        {/* === LE HUD (HEADS UP DISPLAY) === */}
         <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
             <div className="p-5 pb-2 text-center relative">
-                 {/* Indicateur de mois discret */}
                  <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
-                 
                  <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Solde Disponible</p>
                  <span className={`text-3xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></span>
-                 {lockedCash > 0 && <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Lock className="w-2 h-2"/> Total: {formatMoney(balance)}</p>}
+                 <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Lock className="w-2 h-2"/> Total (Tout compris): {formatMoney(balance)}</p>
             </div>
 
-            {/* BARRE DE PROGRESSION DU MOIS */}
             <div className="w-full h-1 bg-gray-900 mt-2">
                 <div className="h-full bg-blue-500/30" style={{ width: `${monthProgress}%` }}></div>
             </div>
 
-            {/* RATION & SPENT SPLIT VIEW */}
             <div className="grid grid-cols-2 divide-x divide-white/10 bg-white/5">
                 <div className="p-3 text-center">
                      <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Ration (J-{daysRemaining})</p>
@@ -356,10 +539,22 @@ function Dashboard({ onNavigate }) {
                      <span className={`absolute top-2 right-2 w-2 h-2 rounded-full ${dailyStatus.color === 'text-green-500' ? 'bg-green-500' : dailyStatus.color === 'text-red-500' ? 'bg-red-500' : 'bg-gray-700'}`}></span>
                 </div>
             </div>
-            {/* MESSAGE DU SERGENT */}
              <div className="p-2 text-center bg-black/40 border-t border-white/5">
                 <p className={`text-[10px] ${dailyStatus.color} font-bold uppercase tracking-widest`}>STATUT : {dailyStatus.text}</p>
              </div>
+        </div>
+
+        {/* === CARTE BUNKER === */}
+        <div onClick={() => setIsBunkerModalOpen(true)} className="bg-[#1a1505] border border-gold/30 rounded-xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:bg-[#251e08] group relative overflow-hidden">
+             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+             <div className="flex items-center gap-4 relative z-10">
+                 <div className="p-3 bg-gold/10 rounded-full border border-gold/20 text-gold"><Landmark className="w-6 h-6"/></div>
+                 <div>
+                     <p className="text-[9px] text-gold uppercase tracking-widest font-bold mb-1">Réserve de Guerre</p>
+                     <h3 className="text-xl font-bold text-white font-serif tracking-wide">{formatMoney(bunker)} {currency}</h3>
+                 </div>
+             </div>
+             <ChevronRight className="w-5 h-5 text-gold/50 group-hover:text-gold relative z-10" />
         </div>
 
         {debtToPay && (
@@ -373,19 +568,23 @@ function Dashboard({ onNavigate }) {
             </div>
         )}
 
-        {/* === MENU RAPIDE HORIZONTAL (GAIN DE PLACE) === */}
-        <div className="grid grid-cols-3 gap-2 mt-2">
-            <button onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
-                <div className="text-indigo-500"><Repeat className="w-5 h-5"/></div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Protocoles</span>
+        {/* === MENU RAPIDE HORIZONTAL (4 SLOTS) === */}
+        <div className="grid grid-cols-4 gap-2 mt-2">
+            <button onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                <div className="text-indigo-500"><Repeat className="w-4 h-4"/></div>
+                <span className="text-[9px] font-bold text-gray-400 uppercase">Protocoles</span>
             </button>
-            <button onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
-                 <div className="text-purple-500"><Scroll className="w-5 h-5"/></div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Registre</span>
+            <button onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                 <div className="text-purple-500"><Scroll className="w-4 h-4"/></div>
+                <span className="text-[9px] font-bold text-gray-400 uppercase">Registre</span>
             </button>
-            <button onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
-                 <div className="text-blue-500"><Target className="w-5 h-5"/></div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Cibles</span>
+            <button onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                 <div className="text-blue-500"><Target className="w-4 h-4"/></div>
+                <span className="text-[9px] font-bold text-gray-400 uppercase">Cibles</span>
+            </button>
+             <button onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                 <div className="text-gold"><Trophy className="w-4 h-4"/></div>
+                <span className="text-[9px] font-bold text-gray-400 uppercase">Succès</span>
             </button>
         </div>
 
@@ -400,6 +599,7 @@ function Dashboard({ onNavigate }) {
         <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200"><Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span></button>
       </div>
 
+      {/* MODAL DE SAISIE */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
@@ -420,6 +620,83 @@ function Dashboard({ onNavigate }) {
           </div>
         </div>
       )}
+
+      {/* MODAL DU BUNKER */}
+      {isBunkerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#1a1505] border-t border-gold/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-2xl pointer-events-none"></div>
+             
+             <div className="flex justify-between items-center mb-6">
+                 <div className="flex items-center gap-2">
+                     <Landmark className="w-5 h-5 text-gold"/>
+                     <h2 className="font-serif text-gold text-sm tracking-widest uppercase font-bold">Le Bunker</h2>
+                 </div>
+                 <button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button>
+             </div>
+
+             <div className="text-center mb-8">
+                 <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Fonds Sécurisés</p>
+                 <h2 className="text-4xl font-bold text-white font-serif">{formatMoney(bunker)} {currency}</h2>
+                 <p className="text-xs text-gray-500 mt-2 px-6">Cet argent est exclu de votre ration quotidienne. C'est votre dernier rempart.</p>
+             </div>
+
+             <div className="space-y-4">
+                 <input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-black/50 border border-gold/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-gold focus:outline-none placeholder-gray-700" placeholder="0" autoFocus />
+                 
+                 <div className="flex gap-3">
+                     <button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 hover:bg-red-900/20 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-colors">
+                         <Unlock className="w-4 h-4"/>
+                         <span>Retirer (Urgence)</span>
+                     </button>
+                     <button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-gold text-black py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 hover:bg-yellow-400 transition-colors shadow-[0_0_20px_rgba(212,175,55,0.2)]">
+                         <Lock className="w-4 h-4"/>
+                         <span>Sécuriser</span>
+                     </button>
+                 </div>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE L'IMPÔT IMPÉRIAL */}
+      {showTaxModal && pendingTransaction && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+              <div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-[0_0_50px_rgba(212,175,55,0.1)] relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-bl-full"></div>
+                  <div className="flex flex-col items-center text-center">
+                      <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mb-4 border border-gold/40">
+                          <Coins className="w-8 h-8 text-gold" />
+                      </div>
+                      <h3 className="text-gold font-serif text-xl font-bold mb-2 tracking-wide uppercase">L'Impôt Impérial</h3>
+                      <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                          La règle d'or est de se payer en premier. L'Empire réclame <span className="text-white font-bold">20%</span> de ce revenu pour le <span className="text-gold">Bunker</span>.
+                      </p>
+                      
+                      <div className="w-full bg-gray-900 rounded-lg p-4 mb-6 border border-white/5">
+                          <div className="flex justify-between text-xs mb-2">
+                              <span className="text-gray-500">Revenu Total</span>
+                              <span className="text-white font-bold">{formatMoney(pendingTransaction.value)} {currency}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                              <span className="text-gold font-bold">Prélèvement (20%)</span>
+                              <span className="text-gold font-bold">-{formatMoney(Math.floor(pendingTransaction.value * 0.2))} {currency}</span>
+                          </div>
+                      </div>
+
+                      <div className="flex gap-3 w-full">
+                          <button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase hover:bg-white/5">
+                              Faiblesse (0%)
+                          </button>
+                          <button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-gold text-black text-xs font-bold uppercase hover:bg-yellow-400">
+                              Investir (20%)
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
     </div>
     </PageTransition>
   );
@@ -699,16 +976,48 @@ function GoalsScreen({ onBack }) {
 }
 
 // ==========================================
-// 3. STATISTIQUES (Inchangé)
+// 3. STATISTIQUES AVEC COURBE
 // ==========================================
 function StatsScreen({ onBack }) {
     const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
+    const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
     const currency = localStorage.getItem('imperium_currency') || "€";
+    
+    // CALCUL STATISTIQUES CLASSIQUES
     const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
     const wants = transactions.filter(t => t.type === 'expense' && t.category === 'want').reduce((acc, t) => acc + t.amount, 0);
     const needs = transactions.filter(t => t.type === 'expense' && t.category === 'need').reduce((acc, t) => acc + t.amount, 0);
     const wantPercent = totalExpenses === 0 ? 0 : Math.round((wants / totalExpenses) * 100);
     const needPercent = totalExpenses === 0 ? 0 : Math.round((needs / totalExpenses) * 100);
+
+    // CALCUL DONNÉES COURBE (30 JOURS)
+    const generateTrendData = () => {
+        const data = [];
+        let current = balance; // Solde TOTAL actuel (incluant tout)
+        // On remonte le temps sur 30 jours
+        for (let i = 0; i < 30; i++) {
+            data.unshift(current); // On ajoute la valeur actuelle au début du tableau
+            
+            // On calcule la valeur de la veille en inversant les transactions du jour 'i'
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+            
+            // Trouver les transactions de ce jour là
+            const dayTx = transactions.filter(t => t.date === dateStr);
+            
+            // Pour revenir en arrière : 
+            // Solde Hier = Solde Aujourd'hui - Revenus Aujourd'hui + Dépenses Aujourd'hui
+            dayTx.forEach(t => {
+                if (t.type === 'income') current -= t.amount;
+                else current += t.amount;
+            });
+        }
+        return data;
+    };
+    
+    const trendData = generateTrendData();
+    const isTrendingUp = trendData[trendData.length - 1] >= trendData[0];
 
     return (
         <PageTransition>
@@ -717,7 +1026,20 @@ function StatsScreen({ onBack }) {
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Salle des Cartes</h1>
             </div>
-            <div className="p-5 overflow-y-auto">
+            <div className="p-5 overflow-y-auto pb-10">
+                
+                {/* LA COURBE DE PUISSANCE */}
+                <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2"><Activity className="w-4 h-4 text-gold"/><h3 className="text-xs font-bold uppercase tracking-widest text-white">Courbe de Puissance</h3></div>
+                        <span className={`text-xs font-bold flex items-center gap-1 ${isTrendingUp ? 'text-green-500' : 'text-red-500'}`}>
+                            {isTrendingUp ? <TrendingUp className="w-3 h-3"/> : <TrendingDown className="w-3 h-3"/>}
+                            {isTrendingUp ? "Croissance" : "Déclin"}
+                        </span>
+                    </div>
+                    <PowerChart data={trendData} color={isTrendingUp ? "#22c55e" : "#ef4444"} />
+                </div>
+
                 <div className="grid grid-cols-2 gap-3 mb-6">
                     <div className="bg-[#111] p-4 rounded-xl border border-white/5"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Dépensé</p><p className="text-xl font-bold text-white">{formatMoney(totalExpenses)} {currency}</p></div>
                     <div className="bg-[#111] p-4 rounded-xl border border-white/5"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ratio Futilité</p><p className={`text-xl font-bold ${wantPercent > 30 ? 'text-red-500' : 'text-green-500'}`}>{wantPercent}%</p></div>
@@ -1029,6 +1351,8 @@ function SettingsScreen({ onBack }) {
             currency: localStorage.getItem('imperium_currency'), 
             zone: localStorage.getItem('imperium_zone'), 
             onboarded: localStorage.getItem('imperium_onboarded'), 
+            bunker: localStorage.getItem('imperium_bunker'),
+            version: localStorage.getItem('imperium_version'),
         }; 
         const encoded = btoa(JSON.stringify(data)); 
         navigator.clipboard.writeText(encoded); 
@@ -1048,6 +1372,8 @@ function SettingsScreen({ onBack }) {
             if(decoded.currency) localStorage.setItem('imperium_currency', decoded.currency); 
             if(decoded.zone) localStorage.setItem('imperium_zone', decoded.zone); 
             if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); 
+            if(decoded.bunker) localStorage.setItem('imperium_bunker', decoded.bunker);
+            if(decoded.version) localStorage.setItem('imperium_version', decoded.version);
             alert("✅ RESTAURATION RÉUSSIE."); 
             window.location.reload(); 
         } catch (e) { alert("❌ ERREUR : Code invalide."); } 
