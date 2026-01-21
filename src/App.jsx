@@ -1,28 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Wallet, Smartphone, Banknote } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "15.1";
+const APP_VERSION = "14.1";
 
 const RELEASE_NOTES = [
     {
-        version: "15.1",
-        title: "Calibrage Tactique",
-        desc: "Correction de la répartition des fonds.",
+        version: "14.1",
+        title: "Retour à la Base",
+        desc: "Version stable et épurée.",
         changes: [
-            { icon: Edit3, text: "Répartition Manuelle : Allez dans Paramètres pour ajuster le solde exact de chaque compte (Wave, Cash, OM)." },
-            { icon: Wallet, text: "Correction Migration : Vos fonds ne sont plus bloqués uniquement en espèces." }
+            { icon: Shield, text: "Restauration du système central." },
+            { icon: LayoutGrid, text: "Gestion globale de la trésorerie." }
         ]
     }
-];
-
-const DEFAULT_WALLETS = [
-    { id: 'cash', name: 'Espèces / Main', type: 'cash', balance: 0, bunker: 0 },
-    { id: 'wave', name: 'Wave', type: 'mobile', balance: 0, bunker: 0 },
-    { id: 'om', name: 'Orange Money', type: 'mobile', balance: 0, bunker: 0 },
 ];
 
 const CURRENCIES = [
@@ -74,12 +68,6 @@ const BUSINESS_IDEAS = {
   'montage': { title: 'Vidéos TikTok/Reels', price: 40, task: 'Monte des vidéos dynamiques pour un influenceur local.' },
   'ia': { title: 'Formation ChatGPT', price: 80, task: 'Forme une petite équipe à utiliser l\'IA pour gagner du temps.' },
 };
-
-const TUTORIAL_STEPS = [
-    { title: "BIENVENUE, COMMANDANT", text: "Imperium v15.1 corrige le tir.", icon: Shield },
-    { title: "CALIBRAGE", text: "Allez dans PARAMÈTRES (Roue dentée en haut à droite).", icon: Settings },
-    { title: "RÉPARTITION", text: "Vous pourrez y définir manuellement combien vous avez sur Wave, OM et en Cash.", icon: LayoutGrid },
-];
 
 const getRank = (balance, currency) => {
   let points = balance;
@@ -173,27 +161,6 @@ function PatchNotesModal({ onAck }) {
     );
 }
 
-function TutorialOverlay({ onComplete }) {
-    const [stepIndex, setStepIndex] = useState(0);
-    const step = TUTORIAL_STEPS[stepIndex];
-    const Icon = step.icon;
-    const nextStep = () => { if (stepIndex < TUTORIAL_STEPS.length - 1) { setStepIndex(stepIndex + 1); } else { onComplete(); } };
-    return (
-        <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="bg-[#111] border border-gold/30 w-full max-w-sm rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-                 <div className="absolute top-0 right-0 p-4 opacity-10"><BookOpen className="w-24 h-24 text-gold" /></div>
-                 <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mb-6 border border-gold/40"><Icon className="w-8 h-8 text-gold" /></div>
-                    <p className="text-[10px] text-gold font-bold uppercase tracking-[0.3em] mb-2">Opération {stepIndex + 1}/{TUTORIAL_STEPS.length}</p>
-                    <h3 className="text-white font-serif text-xl font-bold mb-4 tracking-wide uppercase">{step.title}</h3>
-                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 mb-8"><p className="text-gray-300 text-sm leading-relaxed">{step.text}</p></div>
-                    <div className="flex flex-col gap-3"><button onClick={nextStep} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all active:scale-95">{stepIndex === TUTORIAL_STEPS.length - 1 ? "PRENDRE LE COMMANDEMENT" : "SUIVANT"} <ChevronRight className="w-4 h-4"/></button></div>
-                 </div>
-            </div>
-        </div>
-    );
-}
-
 // ==========================================
 // APP PRINCIPALE
 // ==========================================
@@ -208,25 +175,18 @@ export default function App() {
 
 function MainOS() {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [showTutorial, setShowTutorial] = useState(false);
   const [showPatchNotes, setShowPatchNotes] = useState(false);
   const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
   
   useEffect(() => { 
-      const tutorialDone = localStorage.getItem('imperium_tutorial_done') === 'true'; 
       const lastVersion = localStorage.getItem('imperium_version');
-      if (!tutorialDone) { setTimeout(() => setShowTutorial(true), 500); } 
-      else if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
+      if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
   }, []);
-  
-  const completeTutorial = () => { localStorage.setItem('imperium_tutorial_done', 'true'); localStorage.setItem('imperium_version', APP_VERSION); setShowTutorial(false); };
   const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
 
   return (
     <>
-        {showTutorial && <TutorialOverlay onComplete={completeTutorial} />}
-        {showPatchNotes && !showTutorial && <PatchNotesModal onAck={ackPatchNotes} />}
-        
+        {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
         {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
         {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
         {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
@@ -260,14 +220,7 @@ function OnboardingScreen({ onComplete }) {
   const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
   
   const finishOnboarding = () => {
-    // INIT WALLETS
-    const totalBal = parseFloat(initialBalance) || 0;
-    // On met tout dans le Cash par défaut, l'utilisateur dispatchera après
-    const initWallets = DEFAULT_WALLETS.map(w => w.id === 'cash' ? { ...w, balance: totalBal } : w);
-    
-    localStorage.setItem('imperium_wallets', JSON.stringify(initWallets));
-    localStorage.setItem('imperium_balance', JSON.stringify(totalBal)); // Gardé pour compatibilité legacy
-    
+    localStorage.setItem('imperium_balance', initialBalance || 0);
     const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
     localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
     localStorage.setItem('imperium_currency', currency || "€");
@@ -292,18 +245,8 @@ function OnboardingScreen({ onComplete }) {
 // 2. DASHBOARD
 // ==========================================
 function Dashboard({ onNavigate }) {
-  // GESTION DES WALLETS (NOUVEAU COEUR DU SYSTÈME)
-  const [wallets, setWallets] = useState(() => {
-      try { 
-          const saved = JSON.parse(localStorage.getItem('imperium_wallets'));
-          if (saved) return saved;
-          // MIGRATION V14 -> V15 (Si pas de wallets, on prend le solde global et on le met en cash)
-          const oldBalance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
-          const oldBunker = JSON.parse(localStorage.getItem('imperium_bunker') || "0");
-          return DEFAULT_WALLETS.map(w => w.id === 'cash' ? { ...w, balance: oldBalance, bunker: oldBunker } : w);
-      } catch { return DEFAULT_WALLETS; }
-  });
-
+  const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
+  const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
   const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
   const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
   const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
@@ -321,27 +264,24 @@ function Dashboard({ onNavigate }) {
   const [expenseCategory, setExpenseCategory] = useState('need'); 
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedWalletId, setSelectedWalletId] = useState('cash'); // Pour la transaction
   
   // Bunker State Local pour Modal
   const [bunkerAmount, setBunkerAmount] = useState('');
-  const [bunkerWalletId, setBunkerWalletId] = useState('cash');
 
   // CALCULS AGRÉGÉS
-  const totalBalance = wallets.reduce((acc, w) => acc + w.balance, 0); // Tout l'argent que je possède
-  const totalBunker = wallets.reduce((acc, w) => acc + (w.bunker || 0), 0);
+  const totalBalance = balance; 
+  const totalBunker = bunker;
   const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
   const availableCash = totalBalance - lockedCash - totalBunker;
 
   // Sync Storage
   useEffect(() => {
-    localStorage.setItem('imperium_wallets', JSON.stringify(wallets));
-    localStorage.setItem('imperium_balance', JSON.stringify(totalBalance)); // Legacy sync
-    localStorage.setItem('imperium_bunker', JSON.stringify(totalBunker)); // Legacy sync
+    localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
+    localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
     localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
     localStorage.setItem('imperium_projects', JSON.stringify(projects));
     localStorage.setItem('imperium_goals', JSON.stringify(goals));
-  }, [wallets, transactions, projects, goals]);
+  }, [balance, bunker, transactions, projects, goals]);
 
   // --- LOGIQUE TEMPORELLE & RATION ---
   const today = new Date();
@@ -391,27 +331,25 @@ function Dashboard({ onNavigate }) {
     
     // INTERCEPTION DE L'IMPÔT IMPÉRIAL
     if (transactionType === 'income' && (goals.length > 0 || totalBunker >= 0)) {
-        setPendingTransaction({ value, description, walletId: selectedWalletId }); // On garde le wallet sélectionné
+        setPendingTransaction({ value, description });
         setShowTaxModal(true);
         setIsModalOpen(false);
         setAmount(''); setDescription('');
         return;
     }
 
-    // UPDATE WALLET SPECIFIQUE
-    const updatedWallets = wallets.map(w => {
-        if (w.id === selectedWalletId) {
-            return { ...w, balance: transactionType === 'expense' ? w.balance - value : w.balance + value };
-        }
-        return w;
-    });
+    if (transactionType === 'expense') {
+        if (value > balance) return alert("Fonds insuffisants.");
+        setBalance(balance - value);
+    } else {
+        setBalance(balance + value);
+    }
 
     let finalDesc = description;
     if (transactionType === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${description}`;
     
-    const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString(), walletId: selectedWalletId };
+    const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
     
-    setWallets(updatedWallets);
     setTransactions([newTransaction, ...transactions]);
     setAmount(''); setDescription(''); setIsModalOpen(false);
   };
@@ -421,24 +359,15 @@ function Dashboard({ onNavigate }) {
       const totalIncome = pendingTransaction.value;
       const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0;
       const incomeDesc = pendingTransaction.description || "Revenu";
-      const wId = pendingTransaction.walletId;
 
-      // 1. Ajouter le revenu total au wallet concerné
-      let updatedWallets = wallets.map(w => {
-          if (w.id === wId) {
-              // Ajout revenu + Calcul Bunker Local
-              const newBalance = w.balance + totalIncome;
-              const newBunker = applyTax ? (w.bunker || 0) + taxAmount : (w.bunker || 0);
-              return { ...w, balance: newBalance, bunker: newBunker };
-          }
-          return w;
-      });
-
-      // 2. Créer la transaction de revenu
-      const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString(), walletId: wId };
+      const newBalance = balance + totalIncome;
+      const newBunker = applyTax ? (bunker || 0) + taxAmount : (bunker || 0);
+      
+      const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
       let newTransactions = [incomeTx, ...transactions];
 
-      setWallets(updatedWallets);
+      setBalance(newBalance);
+      setBunker(newBunker);
       setTransactions(newTransactions);
       setPendingTransaction(null);
       setShowTaxModal(false);
@@ -448,21 +377,12 @@ function Dashboard({ onNavigate }) {
       if (!bunkerAmount) return;
       const val = parseFloat(bunkerAmount);
       
-      const targetWallet = wallets.find(w => w.id === bunkerWalletId);
-      if (!targetWallet) return;
-
       if (action === 'deposit') {
-          // On vérifie le dispo DU WALLET SPECIFIQUE
-          const availableInWallet = targetWallet.balance - (targetWallet.bunker || 0);
-          if (val > availableInWallet) return alert(`Fonds insuffisants sur ${targetWallet.name}.`);
-          
-          const updatedWallets = wallets.map(w => w.id === bunkerWalletId ? { ...w, bunker: (w.bunker || 0) + val } : w);
-          setWallets(updatedWallets);
-
+          if (val > availableCash) return alert(`Fonds insuffisants.`);
+          setBunker(bunker + val);
       } else if (action === 'withdraw') {
-          if (val > (targetWallet.bunker || 0)) return alert(`Fonds insuffisants dans le Bunker de ${targetWallet.name}.`);
-          const updatedWallets = wallets.map(w => w.id === bunkerWalletId ? { ...w, bunker: (w.bunker || 0) - val } : w);
-          setWallets(updatedWallets);
+          if (val > bunker) return alert(`Fonds insuffisants dans le Bunker.`);
+          setBunker(bunker - val);
       }
       setBunkerAmount('');
       setIsBunkerModalOpen(false);
@@ -528,29 +448,6 @@ function Dashboard({ onNavigate }) {
              <div className="p-2 text-center bg-black/40 border-t border-white/5">
                 <p className={`text-[10px] ${dailyStatus.color} font-bold uppercase tracking-widest`}>STATUT : {dailyStatus.text}</p>
              </div>
-        </div>
-
-        {/* === SECTION SILOS (NOUVEAU) === */}
-        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar snap-x">
-             {wallets.map(w => {
-                 const avail = w.balance - (w.bunker || 0);
-                 const hasBunker = (w.bunker || 0) > 0;
-                 return (
-                     <div key={w.id} className="snap-center min-w-[140px] bg-[#1a1a1a] border border-white/5 rounded-xl p-3 flex flex-col justify-between group">
-                         <div className="flex items-start justify-between mb-2">
-                             <div className={`p-1.5 rounded-lg ${w.type === 'cash' ? 'bg-green-900/20 text-green-500' : 'bg-blue-900/20 text-blue-500'}`}>
-                                 {w.type === 'cash' ? <Banknote className="w-3 h-3"/> : <Smartphone className="w-3 h-3"/>}
-                             </div>
-                             {hasBunker && <Lock className="w-3 h-3 text-gold opacity-50"/>}
-                         </div>
-                         <div>
-                             <p className="text-[9px] text-gray-400 font-bold uppercase truncate mb-1">{w.name}</p>
-                             <p className="text-white font-bold text-sm">{formatMoney(avail)}</p>
-                             {hasBunker && <p className="text-[9px] text-gold mt-1">+{formatMoney(w.bunker)} Securisé</p>}
-                         </div>
-                     </div>
-                 )
-             })}
         </div>
 
         {/* === CARTE BUNKER === */}
@@ -619,18 +516,6 @@ function Dashboard({ onNavigate }) {
                 <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
             </div>
             
-            {/* SELECTION DU WALLET */}
-            <div className="mb-4">
-                 <label className="text-[10px] text-gray-500 uppercase font-bold mb-2 block">Compte concerné</label>
-                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                     {wallets.map(w => (
-                         <button key={w.id} onClick={() => setSelectedWalletId(w.id)} className={`px-4 py-2 rounded-lg border text-xs font-bold whitespace-nowrap transition-all ${selectedWalletId === w.id ? 'border-gold bg-gold/10 text-white' : 'border-white/10 bg-[#111] text-gray-500'}`}>
-                             {w.name}
-                         </button>
-                     ))}
-                 </div>
-             </div>
-
             {transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}
             {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (
                  <div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Avertissement du Sergent</p><p className="text-gray-300 text-xs leading-relaxed mt-1">Cette dépense équivaut à <span className="text-white font-bold">{daysLost} jours</span> de survie.<br/>Est-ce que ça en vaut vraiment la peine ?</p></div></div>
@@ -661,19 +546,7 @@ function Dashboard({ onNavigate }) {
              <div className="text-center mb-4">
                  <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Sécurisé</p>
                  <h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2>
-                 <p className="text-xs text-gray-500 mt-2 px-6">Sélectionnez le compte où l'argent doit être verrouillé.</p>
-             </div>
-
-             {/* CHOIX DU COMPTE POUR LE BUNKER */}
-             <div className="mb-6">
-                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar justify-center">
-                     {wallets.map(w => (
-                         <button key={w.id} onClick={() => setBunkerWalletId(w.id)} className={`px-4 py-3 rounded-xl border text-xs font-bold whitespace-nowrap transition-all flex flex-col items-center gap-1 ${bunkerWalletId === w.id ? 'border-gold bg-gold/10 text-white' : 'border-white/10 bg-[#111] text-gray-500'}`}>
-                             <span>{w.name}</span>
-                             <span className="text-[9px] opacity-70">Dispo: {formatMoney(w.balance - (w.bunker || 0))}</span>
-                         </button>
-                     ))}
-                 </div>
+                 <p className="text-xs text-gray-500 mt-2 px-6">L'argent du Bunker n'est plus compté dans votre solde disponible.</p>
              </div>
 
              <div className="space-y-4">
@@ -710,7 +583,7 @@ function Dashboard({ onNavigate }) {
                       
                       <div className="w-full bg-gray-900 rounded-lg p-4 mb-6 border border-white/5">
                           <div className="flex justify-between text-xs mb-2">
-                              <span className="text-gray-500">Revenu Total ({wallets.find(w => w.id === pendingTransaction.walletId)?.name})</span>
+                              <span className="text-gray-500">Revenu Total</span>
                               <span className="text-white font-bold">{formatMoney(pendingTransaction.value)} {currency}</span>
                           </div>
                           <div className="flex justify-between text-sm">
@@ -1374,23 +1247,9 @@ function ProjectScreen({ onBack }) {
 
 function SettingsScreen({ onBack }) { 
     const [importData, setImportData] = useState("");
-    const [wallets, setWallets] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('imperium_wallets') || JSON.stringify(DEFAULT_WALLETS)); } catch { return DEFAULT_WALLETS; }
-    });
-
-    const handleWalletUpdate = (id, newVal) => {
-        const val = parseFloat(newVal);
-        const updated = wallets.map(w => w.id === id ? { ...w, balance: isNaN(val) ? 0 : val } : w);
-        setWallets(updated);
-        localStorage.setItem('imperium_wallets', JSON.stringify(updated));
-        // UPDATE GLOBAL BALANCE FOR LEGACY COMPAT
-        const total = updated.reduce((acc, w) => acc + w.balance, 0);
-        localStorage.setItem('imperium_balance', JSON.stringify(total));
-    };
 
     const handleExport = () => { 
         const data = { 
-            wallets: localStorage.getItem('imperium_wallets'),
             balance: localStorage.getItem('imperium_balance'), 
             transactions: localStorage.getItem('imperium_transactions'), 
             projects: localStorage.getItem('imperium_projects'),
@@ -1411,7 +1270,6 @@ function SettingsScreen({ onBack }) {
         try { 
             if(!importData) return; 
             const decoded = JSON.parse(atob(importData)); 
-            if(decoded.wallets) localStorage.setItem('imperium_wallets', decoded.wallets);
             if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); 
             if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); 
             if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects);
@@ -1440,27 +1298,6 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="p-5 space-y-8 flex-1 overflow-y-auto">
                     
-                    {/* CALIBRAGE DES SILOS (Correctif) */}
-                    <div className="bg-[#111] p-5 rounded-xl border border-white/5">
-                         <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-yellow-900/20 text-gold rounded-lg"><Edit3 className="w-5 h-5"/></div>
-                            <div><h3 className="text-sm font-bold text-gray-200">Calibrage des Silos</h3><p className="text-[10px] text-gray-500">Ajustez manuellement chaque compte.</p></div>
-                        </div>
-                        <div className="space-y-3">
-                            {wallets.map(w => (
-                                <div key={w.id}>
-                                    <label className="text-[10px] text-gray-500 uppercase font-bold block mb-1">{w.name}</label>
-                                    <input 
-                                        type="number" 
-                                        value={w.balance || 0} 
-                                        onChange={(e) => handleWalletUpdate(w.id, e.target.value)}
-                                        className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold outline-none" 
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
                     <div className="bg-[#111] p-5 rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
