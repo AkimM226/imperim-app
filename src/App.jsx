@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -30,22 +30,20 @@ const FREQUENCIES = [
     { id: 'yearly', label: 'Annuel (An)', factor: 0.083 }
 ];
 
-// NOUVEAU : QUESTIONS STRATÉGIQUES POUR LES PROJETS
 const STRATEGIC_QUESTIONS = [
     { id: 'goal', q: "Quel est l'objectif financier précis de ce projet ?" },
-    { id: 'deadline', q: "Quelle est la date limite absolue pour la première victoire ?" },
     { id: 'obstacle', q: "Quel est le plus grand obstacle actuel ?" },
     { id: 'first_step', q: "Quelle est la toute première action (gratuite) à faire ?" }
 ];
 
 const QUOTES = [
+  "Le temps est la seule ressource qu'on ne peut pas récupérer.",
   "Les dettes sont l'esclavage des hommes libres.",
   "La discipline est mère du succès.",
   "Ce n'est pas parce que les choses sont difficiles que nous n'osons pas, c'est parce que nous n'osons pas qu'elles sont difficiles.",
   "L'homme qui déplace une montagne commence par déplacer de petites pierres.",
   "La richesse consiste bien plus dans l'usage qu'on en fait que dans la possession.",
-  "Fais ce que tu dois, advienne que pourra.",
-  "Le meilleur moment pour planter un arbre était il y a 20 ans. Le deuxième meilleur moment est maintenant."
+  "Fais ce que tu dois, advienne que pourra."
 ];
 
 const TROPHIES_DATA = [
@@ -69,11 +67,11 @@ const BUSINESS_IDEAS = {
 
 const TUTORIAL_STEPS = [
     { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. Ici, chaque unité de monnaie est un soldat sous vos ordres.", icon: Shield },
+    { title: "LE TEMPS C'EST DE L'ARGENT (Nouveau)", text: "Observez la barre en haut du Dashboard. Elle montre la progression du mois. Adaptez vos dépenses au temps qu'il reste.", icon: Hourglass },
     { title: "ALLOCATION DE SURVIE", text: "Le système calcule votre budget quotidien strict (Solde / 30). C'est votre limite absolue pour ne pas sombrer.", icon: Flame },
-    { title: "CONQUÊTE & STRATÉGIE (Nouveau)", text: "Gérez plusieurs projets simultanément. L'IA vous posera des questions tactiques pour structurer votre avancée.", icon: Castle },
+    { title: "CONQUÊTE & DEADLINES", text: "Fixez des dates limites à vos projets. L'Empire ne tolère pas la procrastination.", icon: Castle },
     { title: "LE RADAR DE DETTES", text: "L'IA surveille votre trésorerie et vous ordonne de payer vos dettes quand le moment est venu.", icon: AlertTriangle },
     { title: "LES PROTOCOLES", text: "Définissez vos rentes et charges avec leur fréquence. Le système calculera votre vraie puissance mensuelle.", icon: Repeat },
-    { title: "LE REGISTRE", text: "Traquez ce que vous devez (Tributs) et ce qu'on vous doit (Butin).", icon: Scroll },
     { title: "ARCHIVES", text: "Sauvegardez votre Empire via les Paramètres.", icon: Save }
 ];
 
@@ -95,6 +93,13 @@ const formatMoney = (amount) => {
   return Math.floor(amount).toLocaleString('fr-FR');
 };
 
+const getDaysLeft = (targetDate) => {
+    if (!targetDate) return null;
+    const diff = new Date(targetDate) - new Date();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return days;
+};
+
 // ==========================================
 // COMPOSANTS UX
 // ==========================================
@@ -104,7 +109,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.5</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.6</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -194,6 +199,7 @@ function OnboardingScreen({ onComplete }) {
     const firstProject = {
         id: Date.now(),
         title: mainProject || "Empire Naissant",
+        deadline: "", // Ajout deadline
         tasks: [],
         answers: {}
     };
@@ -227,22 +233,20 @@ function Dashboard({ onNavigate }) {
   const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
   const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
   
-  // MIGRATION / CHARGEMENT DES PROJETS
+  // CHARGEMENT DES PROJETS
   const [projects, setProjects] = useState(() => {
      const saved = localStorage.getItem('imperium_projects');
      if (saved) return JSON.parse(saved);
-     // Fallback pour anciens utilisateurs
      const oldName = localStorage.getItem('imperium_project_name');
      const oldTasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
      if (oldName) {
-         return [{ id: 1, title: oldName, tasks: oldTasks, answers: {} }];
+         return [{ id: 1, title: oldName, deadline: "", tasks: oldTasks, answers: {} }];
      }
      return [];
   });
 
   const currency = localStorage.getItem('imperium_currency') || "€";
   
-  // Calcul du progrès global (moyenne de tous les projets)
   const totalTasks = projects.reduce((acc, p) => acc + (p.tasks ? p.tasks.length : 0), 0);
   const doneTasks = projects.reduce((acc, p) => acc + (p.tasks ? p.tasks.filter(t => t.done).length : 0), 0);
   const progressPercent = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
@@ -255,6 +259,12 @@ function Dashboard({ onNavigate }) {
   const [todaysQuote, setTodaysQuote] = useState("");
 
   useEffect(() => { const dayIndex = new Date().getDate() % QUOTES.length; setTodaysQuote(QUOTES[dayIndex]); }, []);
+
+  // CALCUL DE LA NOTION DU TEMPS (MOIS)
+  const today = new Date();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const currentDay = today.getDate();
+  const monthProgress = (currentDay / daysInMonth) * 100;
 
   const calculateStreak = () => {
     if (transactions.length === 0) return 0;
@@ -284,7 +294,7 @@ function Dashboard({ onNavigate }) {
   useEffect(() => {
     localStorage.setItem('imperium_balance', JSON.stringify(balance));
     localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-    localStorage.setItem('imperium_projects', JSON.stringify(projects)); // Sauvegarde des projets migrés
+    localStorage.setItem('imperium_projects', JSON.stringify(projects));
   }, [balance, transactions, projects]);
 
   const handleSubmit = (e) => {
@@ -303,7 +313,13 @@ function Dashboard({ onNavigate }) {
   return (
     <PageTransition>
     <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-32 flex flex-col relative shadow-2xl">
-      <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
+      
+      {/* NOUVELLE BARRE DE TEMPS (Mois) */}
+      <div className="w-full bg-gray-900 h-1 fixed top-0 z-50">
+        <div className="h-full bg-blue-500/50" style={{ width: `${monthProgress}%` }}></div>
+      </div>
+
+      <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[calc(env(safe-area-inset-top)+4px)]">
          <div className="flex gap-2">
              <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><BarChart3 className="w-5 h-5"/></button>
              <button onClick={() => onNavigate('goals')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><Target className="w-5 h-5"/></button>
@@ -313,6 +329,12 @@ function Dashboard({ onNavigate }) {
       </header>
 
       <div className="w-full px-4 mt-6">
+        {/* INDICATEUR DE TEMPS */}
+        <div className="flex justify-between items-center mb-4">
+             <p className="text-[10px] text-gray-500 uppercase tracking-widest flex items-center gap-1"><Hourglass className="w-3 h-3"/> Jour {currentDay}/{daysInMonth}</p>
+             <p className="text-[10px] text-gray-500 uppercase tracking-widest">{Math.round(monthProgress)}% du mois déployé</p>
+        </div>
+
         <div className="mb-6 flex items-start gap-3 opacity-70"><Quote className="w-4 h-4 text-gold shrink-0 mt-0.5" /><p className="text-xs text-gray-400 italic font-serif leading-relaxed">"{todaysQuote}"</p></div>
         <div className="flex justify-between items-end">
             <div className="flex flex-col items-start"><p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Grade</p><div className="flex items-center gap-2"><RankIcon className={`w-4 h-4 ${rank.color}`} /><h2 className={`text-lg font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2></div></div>
@@ -372,7 +394,6 @@ function Dashboard({ onNavigate }) {
 
         <div className="grid grid-cols-2 gap-3">
             <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Sword className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3><p className="text-[9px] text-gray-500 mt-1">Générer du cash</p></div>
-            {/* CARTE CONQUETE MISE À JOUR POUR AFFICHER LE NOMBRE DE PROJETS */}
             <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Castle className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">{projects.length} Front(s) Actif(s)</p></div>
         </div>
       </main>
@@ -579,6 +600,7 @@ function GoalsScreen({ onBack }) {
     const [goals, setGoals] = useState(JSON.parse(localStorage.getItem('imperium_goals') || "[]"));
     const [newGoalName, setNewGoalName] = useState("");
     const [newGoalTarget, setNewGoalTarget] = useState("");
+    const [newGoalDeadline, setNewGoalDeadline] = useState("");
     const [selectedGoal, setSelectedGoal] = useState(null);
     const [allocAmount, setAllocAmount] = useState("");
 
@@ -587,8 +609,8 @@ function GoalsScreen({ onBack }) {
     const addGoal = (e) => {
         e.preventDefault();
         if (!newGoalName || !newGoalTarget) return;
-        setGoals([...goals, { id: Date.now(), title: newGoalName, target: parseFloat(newGoalTarget), current: 0 }]);
-        setNewGoalName(""); setNewGoalTarget("");
+        setGoals([...goals, { id: Date.now(), title: newGoalName, target: parseFloat(newGoalTarget), deadline: newGoalDeadline, current: 0 }]);
+        setNewGoalName(""); setNewGoalTarget(""); setNewGoalDeadline("");
     };
 
     const deleteGoal = (id) => { setGoals(goals.filter(g => g.id !== id)); };
@@ -618,15 +640,26 @@ function GoalsScreen({ onBack }) {
                 <div className="space-y-4">
                     {goals.map(goal => {
                         const percent = Math.min(100, Math.round((goal.current / goal.target) * 100));
+                        const daysLeft = getDaysLeft(goal.deadline);
                         return (
                             <div key={goal.id} className="bg-[#111] border border-white/5 p-4 rounded-xl">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-3">
                                         <div className={`p-2 rounded-lg ${percent >= 100 ? 'bg-green-900/20 text-green-500' : 'bg-blue-900/20 text-blue-500'}`}><Target className="w-5 h-5"/></div>
-                                        <div><h3 className="text-sm font-bold text-gray-200">{goal.title}</h3><p className="text-[10px] text-gray-500">{percent}% Sécurisé</p></div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gray-200">{goal.title}</h3>
+                                            <p className="text-[10px] text-gray-500">{percent}% Sécurisé</p>
+                                        </div>
                                     </div>
                                     <button onClick={() => deleteGoal(goal.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4"/></button>
                                 </div>
+                                
+                                {daysLeft !== null && (
+                                    <div className={`text-[10px] font-bold mb-2 flex items-center gap-1 ${daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-gray-500'}`}>
+                                        <Clock className="w-3 h-3" /> {daysLeft > 0 ? `${daysLeft} Jours restants` : "Date dépassée"}
+                                    </div>
+                                )}
+
                                 <div className="w-full bg-gray-900 rounded-full h-2 mb-2"><div className={`h-2 rounded-full transition-all duration-500 ${percent >= 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${percent}%` }}></div></div>
                                 <div className="flex justify-between items-center mb-4"><span className="text-xs font-bold text-white">{formatMoney(goal.current)} {currency}</span><span className="text-[10px] text-gray-500">Obj: {formatMoney(goal.target)}</span></div>
                                 <div className="flex gap-2">
@@ -657,7 +690,8 @@ function GoalsScreen({ onBack }) {
                     <input type="text" value={newGoalName} onChange={(e) => setNewGoalName(e.target.value)} placeholder="Nom (ex: PC Gamer)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
                     <div className="flex gap-2">
                         <input type="number" value={newGoalTarget} onChange={(e) => setNewGoalTarget(e.target.value)} placeholder="Cible" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                        <button type="submit" disabled={!newGoalName || !newGoalTarget} className="bg-blue-600/80 text-white font-bold px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-blue-500 transition-colors"><Plus className="w-5 h-5" /></button>
+                        <input type="date" value={newGoalDeadline} onChange={(e) => setNewGoalDeadline(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-2 text-white text-xs focus:border-gold outline-none" />
+                        <button type="submit" disabled={!newGoalName || !newGoalTarget} className="bg-blue-600/80 text-white font-bold px-4 py-3 rounded-lg disabled:opacity-50 hover:bg-blue-500 transition-colors"><Plus className="w-5 h-5" /></button>
                     </div>
                 </form>
             </div>
@@ -801,30 +835,28 @@ function ProjectScreen({ onBack }) {
     const [projects, setProjects] = useState(() => {
         const saved = localStorage.getItem('imperium_projects');
         if (saved) return JSON.parse(saved);
-        // Fallback backward compatibility
         const oldName = localStorage.getItem('imperium_project_name');
         const oldTasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
         if (oldName) {
-            return [{ id: Date.now(), title: oldName, tasks: oldTasks, answers: {} }];
+            return [{ id: Date.now(), title: oldName, deadline: "", tasks: oldTasks, answers: {} }];
         }
         return [];
     });
     
-    const [activeProject, setActiveProject] = useState(null); // Si null, affiche la liste. Sinon affiche le détail.
+    const [activeProject, setActiveProject] = useState(null); 
     const [newProjectName, setNewProjectName] = useState("");
+    const [newProjectDeadline, setNewProjectDeadline] = useState("");
     const [newTask, setNewTask] = useState("");
 
     useEffect(() => { localStorage.setItem('imperium_projects', JSON.stringify(projects)); }, [projects]);
 
-    // AJOUTER UN PROJET
     const addProject = (e) => {
         e.preventDefault();
         if (!newProjectName.trim()) return;
-        setProjects([...projects, { id: Date.now(), title: newProjectName, tasks: [], answers: {} }]);
-        setNewProjectName("");
+        setProjects([...projects, { id: Date.now(), title: newProjectName, deadline: newProjectDeadline, tasks: [], answers: {} }]);
+        setNewProjectName(""); setNewProjectDeadline("");
     };
 
-    // SUPPRIMER UN PROJET
     const deleteProject = (id, e) => {
         e.stopPropagation();
         if(confirm("Confirmer l'abandon de ce front ?")) {
@@ -833,7 +865,6 @@ function ProjectScreen({ onBack }) {
         }
     };
 
-    // --- LOGIQUE INTERNE AU PROJET ACTIF ---
     const addTask = (e) => { 
         e.preventDefault(); 
         if (!newTask.trim() || !activeProject) return; 
@@ -871,7 +902,6 @@ function ProjectScreen({ onBack }) {
         setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
     };
 
-    // --- LOGIQUE REPONSES STRATEGIQUES ---
     const updateAnswer = (qId, value) => {
          const updatedProjects = projects.map(p => {
             if (p.id === activeProject.id) {
@@ -900,10 +930,14 @@ function ProjectScreen({ onBack }) {
                         {projects.map(p => {
                             const pTasks = p.tasks || [];
                             const progress = pTasks.length === 0 ? 0 : Math.round((pTasks.filter(t => t.done).length / pTasks.length) * 100);
+                            const daysLeft = getDaysLeft(p.deadline);
                             return (
                                 <div key={p.id} onClick={() => setActiveProject(p)} className="bg-[#111] border border-white/5 p-5 rounded-xl active:scale-[0.98] transition-all cursor-pointer group hover:border-gold/30">
                                     <div className="flex justify-between items-start mb-3">
-                                        <h3 className="text-white font-bold font-serif text-lg">{p.title}</h3>
+                                        <div>
+                                            <h3 className="text-white font-bold font-serif text-lg">{p.title}</h3>
+                                            {daysLeft !== null && (<p className={`text-[10px] font-bold ${daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-gray-500'}`}>{daysLeft > 0 ? `${daysLeft} Jours restants` : "Date dépassée"}</p>)}
+                                        </div>
                                         <button onClick={(e) => deleteProject(p.id, e)} className="text-gray-600 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
                                     </div>
                                     <div className="w-full bg-gray-900 rounded-full h-1.5 mb-3"><div className="h-full bg-gold rounded-full" style={{ width: `${progress}%` }}></div></div>
@@ -918,7 +952,8 @@ function ProjectScreen({ onBack }) {
 
                     <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
                         <form onSubmit={addProject} className="flex gap-2">
-                            <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Nouveau Front (ex: Agence Web)..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                            <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Nouveau Front..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                            <input type="date" value={newProjectDeadline} onChange={(e) => setNewProjectDeadline(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-2 text-white text-xs focus:border-gold outline-none" />
                             <button type="submit" disabled={!newProjectName.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button>
                         </form>
                     </div>
@@ -942,7 +977,6 @@ function ProjectScreen({ onBack }) {
 
                 <div className="flex-1 p-5 overflow-y-auto pb-32">
                     
-                    {/* SECTION INTERROGATOIRE TACTIQUE */}
                     <div className="mb-8 space-y-4">
                         <div className="flex items-center gap-2 mb-2 opacity-80"><Lightbulb className="w-4 h-4 text-gold" /><h3 className="text-xs font-bold uppercase tracking-widest text-gold">Interrogatoire Tactique</h3></div>
                         {STRATEGIC_QUESTIONS.map(q => (
@@ -959,7 +993,6 @@ function ProjectScreen({ onBack }) {
                         ))}
                     </div>
 
-                    {/* SECTION MISSIONS */}
                     <div className="flex items-center gap-2 mb-4 opacity-80"><CheckSquare className="w-4 h-4 text-white" /><h3 className="text-xs font-bold uppercase tracking-widest text-white">Plan de Bataille</h3></div>
                     <div className="space-y-3">
                         {pTasks.map(task => (
@@ -992,7 +1025,7 @@ function SettingsScreen({ onBack }) {
         const data = { 
             balance: localStorage.getItem('imperium_balance'), 
             transactions: localStorage.getItem('imperium_transactions'), 
-            projects: localStorage.getItem('imperium_projects'), // Export des projets multiples
+            projects: localStorage.getItem('imperium_projects'),
             tasks: localStorage.getItem('imperium_tasks'), 
             skills: localStorage.getItem('imperium_skills'), 
             currency: localStorage.getItem('imperium_currency'), 
@@ -1010,7 +1043,7 @@ function SettingsScreen({ onBack }) {
             const decoded = JSON.parse(atob(importData)); 
             if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); 
             if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); 
-            if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects); // Import projets
+            if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects);
             if(decoded.project) localStorage.setItem('imperium_project_name', decoded.project); 
             if(decoded.tasks) localStorage.setItem('imperium_tasks', decoded.tasks); 
             if(decoded.skills) localStorage.setItem('imperium_skills', decoded.skills); 
