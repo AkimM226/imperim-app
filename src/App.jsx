@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -23,6 +23,21 @@ const ZONES = [
   { id: 'maghreb', name: 'Maghreb', factor: 0.8 }
 ];
 
+const FREQUENCIES = [
+    { id: 'daily', label: 'Quotidien (Chaque jour)', factor: 30 },
+    { id: 'weekly', label: 'Hebdomadaire (Semaine)', factor: 4.33 },
+    { id: 'monthly', label: 'Mensuel (Mois)', factor: 1 },
+    { id: 'yearly', label: 'Annuel (An)', factor: 0.083 }
+];
+
+// NOUVEAU : QUESTIONS STRATÉGIQUES POUR LES PROJETS
+const STRATEGIC_QUESTIONS = [
+    { id: 'goal', q: "Quel est l'objectif financier précis de ce projet ?" },
+    { id: 'deadline', q: "Quelle est la date limite absolue pour la première victoire ?" },
+    { id: 'obstacle', q: "Quel est le plus grand obstacle actuel ?" },
+    { id: 'first_step', q: "Quelle est la toute première action (gratuite) à faire ?" }
+];
+
 const QUOTES = [
   "Les dettes sont l'esclavage des hommes libres.",
   "La discipline est mère du succès.",
@@ -34,12 +49,12 @@ const QUOTES = [
 ];
 
 const TROPHIES_DATA = [
-    { id: 'savings_1', title: 'Première Pierre', desc: 'Avoir un solde positif.', icon: Shield, condition: (bal, str, tasks) => bal > 0 },
-    { id: 'streak_3', title: 'L\'Éveil', desc: '3 Jours de discipline sans futilités.', icon: Flame, condition: (bal, str, tasks) => str >= 3 },
-    { id: 'streak_7', title: 'Spartiate', desc: '7 Jours de discipline absolue.', icon: Sword, condition: (bal, str, tasks) => str >= 7 },
-    { id: 'task_1', title: 'Architecte', desc: 'Terminer une mission du projet.', icon: CheckSquare, condition: (bal, str, tasks) => tasks.some(t => t.done) },
-    { id: 'rich_1', title: 'Trésorier', desc: 'Accumuler l\'équivalent de 1000€ (650k FCFA).', icon: Castle, condition: (bal, str, tasks) => bal >= 650000 },
-    { id: 'master', title: 'Empereur', desc: 'Accumuler 10 Millions.', icon: Star, condition: (bal, str, tasks) => bal >= 10000000 },
+    { id: 'savings_1', title: 'Première Pierre', desc: 'Avoir un solde positif.', icon: Shield, condition: (bal, str, projects) => bal > 0 },
+    { id: 'streak_3', title: 'L\'Éveil', desc: '3 Jours de discipline sans futilités.', icon: Flame, condition: (bal, str, projects) => str >= 3 },
+    { id: 'streak_7', title: 'Spartiate', desc: '7 Jours de discipline absolue.', icon: Sword, condition: (bal, str, projects) => str >= 7 },
+    { id: 'task_1', title: 'Architecte', desc: 'Terminer une mission d\'un projet.', icon: CheckSquare, condition: (bal, str, projects) => projects.some(p => p.tasks && p.tasks.some(t => t.done)) },
+    { id: 'rich_1', title: 'Trésorier', desc: 'Accumuler l\'équivalent de 1000€ (650k FCFA).', icon: Castle, condition: (bal, str, projects) => bal >= 650000 },
+    { id: 'master', title: 'Empereur', desc: 'Accumuler 10 Millions.', icon: Star, condition: (bal, str, projects) => bal >= 10000000 },
 ];
 
 const BUSINESS_IDEAS = {
@@ -52,18 +67,14 @@ const BUSINESS_IDEAS = {
   'ia': { title: 'Formation ChatGPT', price: 80, task: 'Forme une petite équipe à utiliser l\'IA pour gagner du temps.' },
 };
 
-// ==========================================
-// MANUEL DE FORMATION (TUTORIEL)
-// ==========================================
 const TUTORIAL_STEPS = [
-    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. Ici, chaque unité de monnaie est un soldat sous vos ordres. La discipline est votre seule arme.", icon: Shield },
-    { title: "LE SOLDE VIRTUEL", text: "Le chiffre central est votre 'Solde Disponible'. S'il est positif, vous survivez. S'il vire au rouge, vous êtes à découvert tactique.", icon: PiggyBank },
-    { title: "LES PROTOCOLES", text: "Gérez vos abonnements (charges) et vos revenus passifs. Le système calculera votre cash-flow net mensuel automatiquement.", icon: Repeat },
-    { title: "LE REGISTRE", text: "Traquez ce que vous devez (Tributs) et ce qu'on vous doit (Butin). Un Empire solide ne laisse personne oublier ses dettes.", icon: Scroll },
-    { title: "LES CIBLES", text: "Une Cible est un objectif d'épargne. L'argent alloué à une cible est 'verrouillé' et retiré du solde disponible pour vous protéger.", icon: Target },
-    { title: "ARSENAL & CONQUÊTE", text: "L'Arsenal liste vos compétences. La section Conquête gère vos projets. C'est ici que vous bâtissez votre infrastructure.", icon: Sword },
-    { title: "GRADE & CARTES", text: "Votre Grade évolue selon votre fortune. La Salle des Cartes (Stats) analyse si vous dépensez trop en futilités.", icon: Medal },
-    { title: "ARCHIVES", text: "Dans les Paramètres, générez un code d'exportation. Il permet de restaurer toute votre progression sur n'importe quel appareil.", icon: Download }
+    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement financier. Ici, chaque unité de monnaie est un soldat sous vos ordres.", icon: Shield },
+    { title: "ALLOCATION DE SURVIE", text: "Le système calcule votre budget quotidien strict (Solde / 30). C'est votre limite absolue pour ne pas sombrer.", icon: Flame },
+    { title: "CONQUÊTE & STRATÉGIE (Nouveau)", text: "Gérez plusieurs projets simultanément. L'IA vous posera des questions tactiques pour structurer votre avancée.", icon: Castle },
+    { title: "LE RADAR DE DETTES", text: "L'IA surveille votre trésorerie et vous ordonne de payer vos dettes quand le moment est venu.", icon: AlertTriangle },
+    { title: "LES PROTOCOLES", text: "Définissez vos rentes et charges avec leur fréquence. Le système calculera votre vraie puissance mensuelle.", icon: Repeat },
+    { title: "LE REGISTRE", text: "Traquez ce que vous devez (Tributs) et ce qu'on vous doit (Butin).", icon: Scroll },
+    { title: "ARCHIVES", text: "Sauvegardez votre Empire via les Paramètres.", icon: Save }
 ];
 
 const getRank = (balance, currency) => {
@@ -93,7 +104,7 @@ function SplashScreen() {
             <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
             <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
             <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.0</p>
+            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v11.5</p>
             <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
         </div>
     );
@@ -103,44 +114,21 @@ function PageTransition({ children }) {
     return (<div className="animate-in slide-in-from-bottom-8 fade-in duration-500 w-full flex-1 flex flex-col">{children}</div>);
 }
 
-// ==========================================
-// COMPOSANT TUTORIEL
-// ==========================================
 function TutorialOverlay({ onComplete }) {
     const [stepIndex, setStepIndex] = useState(0);
     const step = TUTORIAL_STEPS[stepIndex];
     const Icon = step.icon;
-
-    const nextStep = () => {
-        if (stepIndex < TUTORIAL_STEPS.length - 1) {
-            setStepIndex(stepIndex + 1);
-        } else {
-            onComplete();
-        }
-    };
-
+    const nextStep = () => { if (stepIndex < TUTORIAL_STEPS.length - 1) { setStepIndex(stepIndex + 1); } else { onComplete(); } };
     return (
         <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
             <div className="bg-[#111] border border-gold/30 w-full max-w-sm rounded-2xl p-8 shadow-2xl relative overflow-hidden">
                  <div className="absolute top-0 right-0 p-4 opacity-10"><BookOpen className="w-24 h-24 text-gold" /></div>
-                 
                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mb-6 border border-gold/40">
-                        <Icon className="w-8 h-8 text-gold" />
-                    </div>
-                    
+                    <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mb-6 border border-gold/40"><Icon className="w-8 h-8 text-gold" /></div>
                     <p className="text-[10px] text-gold font-bold uppercase tracking-[0.3em] mb-2">Opération {stepIndex + 1}/{TUTORIAL_STEPS.length}</p>
                     <h3 className="text-white font-serif text-xl font-bold mb-4 tracking-wide uppercase">{step.title}</h3>
-                    
-                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 mb-8">
-                        <p className="text-gray-300 text-sm leading-relaxed">{step.text}</p>
-                    </div>
-                    
-                    <div className="flex flex-col gap-3">
-                        <button onClick={nextStep} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all active:scale-95">
-                            {stepIndex === TUTORIAL_STEPS.length - 1 ? "PRENDRE LE COMMANDEMENT" : "SUIVANT"} <ChevronRight className="w-4 h-4"/>
-                        </button>
-                    </div>
+                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 mb-8"><p className="text-gray-300 text-sm leading-relaxed">{step.text}</p></div>
+                    <div className="flex flex-col gap-3"><button onClick={nextStep} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all active:scale-95">{stepIndex === TUTORIAL_STEPS.length - 1 ? "PRENDRE LE COMMANDEMENT" : "SUIVANT"} <ChevronRight className="w-4 h-4"/></button></div>
                  </div>
             </div>
         </div>
@@ -153,39 +141,18 @@ function TutorialOverlay({ onComplete }) {
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => { setLoading(false); }, 2500);
-    setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
-    return () => clearTimeout(timer);
-  }, []);
-
+  useEffect(() => { const timer = setTimeout(() => { setLoading(false); }, 2500); setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true'); return () => clearTimeout(timer); }, []);
   if (loading) return <SplashScreen />;
   if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
   return <MainOS />;
 }
 
-// ==========================================
-// 0. GESTIONNAIRE DE VUES & LOGIQUE PRINCIPALE
-// ==========================================
 function MainOS() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [showTutorial, setShowTutorial] = useState(false);
   const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
-
-  useEffect(() => {
-    // Vérifier si le tutoriel a déjà été vu
-    const tutorialDone = localStorage.getItem('imperium_tutorial_done') === 'true';
-    if (!tutorialDone) {
-        setTimeout(() => setShowTutorial(true), 500);
-    }
-  }, []);
-
-  const completeTutorial = () => {
-      localStorage.setItem('imperium_tutorial_done', 'true');
-      setShowTutorial(false);
-  };
-
+  useEffect(() => { const tutorialDone = localStorage.getItem('imperium_tutorial_done') === 'true'; if (!tutorialDone) { setTimeout(() => setShowTutorial(true), 500); } }, []);
+  const completeTutorial = () => { localStorage.setItem('imperium_tutorial_done', 'true'); setShowTutorial(false); };
   return (
     <>
         {showTutorial && <TutorialOverlay onComplete={completeTutorial} />}
@@ -220,14 +187,24 @@ function OnboardingScreen({ onComplete }) {
   const selectZone = (selectedZone) => { setZone(selectedZone); setStep(5); };
   const startHold = () => { setIsHolding(true); let p = 0; holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30); };
   const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
+  
   const finishOnboarding = () => {
     localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(initialBalance) || 0));
-    localStorage.setItem('imperium_project_name', mainProject || "Empire Naissant");
+    // MIGRATION POUR LE NOUVEAU SYSTÈME DE PROJETS
+    const firstProject = {
+        id: Date.now(),
+        title: mainProject || "Empire Naissant",
+        tasks: [],
+        answers: {}
+    };
+    localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
+    
     localStorage.setItem('imperium_currency', currency || "€");
     localStorage.setItem('imperium_zone', JSON.stringify(zone || ZONES[0]));
     localStorage.setItem('imperium_onboarded', 'true');
     window.location.reload();
   };
+
   return (
     <PageTransition><div className="fixed inset-0 bg-black text-gold flex flex-col items-center justify-center p-6 text-center z-50 overflow-hidden w-full h-full">
       {step === 1 && (<div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs"><h1 className="text-4xl font-serif font-bold tracking-widest mb-6">IMPERIUM</h1><p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p><button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button></div>)}
@@ -250,10 +227,25 @@ function Dashboard({ onNavigate }) {
   const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
   const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
   
-  const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha";
+  // MIGRATION / CHARGEMENT DES PROJETS
+  const [projects, setProjects] = useState(() => {
+     const saved = localStorage.getItem('imperium_projects');
+     if (saved) return JSON.parse(saved);
+     // Fallback pour anciens utilisateurs
+     const oldName = localStorage.getItem('imperium_project_name');
+     const oldTasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
+     if (oldName) {
+         return [{ id: 1, title: oldName, tasks: oldTasks, answers: {} }];
+     }
+     return [];
+  });
+
   const currency = localStorage.getItem('imperium_currency') || "€";
-  const tasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
-  const progressPercent = tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.done).length / tasks.length) * 100);
+  
+  // Calcul du progrès global (moyenne de tous les projets)
+  const totalTasks = projects.reduce((acc, p) => acc + (p.tasks ? p.tasks.length : 0), 0);
+  const doneTasks = projects.reduce((acc, p) => acc + (p.tasks ? p.tasks.filter(t => t.done).length : 0), 0);
+  const progressPercent = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactionType, setTransactionType] = useState('expense');
@@ -262,10 +254,7 @@ function Dashboard({ onNavigate }) {
   const [description, setDescription] = useState('');
   const [todaysQuote, setTodaysQuote] = useState("");
 
-  useEffect(() => {
-    const dayIndex = new Date().getDate() % QUOTES.length;
-    setTodaysQuote(QUOTES[dayIndex]);
-  }, []);
+  useEffect(() => { const dayIndex = new Date().getDate() % QUOTES.length; setTodaysQuote(QUOTES[dayIndex]); }, []);
 
   const calculateStreak = () => {
     if (transactions.length === 0) return 0;
@@ -274,8 +263,7 @@ function Dashboard({ onNavigate }) {
     const lastSinDate = new Date(lastSin.rawDate || Date.now());
     const now = new Date();
     const diffTime = Math.abs(now - lastSinDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    return diffDays; 
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
   };
   
   const streak = calculateStreak();
@@ -284,14 +272,20 @@ function Dashboard({ onNavigate }) {
 
   const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
   const availableCash = balance - lockedCash;
+  const dailyAllocation = Math.max(0, Math.floor(availableCash / 30));
 
   const dailySurvivalCost = Math.max(availableCash / 30, 1);
   const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
 
+  const debtToPay = debts
+    .filter(d => d.type === 'owe' && d.amount <= availableCash)
+    .sort((a, b) => a.amount - b.amount)[0];
+
   useEffect(() => {
     localStorage.setItem('imperium_balance', JSON.stringify(balance));
     localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-  }, [balance, transactions]);
+    localStorage.setItem('imperium_projects', JSON.stringify(projects)); // Sauvegarde des projets migrés
+  }, [balance, transactions, projects]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -333,9 +327,29 @@ function Dashboard({ onNavigate }) {
                 <span className={`text-4xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-lg text-gray-500">{currency}</span></span>
                 {lockedCash > 0 && <p className="text-[10px] text-gray-500 mt-2 flex items-center justify-center gap-1"><Lock className="w-3 h-3"/> Fortune Totale : {formatMoney(balance)} {currency}</p>}
             </div>
+            
+            <div className="w-full mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+                <span className="text-[10px] text-gray-500 uppercase tracking-widest">Ration Journalière Max</span>
+                <div className="flex items-center gap-2">
+                     <Flame className={`w-4 h-4 ${dailyAllocation < 500 ? 'text-orange-500' : 'text-green-500'}`}/>
+                     <span className="font-bold text-white font-serif">{formatMoney(dailyAllocation)} {currency}</span>
+                </div>
+            </div>
         </div>
 
-        {/* SECTION PROTOCOLES */}
+        {debtToPay && (
+            <div className="bg-[#1a0f0f] p-4 rounded-xl border border-red-900/30 animate-in slide-in-from-right">
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-red-900/20 text-red-500 rounded-lg shrink-0"><AlertTriangle className="w-4 h-4"/></div>
+                    <div className="flex-1">
+                        <p className="text-[10px] text-red-400 uppercase tracking-widest font-bold mb-1">Opportunité Stratégique</p>
+                        <p className="text-xs text-gray-300 leading-relaxed mb-3">Commandant, vos réserves permettent d'éliminer la dette envers <span className="text-white font-bold">{debtToPay.name}</span> ({formatMoney(debtToPay.amount)} {currency}). Honorer cette dette renforcera votre structure.</p>
+                        <button onClick={() => onNavigate('debts')} className="bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/50 text-[10px] font-bold uppercase py-2 px-4 rounded transition-colors w-full">Accéder au Registre</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <div onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 rounded-xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group hover:border-gold/30 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-900/20 text-indigo-500 rounded-lg"><Repeat className="w-5 h-5"/></div>
@@ -358,7 +372,8 @@ function Dashboard({ onNavigate }) {
 
         <div className="grid grid-cols-2 gap-3">
             <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Sword className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3><p className="text-[9px] text-gray-500 mt-1">Générer du cash</p></div>
-            <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Castle className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">{progressPercent}% Terminé</p></div>
+            {/* CARTE CONQUETE MISE À JOUR POUR AFFICHER LE NOMBRE DE PROJETS */}
+            <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30"><Castle className="w-5 h-5 text-gold mb-2 opacity-80" /><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">{projects.length} Front(s) Actif(s)</p></div>
         </div>
       </main>
 
@@ -392,7 +407,7 @@ function Dashboard({ onNavigate }) {
 }
 
 // ==========================================
-// 8. PROTOCOLES - LAYOUT 2 LIGNES
+// 8. PROTOCOLES - GESTION DES FRÉQUENCES
 // ==========================================
 function ProtocolsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -400,20 +415,26 @@ function ProtocolsScreen({ onBack }) {
     const [newName, setNewName] = useState("");
     const [newAmount, setNewAmount] = useState("");
     const [type, setType] = useState('expense');
+    const [freq, setFreq] = useState('monthly'); 
 
     useEffect(() => { localStorage.setItem('imperium_protocols', JSON.stringify(protocols)); }, [protocols]);
 
     const addProtocol = (e) => {
         e.preventDefault();
         if (!newName || !newAmount) return;
-        setProtocols([...protocols, { id: Date.now(), name: newName, amount: parseFloat(newAmount), type }]);
-        setNewName(""); setNewAmount("");
+        setProtocols([...protocols, { id: Date.now(), name: newName, amount: parseFloat(newAmount), type, freq }]);
+        setNewName(""); setNewAmount(""); setFreq('monthly');
     };
 
     const deleteProtocol = (id) => { setProtocols(protocols.filter(p => p.id !== id)); };
 
-    const fixedExpenses = protocols.filter(p => p.type === 'expense').reduce((acc, p) => acc + p.amount, 0);
-    const fixedIncome = protocols.filter(p => p.type === 'income').reduce((acc, p) => acc + p.amount, 0);
+    const calculateMonthly = (p) => {
+        const frequency = FREQUENCIES.find(f => f.id === (p.freq || 'monthly')); 
+        return p.amount * (frequency ? frequency.factor : 1);
+    };
+
+    const fixedExpenses = protocols.filter(p => p.type === 'expense').reduce((acc, p) => acc + calculateMonthly(p), 0);
+    const fixedIncome = protocols.filter(p => p.type === 'income').reduce((acc, p) => acc + calculateMonthly(p), 0);
     const cashFlow = fixedIncome - fixedExpenses;
 
     return (
@@ -427,35 +448,41 @@ function ProtocolsScreen({ onBack }) {
             <div className="p-5 overflow-y-auto pb-48">
                 <div className="mb-6 bg-[#111] rounded-xl border border-white/10 p-5">
                     <div className="flex items-center gap-2 mb-4 opacity-70"><Infinity className="w-4 h-4 text-gold" /><h3 className="text-xs font-bold uppercase tracking-widest">Projection Mensuelle</h3></div>
-                    <div className="flex justify-between items-center mb-2"><span className="text-xs text-gray-500">Revenus Fixes</span><span className="text-xs font-bold text-green-500">+{formatMoney(fixedIncome)} {currency}</span></div>
-                    <div className="flex justify-between items-center mb-4"><span className="text-xs text-gray-500">Charges Fixes</span><span className="text-xs font-bold text-red-500">-{formatMoney(fixedExpenses)} {currency}</span></div>
+                    <div className="flex justify-between items-center mb-2"><span className="text-xs text-gray-500">Revenus Projetés</span><span className="text-xs font-bold text-green-500">+{formatMoney(fixedIncome)} {currency}</span></div>
+                    <div className="flex justify-between items-center mb-4"><span className="text-xs text-gray-500">Charges Projetées</span><span className="text-xs font-bold text-red-500">-{formatMoney(fixedExpenses)} {currency}</span></div>
                     <div className="pt-4 border-t border-white/10 flex justify-between items-center"><span className="text-xs font-bold text-white uppercase">Cash-Flow Net</span><span className={`text-xl font-bold font-serif ${cashFlow >= 0 ? 'text-gold' : 'text-red-500'}`}>{cashFlow > 0 ? '+' : ''}{formatMoney(cashFlow)} <span className="text-xs">{currency}</span></span></div>
                 </div>
 
                 <div className="space-y-3">
                     {protocols.length === 0 && <p className="text-center text-gray-600 text-xs mt-10">Aucun protocole actif.</p>}
-                    {protocols.map(p => (
-                        <div key={p.id} className="bg-[#111] border border-white/5 p-4 rounded-xl flex justify-between items-center group">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${p.type === 'expense' ? 'bg-red-900/10 text-red-500' : 'bg-green-900/10 text-green-500'}`}>{p.type === 'expense' ? <CalendarClock className="w-5 h-5"/> : <Briefcase className="w-5 h-5"/>}</div>
-                                <div><h3 className="text-sm font-bold text-gray-200">{p.name}</h3><p className="text-[10px] text-gray-500">Mensuel</p></div>
+                    {protocols.map(p => {
+                        const fLabel = FREQUENCIES.find(f => f.id === (p.freq || 'monthly'))?.label.split('(')[0] || 'Mensuel';
+                        return (
+                            <div key={p.id} className="bg-[#111] border border-white/5 p-4 rounded-xl flex justify-between items-center group">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-lg ${p.type === 'expense' ? 'bg-red-900/10 text-red-500' : 'bg-green-900/10 text-green-500'}`}>{p.type === 'expense' ? <CalendarClock className="w-5 h-5"/> : <Briefcase className="w-5 h-5"/>}</div>
+                                    <div><h3 className="text-sm font-bold text-gray-200">{p.name}</h3><p className="text-[10px] text-gray-500">{fLabel}</p></div>
+                                </div>
+                                <div className="flex items-center gap-4"><span className={`text-sm font-bold ${p.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{formatMoney(p.amount)}</span><button onClick={() => deleteProtocol(p.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4"/></button></div>
                             </div>
-                            <div className="flex items-center gap-4"><span className={`text-sm font-bold ${p.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{formatMoney(p.amount)}</span><button onClick={() => deleteProtocol(p.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4"/></button></div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0a0a0a] border-t border-white/10 pb-[calc(2rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
                 <div className="flex bg-black p-1 rounded-lg mb-3 border border-white/5">
-                    <button onClick={() => setType('expense')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Charge Fixe</button>
-                    <button onClick={() => setType('income')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Rente Fixe</button>
+                    <button onClick={() => setType('expense')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Charge</button>
+                    <button onClick={() => setType('income')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Rente</button>
                 </div>
                 <form onSubmit={addProtocol} className="flex flex-col gap-3">
-                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Netflix)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Loyer, Salaire...)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
                     <div className="flex gap-2">
                          <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                         <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
+                         <select value={freq} onChange={(e) => setFreq(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-2 text-white text-xs focus:border-gold outline-none w-24">
+                            {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label.split('(')[1].replace(')', '')}</option>)}
+                         </select>
+                         <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold px-4 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
                     </div>
                 </form>
             </div>
@@ -465,7 +492,7 @@ function ProtocolsScreen({ onBack }) {
 }
 
 // ==========================================
-// 8. LE GRAND LIVRE - LAYOUT 2 LIGNES
+// 8. LE GRAND LIVRE
 // ==========================================
 function DebtsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -545,7 +572,7 @@ function DebtsScreen({ onBack }) {
 }
 
 // ==========================================
-// 7. CIBLES DE CONQUÊTE - LAYOUT 2 LIGNES
+// 7. CIBLES DE CONQUÊTE
 // ==========================================
 function GoalsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -724,7 +751,7 @@ function SkillsScreen({ onBack }) {
 function TrophiesScreen({ onBack }) {
     const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
     const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
-    const tasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
+    const projects = JSON.parse(localStorage.getItem('imperium_projects') || "[]");
     
     const calculateStreak = () => {
         if (transactions.length === 0) return 0;
@@ -746,7 +773,7 @@ function TrophiesScreen({ onBack }) {
             
             <div className="p-5 overflow-y-auto grid grid-cols-2 gap-4 pb-20">
                 {TROPHIES_DATA.map(trophy => {
-                    const isUnlocked = trophy.condition(balance, streak, tasks);
+                    const isUnlocked = trophy.condition(balance, streak, projects);
                     const TrophyIcon = trophy.icon;
                     return (
                         <div key={trophy.id} className={`p-4 rounded-xl border flex flex-col items-center text-center gap-3 transition-all ${isUnlocked ? 'bg-[#111] border-gold/50 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'bg-black border-white/5 opacity-50 grayscale'}`}>
@@ -767,7 +794,286 @@ function TrophiesScreen({ onBack }) {
 }
 
 // ==========================================
-// 6. PROJET & SETTINGS
+// 6. PROJET & STRATÉGIE (MULTI-PROJETS)
 // ==========================================
-function ProjectScreen({ onBack }) { const projectName = localStorage.getItem('imperium_project_name') || "Projet Alpha"; const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('imperium_tasks') || "[]")); const [newTask, setNewTask] = useState(""); useEffect(() => { localStorage.setItem('imperium_tasks', JSON.stringify(tasks)); }, [tasks]); const addTask = (e) => { e.preventDefault(); if (!newTask.trim()) return; setTasks([...tasks, { id: Date.now(), text: newTask, done: false }]); setNewTask(""); }; const toggleTask = (id) => { setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)); }; const deleteTask = (id) => { setTasks(tasks.filter(t => t.id !== id)); }; const progress = tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.done).length / tasks.length) * 100); return (<PageTransition><div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col"><div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10"><button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button><h1 className="text-2xl font-serif text-white font-bold">{projectName}</h1><div className="flex items-center gap-4 mt-4"><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div></div><span className="text-gold font-bold text-sm">{progress}%</span></div></div><div className="flex-1 p-5 overflow-y-auto pb-32"><div className="space-y-3">{tasks.map(task => (<div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : 'bg-[#111] border-white/5'}`}><button onClick={() => toggleTask(task.id)} className="mt-0.5 text-gold hover:scale-110 transition-transform">{task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</button><p className={`flex-1 text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.text}</p><button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4" /></button></div>))}</div></div><div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto"><form onSubmit={addTask} className="flex gap-2"><input type="text" value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Nouvelle mission..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button></form></div></div></PageTransition>); }
-function SettingsScreen({ onBack }) { const [importData, setImportData] = useState(""); const handleExport = () => { const data = { balance: localStorage.getItem('imperium_balance'), transactions: localStorage.getItem('imperium_transactions'), project: localStorage.getItem('imperium_project_name'), tasks: localStorage.getItem('imperium_tasks'), skills: localStorage.getItem('imperium_skills'), currency: localStorage.getItem('imperium_currency'), zone: localStorage.getItem('imperium_zone'), onboarded: localStorage.getItem('imperium_onboarded'), }; const encoded = btoa(JSON.stringify(data)); navigator.clipboard.writeText(encoded); alert("⚔️ ARCHIVES SÉCURISÉES ⚔️\n\nCode copié."); }; const handleImport = () => { try { if(!importData) return; const decoded = JSON.parse(atob(importData)); if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); if(decoded.project) localStorage.setItem('imperium_project_name', decoded.project); if(decoded.tasks) localStorage.setItem('imperium_tasks', decoded.tasks); if(decoded.skills) localStorage.setItem('imperium_skills', decoded.skills); if(decoded.currency) localStorage.setItem('imperium_currency', decoded.currency); if(decoded.zone) localStorage.setItem('imperium_zone', decoded.zone); if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); alert("✅ RESTAURATION RÉUSSIE."); window.location.reload(); } catch (e) { alert("❌ ERREUR : Code invalide."); } }; const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; return (<PageTransition><div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col"><div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10"><button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button><h1 className="text-2xl font-serif text-white font-bold">Archives</h1></div><div className="p-5 space-y-8"><div className="bg-[#111] border border-white/5 rounded-xl p-5"><div className="flex items-center gap-3 mb-3"><div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div></div><button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"><Copy className="w-4 h-4" /> Copier le Code</button></div><div className="bg-[#111] border border-white/5 rounded-xl p-5"><div className="flex items-center gap-3 mb-3"><div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div><div><h3 className="text-sm font-bold text-gray-200">Restaurer les données</h3><p className="text-[10px] text-gray-500">Collez le code ici.</p></div></div><textarea value={importData} onChange={(e) => setImportData(e.target.value)} placeholder="Collez votre code ici..." className="w-full bg-black border border-white/10 rounded-lg p-3 text-xs text-gray-300 focus:border-gold focus:outline-none h-20 mb-3 font-mono"/><button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">Restaurer</button></div><div className="pt-10 border-t border-white/5"><button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button></div></div></div></PageTransition>); }
+function ProjectScreen({ onBack }) { 
+    // GESTION DES PROJETS MULTIPLES
+    const [projects, setProjects] = useState(() => {
+        const saved = localStorage.getItem('imperium_projects');
+        if (saved) return JSON.parse(saved);
+        // Fallback backward compatibility
+        const oldName = localStorage.getItem('imperium_project_name');
+        const oldTasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
+        if (oldName) {
+            return [{ id: Date.now(), title: oldName, tasks: oldTasks, answers: {} }];
+        }
+        return [];
+    });
+    
+    const [activeProject, setActiveProject] = useState(null); // Si null, affiche la liste. Sinon affiche le détail.
+    const [newProjectName, setNewProjectName] = useState("");
+    const [newTask, setNewTask] = useState("");
+
+    useEffect(() => { localStorage.setItem('imperium_projects', JSON.stringify(projects)); }, [projects]);
+
+    // AJOUTER UN PROJET
+    const addProject = (e) => {
+        e.preventDefault();
+        if (!newProjectName.trim()) return;
+        setProjects([...projects, { id: Date.now(), title: newProjectName, tasks: [], answers: {} }]);
+        setNewProjectName("");
+    };
+
+    // SUPPRIMER UN PROJET
+    const deleteProject = (id, e) => {
+        e.stopPropagation();
+        if(confirm("Confirmer l'abandon de ce front ?")) {
+             setProjects(projects.filter(p => p.id !== id));
+             if(activeProject && activeProject.id === id) setActiveProject(null);
+        }
+    };
+
+    // --- LOGIQUE INTERNE AU PROJET ACTIF ---
+    const addTask = (e) => { 
+        e.preventDefault(); 
+        if (!newTask.trim() || !activeProject) return; 
+        const updatedProjects = projects.map(p => {
+            if (p.id === activeProject.id) {
+                return { ...p, tasks: [...(p.tasks || []), { id: Date.now(), text: newTask, done: false }] };
+            }
+            return p;
+        });
+        setProjects(updatedProjects);
+        setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
+        setNewTask(""); 
+    }; 
+    
+    const toggleTask = (taskId) => { 
+        const updatedProjects = projects.map(p => {
+            if (p.id === activeProject.id) {
+                const newTasks = p.tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t);
+                return { ...p, tasks: newTasks };
+            }
+            return p;
+        });
+        setProjects(updatedProjects);
+        setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
+    }; 
+    
+    const deleteTask = (taskId) => { 
+         const updatedProjects = projects.map(p => {
+            if (p.id === activeProject.id) {
+                return { ...p, tasks: p.tasks.filter(t => t.id !== taskId) };
+            }
+            return p;
+        });
+        setProjects(updatedProjects);
+        setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
+    };
+
+    // --- LOGIQUE REPONSES STRATEGIQUES ---
+    const updateAnswer = (qId, value) => {
+         const updatedProjects = projects.map(p => {
+            if (p.id === activeProject.id) {
+                return { ...p, answers: { ...(p.answers || {}), [qId]: value } };
+            }
+            return p;
+        });
+        setProjects(updatedProjects);
+        setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
+    };
+
+    // VUE 1 : LISTE DES PROJETS
+    if (!activeProject) {
+        return (
+            <PageTransition>
+                <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col">
+                    <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                        <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                        <h1 className="text-2xl font-serif text-white font-bold">Conquêtes</h1>
+                        <p className="text-[10px] text-gray-500 mt-1">Gérez vos fronts actifs.</p>
+                    </div>
+
+                    <div className="flex-1 p-5 overflow-y-auto pb-40 space-y-4">
+                        {projects.length === 0 && <div className="text-center p-10 opacity-50"><Castle className="w-12 h-12 mx-auto mb-4 text-gray-600"/><p className="text-sm">Aucune conquête en cours.</p></div>}
+                        
+                        {projects.map(p => {
+                            const pTasks = p.tasks || [];
+                            const progress = pTasks.length === 0 ? 0 : Math.round((pTasks.filter(t => t.done).length / pTasks.length) * 100);
+                            return (
+                                <div key={p.id} onClick={() => setActiveProject(p)} className="bg-[#111] border border-white/5 p-5 rounded-xl active:scale-[0.98] transition-all cursor-pointer group hover:border-gold/30">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <h3 className="text-white font-bold font-serif text-lg">{p.title}</h3>
+                                        <button onClick={(e) => deleteProject(p.id, e)} className="text-gray-600 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
+                                    <div className="w-full bg-gray-900 rounded-full h-1.5 mb-3"><div className="h-full bg-gold rounded-full" style={{ width: `${progress}%` }}></div></div>
+                                    <div className="flex justify-between items-center text-[10px] text-gray-500">
+                                        <span>{pTasks.length} Missions</span>
+                                        <span>{progress}%</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
+                        <form onSubmit={addProject} className="flex gap-2">
+                            <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Nouveau Front (ex: Agence Web)..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                            <button type="submit" disabled={!newProjectName.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button>
+                        </form>
+                    </div>
+                </div>
+            </PageTransition>
+        );
+    }
+
+    // VUE 2 : DÉTAIL DU PROJET ACTIF
+    const pTasks = activeProject.tasks || [];
+    const progress = pTasks.length === 0 ? 0 : Math.round((pTasks.filter(t => t.done).length / pTasks.length) * 100);
+
+    return (
+        <PageTransition>
+            <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col">
+                <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                    <button onClick={() => setActiveProject(null)} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour aux Conquêtes</span></button>
+                    <h1 className="text-2xl font-serif text-white font-bold">{activeProject.title}</h1>
+                    <div className="flex items-center gap-4 mt-4"><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div></div><span className="text-gold font-bold text-sm">{progress}%</span></div>
+                </div>
+
+                <div className="flex-1 p-5 overflow-y-auto pb-32">
+                    
+                    {/* SECTION INTERROGATOIRE TACTIQUE */}
+                    <div className="mb-8 space-y-4">
+                        <div className="flex items-center gap-2 mb-2 opacity-80"><Lightbulb className="w-4 h-4 text-gold" /><h3 className="text-xs font-bold uppercase tracking-widest text-gold">Interrogatoire Tactique</h3></div>
+                        {STRATEGIC_QUESTIONS.map(q => (
+                            <div key={q.id} className="bg-[#111] border border-white/5 p-4 rounded-lg">
+                                <p className="text-xs text-gray-400 mb-2 italic">{q.q}</p>
+                                <input 
+                                    type="text" 
+                                    value={(activeProject.answers && activeProject.answers[q.id]) || ""} 
+                                    onChange={(e) => updateAnswer(q.id, e.target.value)}
+                                    placeholder="Réponse stratégique..." 
+                                    className="w-full bg-black border-b border-white/10 text-white text-sm py-1 focus:border-gold focus:outline-none placeholder-gray-800"
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* SECTION MISSIONS */}
+                    <div className="flex items-center gap-2 mb-4 opacity-80"><CheckSquare className="w-4 h-4 text-white" /><h3 className="text-xs font-bold uppercase tracking-widest text-white">Plan de Bataille</h3></div>
+                    <div className="space-y-3">
+                        {pTasks.map(task => (
+                            <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : 'bg-[#111] border-white/5'}`}>
+                                <button onClick={() => toggleTask(task.id)} className="mt-0.5 text-gold hover:scale-110 transition-transform">{task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</button>
+                                <p className={`flex-1 text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.text}</p>
+                                <button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4" /></button>
+                            </div>
+                        ))}
+                        {pTasks.length === 0 && <p className="text-gray-600 text-xs italic">Aucune mission définie. L'ennemi avance.</p>}
+                    </div>
+                </div>
+
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto">
+                    <form onSubmit={addTask} className="flex gap-2">
+                        <input type="text" value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Nouvelle mission..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                        <button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button>
+                    </form>
+                </div>
+            </div>
+        </PageTransition>
+    ); 
+}
+
+function SettingsScreen({ onBack }) { 
+    const [importData, setImportData] = useState("");
+    const [currentBalance, setCurrentBalance] = useState(() => JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+
+    const handleExport = () => { 
+        const data = { 
+            balance: localStorage.getItem('imperium_balance'), 
+            transactions: localStorage.getItem('imperium_transactions'), 
+            projects: localStorage.getItem('imperium_projects'), // Export des projets multiples
+            tasks: localStorage.getItem('imperium_tasks'), 
+            skills: localStorage.getItem('imperium_skills'), 
+            currency: localStorage.getItem('imperium_currency'), 
+            zone: localStorage.getItem('imperium_zone'), 
+            onboarded: localStorage.getItem('imperium_onboarded'), 
+        }; 
+        const encoded = btoa(JSON.stringify(data)); 
+        navigator.clipboard.writeText(encoded); 
+        alert("CODE D'ARCHIVE COPIÉ."); 
+    }; 
+    
+    const handleImport = () => { 
+        try { 
+            if(!importData) return; 
+            const decoded = JSON.parse(atob(importData)); 
+            if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); 
+            if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); 
+            if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects); // Import projets
+            if(decoded.project) localStorage.setItem('imperium_project_name', decoded.project); 
+            if(decoded.tasks) localStorage.setItem('imperium_tasks', decoded.tasks); 
+            if(decoded.skills) localStorage.setItem('imperium_skills', decoded.skills); 
+            if(decoded.currency) localStorage.setItem('imperium_currency', decoded.currency); 
+            if(decoded.zone) localStorage.setItem('imperium_zone', decoded.zone); 
+            if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); 
+            alert("✅ RESTAURATION RÉUSSIE."); 
+            window.location.reload(); 
+        } catch (e) { alert("❌ ERREUR : Code invalide."); } 
+    }; 
+    
+    const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; 
+    
+    const handleBalanceUpdate = () => {
+        localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(currentBalance)));
+        alert("✅ Trésorerie calibrée.");
+        window.location.reload();
+    };
+
+    return (
+        <PageTransition>
+            <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col">
+                <div className="px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] sticky top-0 z-10">
+                    <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                    <h1 className="text-2xl font-serif text-white font-bold">Paramètres</h1>
+                </div>
+                
+                <div className="p-5 space-y-8 flex-1 overflow-y-auto">
+                    
+                    <div className="bg-[#111] p-5 rounded-xl border border-white/5">
+                         <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-yellow-900/20 text-gold rounded-lg"><Edit3 className="w-5 h-5"/></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Calibrage Financier</h3><p className="text-[10px] text-gray-500">Correction d'erreur de saisie.</p></div>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mb-3 leading-relaxed">Utilisez ceci uniquement si votre solde actuel ne reflète pas la réalité (erreur lors de l'Onboarding).</p>
+                        <div className="flex gap-2">
+                             <input type="number" value={currentBalance} onChange={(e) => setCurrentBalance(e.target.value)} className="flex-1 bg-black border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold outline-none" placeholder="Nouveau Solde" />
+                             <button onClick={handleBalanceUpdate} className="bg-white/10 text-white font-bold px-4 rounded-lg text-xs uppercase hover:bg-white/20">Corriger</button>
+                        </div>
+                    </div>
+
+                    <div className="bg-[#111] p-5 rounded-xl border border-white/5">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div>
+                        </div>
+                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"><Copy className="w-4 h-4" /> Copier le Code</button>
+                    </div>
+                    
+                    <div className="bg-[#111] border border-white/5 rounded-xl p-5">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Restaurer les données</h3><p className="text-[10px] text-gray-500">Collez le code ici.</p></div>
+                        </div>
+                        <textarea value={importData} onChange={(e) => setImportData(e.target.value)} placeholder="Collez votre code ici..." className="w-full bg-black border border-white/10 rounded-lg p-3 text-xs text-gray-300 focus:border-gold focus:outline-none h-20 mb-3 font-mono"/>
+                        <button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">Restaurer</button>
+                    </div>
+                    
+                    <div className="pt-10 border-t border-white/5">
+                        <button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button>
+                    </div>
+                </div>
+            </div>
+        </PageTransition>
+    ); 
+}
