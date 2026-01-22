@@ -1,22 +1,45 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2 } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.2.7"; 
+const APP_VERSION = "14.3.0"; 
 
 const RELEASE_NOTES = [
     {
-        version: "14.2.7",
-        title: "Correctif Urgent",
-        desc: "Restauration de l'accès aux données.",
+        version: "14.3.0",
+        title: "Protocole Sécurisé",
+        desc: "Restriction de l'accès à l'application.",
         changes: [
-            { icon: BarChart3, text: "La Salle des Cartes (Statistiques) est de retour dans la barre de navigation." },
-            { icon: History, text: "L'Historique reste accessible juste à côté pour annuler vos actions." }
+            { icon: Lock, text: "Accès Restreint : L'application est désormais verrouillée pour le grand public." },
+            { icon: Key, text: "Beta Privée : Seuls les détenteurs d'une Clé Impériale peuvent entrer." }
         ]
     }
+];
+
+// LISTE DES CODES HACHÉS (Pour ne pas qu'ils soient lisibles en clair dans le code source facilement)
+// Ce sont les versions base64 de : IMP-ALPHA-77, IMP-BRAVO-88, etc.
+const VALID_HASHES = [
+    "SU1QLUFMUEhBLTc3", "SU1QLUJSQVZPLTg4", "SU1QLUNIQVJMSUUtOTk=", "SU1QLURFTEVULTEw", 
+    "SU1QLRUNITy0yMA==", "SU1QLUZPWFRST1QtMzA=", "SU1QLUdPTEYtNDA=", "SU1QLUhPVEVMLTUw", 
+    "SU1QLUlORElBLTYw", "SU1QLUpVTElFVFQtNzA=", "SU1QRVJBVE9SLVg=" // Le code maître
+];
+
+const DAILY_QUOTES = [
+    { text: "Ce n'est pas parce que les choses sont difficiles que nous n'osons pas, c'est parce que nous n'osons pas qu'elles sont difficiles.", author: "Sénèque" },
+    { text: "La richesse consiste bien plus dans l'usage qu'on en fait que dans la possession.", author: "Aristote" },
+    { text: "Ne dépensez pas votre argent avant de l'avoir gagné.", author: "Thomas Jefferson" },
+    { text: "L'art de la guerre, c'est de soumettre l'ennemi sans combat.", author: "Sun Tzu" },
+    { text: "La discipline est mère du succès.", author: "Eschyle" },
+    { text: "Fais ce que tu dois, advienne que pourra.", author: "Devise Chevaleresque" },
+    { text: "Si tu achètes des choses dont tu n'as pas besoin, tu devras bientôt vendre des choses dont tu as besoin.", author: "Warren Buffett" },
+    { text: "Le prix est ce que vous payez. La valeur est ce que vous obtenez.", author: "Warren Buffett" },
+    { text: "Un voyage de mille lieues commence toujours par un premier pas.", author: "Lao Tseu" },
+    { text: "La pauvreté n'est pas le manque de biens, mais le désir insatiable d'en avoir plus.", author: "Sénèque" },
+    { text: "Celui qui a le contrôle sur lui-même est plus puissant que celui qui contrôle une cité.", author: "Proverbe" },
+    { text: "L'intérêt composé est la huitième merveille du monde.", author: "Einstein" }
 ];
 
 const CURRENCIES = [
@@ -141,6 +164,84 @@ function PageTransition({ children }) {
     return (<div className="animate-in slide-in-from-bottom-8 fade-in duration-500 w-full flex-1 flex flex-col overflow-hidden">{children}</div>);
 }
 
+// ==========================================
+// SYSTEME DE SECURITE (NOUVEAU)
+// ==========================================
+function SecurityGate({ onAccessGranted }) {
+    const [code, setCode] = useState("");
+    const [error, setError] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const checkCode = (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(false);
+
+        setTimeout(() => {
+            // Encodage de l'entrée utilisateur en Base64 pour comparer
+            const inputHash = btoa(code.trim().toUpperCase());
+            
+            if (VALID_HASHES.includes(inputHash)) {
+                // Succès
+                localStorage.setItem('imperium_license', 'GRANTED_V1');
+                onAccessGranted();
+            } else {
+                setError(true);
+                setLoading(false);
+                setCode("");
+            }
+        }, 1500); // Simulation de vérification serveur
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black z-[200] flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-full max-w-sm">
+                <div className="w-24 h-24 bg-red-900/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/30 animate-pulse">
+                    <Lock className="w-10 h-10 text-red-500" />
+                </div>
+                
+                <h1 className="text-2xl font-serif text-white font-bold mb-2 uppercase tracking-widest">Zone Restreinte</h1>
+                <p className="text-gray-500 text-xs mb-8 leading-relaxed">
+                    Cette application est en phase de test classifiée.<br/>
+                    L'accès est limité au personnel autorisé disposant d'une Clé Impériale.
+                </p>
+
+                <form onSubmit={checkCode} className="space-y-4">
+                    <div className="relative">
+                        <Key className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+                        <input 
+                            type="text" 
+                            value={code} 
+                            onChange={(e) => setCode(e.target.value)} 
+                            className={`w-full bg-[#111] border rounded-lg pl-10 pr-4 py-3 text-white font-mono text-center uppercase tracking-widest focus:outline-none transition-all ${error ? 'border-red-500 animate-shake' : 'border-white/20 focus:border-gold'}`}
+                            placeholder="XXX-XXXXX-00" 
+                            autoFocus
+                        />
+                    </div>
+                    
+                    <button 
+                        type="submit" 
+                        disabled={!code || loading}
+                        className={`w-full font-bold py-4 rounded-lg uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-800 text-gray-500' : 'bg-white text-black hover:bg-gray-200'}`}
+                    >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Unlock className="w-4 h-4"/>}
+                        {loading ? "Vérification..." : "Déverrouiller"}
+                    </button>
+                </form>
+
+                {error && (
+                    <div className="mt-6 p-3 bg-red-900/20 border border-red-500/20 rounded text-red-400 text-xs flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2">
+                        <AlertTriangle className="w-4 h-4" /> Code invalide ou expiré.
+                    </div>
+                )}
+                
+                <p className="fixed bottom-6 w-full left-0 text-[9px] text-gray-700 uppercase tracking-widest">Security Protocol v{APP_VERSION}</p>
+            </div>
+            <style>{`@keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } } .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }`}</style>
+        </div>
+    );
+}
+
 function PatchNotesModal({ onAck }) {
     const note = RELEASE_NOTES[0];
     return (
@@ -167,9 +268,22 @@ function PatchNotesModal({ onAck }) {
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-  useEffect(() => { const timer = setTimeout(() => { setLoading(false); }, 2500); setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true'); return () => clearTimeout(timer); }, []);
+  const [isAuthorized, setIsAuthorized] = useState(false); // NOUVEAU STATE
+
+  useEffect(() => { 
+      const timer = setTimeout(() => { setLoading(false); }, 2500); 
+      setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
+      setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); // VERIF LICENCE
+      return () => clearTimeout(timer); 
+  }, []);
+
   if (loading) return <SplashScreen />;
+  
+  // SI PAS AUTORISÉ, AFFICHER LA SECURITY GATE
+  if (!isAuthorized) return <SecurityGate onAccessGranted={() => setIsAuthorized(true)} />;
+  
   if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
+  
   return <MainOS />;
 }
 
@@ -289,6 +403,10 @@ function Dashboard({ onNavigate }) {
   
   // Bunker State Local pour Modal
   const [bunkerAmount, setBunkerAmount] = useState('');
+
+  // CALCUL DE LA CITATION DU JOUR
+  const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
+  const dailyQuote = DAILY_QUOTES[quoteIndex];
 
   // CALCULS AGRÉGÉS
   const totalBalance = balance; // Ce qu'il a en main + OM
@@ -420,7 +538,6 @@ function Dashboard({ onNavigate }) {
       setIsBunkerModalOpen(false);
   };
   
-  // --- NOUVELLE FONCTION D'ANNULATION ---
   const handleUndoTransaction = (txId) => {
       if(!confirm("Annuler cette opération ? Le montant sera remboursé sur votre solde.")) return;
       
@@ -548,6 +665,15 @@ function Dashboard({ onNavigate }) {
         <div className="grid grid-cols-2 gap-3 mt-1">
             <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Sword className="w-5 h-5 text-gold opacity-80" /></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3><p className="text-[9px] text-gray-500 mt-1">Compétences & Business</p></div></div>
             <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Castle className="w-5 h-5 text-gold opacity-80" /><span className="text-[10px] font-bold text-gray-500">{projects.length}</span></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">Projets Stratégiques</p></div></div>
+        </div>
+
+        {/* === CITATION DU JOUR (En bas, pour l'ergonomie) === */}
+        <div className="mt-4 bg-[#111] border border-white/5 rounded-xl p-4 flex gap-3 items-start opacity-80">
+            <Quote className="w-5 h-5 text-gold shrink-0 mt-1" />
+            <div>
+                <p className="text-xs text-gray-300 italic font-serif leading-relaxed">"{dailyQuote.text}"</p>
+                <p className="text-[10px] text-gold mt-2 font-bold uppercase">— {dailyQuote.author}</p>
+            </div>
         </div>
       </main>
 
@@ -1364,6 +1490,7 @@ function SettingsScreen({ onBack }) {
             onboarded: localStorage.getItem('imperium_onboarded'), 
             bunker: localStorage.getItem('imperium_bunker'),
             version: localStorage.getItem('imperium_version'),
+            license: localStorage.getItem('imperium_license') // Include license in backup
         }; 
         const encoded = btoa(JSON.stringify(data)); 
         setExportCode(encoded); // Affiche le code
@@ -1389,6 +1516,7 @@ function SettingsScreen({ onBack }) {
             if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); 
             if(decoded.bunker) localStorage.setItem('imperium_bunker', decoded.bunker);
             if(decoded.version) localStorage.setItem('imperium_version', decoded.version);
+            if(decoded.license) localStorage.setItem('imperium_license', decoded.license); // Restore license
             alert("✅ RESTAURATION RÉUSSIE."); 
             window.location.reload(); 
         } catch (e) { alert("❌ ERREUR : Code invalide."); } 
