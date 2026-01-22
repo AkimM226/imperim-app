@@ -5,16 +5,15 @@ import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpC
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.2.2"; 
+const APP_VERSION = "14.2.4"; 
 
 const RELEASE_NOTES = [
     {
-        version: "14.2.2",
-        title: "Calibrage Manuel",
-        desc: "Restauration des outils de correction.",
+        version: "14.2.4",
+        title: "Correction Registre",
+        desc: "Gestion des erreurs dans le grand livre.",
         changes: [
-            { icon: RefreshCw, text: "Recalibrage : Modifiez manuellement vos soldes (Cash ou Wave) dans les Paramètres en cas d'erreur." },
-            { icon: Smartphone, text: "Stratégie Wave : Votre compte Wave reste votre Bunker inviolable." }
+            { icon: Trash2, text: "Suppression : Vous pouvez désormais supprimer une dette ou une créance sans impacter votre solde (en cas d'erreur de saisie)." }
         ]
     }
 ];
@@ -757,6 +756,13 @@ function DebtsScreen({ onBack }) {
         }
         setDebts(debts.filter(d => d.id !== item.id));
     };
+    
+    // NOUVELLE FONCTION DE SUPPRESSION
+    const deleteEntry = (id) => {
+        if(confirm("Supprimer cette entrée ? Cela n'affectera pas votre solde.")) {
+            setDebts(debts.filter(d => d.id !== id));
+        }
+    };
 
     const totalOwe = debts.filter(d => d.type === 'owe').reduce((acc, d) => acc + d.amount, 0);
     const totalOwed = debts.filter(d => d.type === 'owed').reduce((acc, d) => acc + d.amount, 0);
@@ -783,7 +789,10 @@ function DebtsScreen({ onBack }) {
                                 <div className={`p-2 rounded-lg ${item.type === 'owe' ? 'bg-red-900/20 text-red-500' : 'bg-green-900/20 text-green-500'}`}>{item.type === 'owe' ? <UserMinus className="w-5 h-5"/> : <UserPlus className="w-5 h-5"/>}</div>
                                 <div><h3 className="text-sm font-bold text-gray-200">{item.name}</h3><p className="text-[10px] text-gray-500">{formatMoney(item.amount)} {currency}</p></div>
                             </div>
-                            <button onClick={() => settleEntry(item)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase border ${item.type === 'owe' ? 'border-red-500 text-red-500 hover:bg-red-900/20' : 'border-green-500 text-green-500 hover:bg-green-900/20'}`}>{item.type === 'owe' ? "Honorer" : "Encaisser"}</button>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => settleEntry(item)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase border ${item.type === 'owe' ? 'border-red-500 text-red-500 hover:bg-red-900/20' : 'border-green-500 text-green-500 hover:bg-green-900/20'}`}>{item.type === 'owe' ? "Honorer" : "Encaisser"}</button>
+                                <button onClick={() => deleteEntry(item.id)} className="p-2 text-gray-600 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4"/></button>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -1279,6 +1288,7 @@ function ProjectScreen({ onBack }) {
 
 function SettingsScreen({ onBack }) { 
     const [importData, setImportData] = useState("");
+    const [exportCode, setExportCode] = useState(""); // NOUVEAU
     
     // CALIBRAGE STATES
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
@@ -1298,8 +1308,12 @@ function SettingsScreen({ onBack }) {
             version: localStorage.getItem('imperium_version'),
         }; 
         const encoded = btoa(JSON.stringify(data)); 
-        navigator.clipboard.writeText(encoded); 
-        alert("CODE D'ARCHIVE COPIÉ."); 
+        setExportCode(encoded); // Affiche le code
+        
+        // Tente de copier quand même
+        navigator.clipboard.writeText(encoded)
+            .then(() => alert("CODE D'ARCHIVE COPIÉ."))
+            .catch(() => alert("Copie automatique échouée. Veuillez copier le code affiché manuellement."));
     }; 
     
     const handleImport = () => { 
@@ -1369,7 +1383,15 @@ function SettingsScreen({ onBack }) {
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
                             <div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div>
                         </div>
-                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"><Copy className="w-4 h-4" /> Copier le Code</button>
+                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3"><Copy className="w-4 h-4" /> Générer Code</button>
+                        
+                        {/* NOUVEAU : AFFICHAGE DU CODE */}
+                        {exportCode && (
+                            <div className="animate-in fade-in slide-in-from-top-2">
+                                <p className="text-[10px] text-gray-500 mb-1">Copiez ce code manuellement si besoin :</p>
+                                <textarea readOnly value={exportCode} className="w-full h-24 bg-black border border-blue-500/30 rounded-lg p-2 text-[10px] text-blue-300 font-mono focus:outline-none" onClick={(e) => e.target.select()}></textarea>
+                            </div>
+                        )}
                     </div>
                     
                     <div className="bg-[#111] border border-white/5 rounded-xl p-5">
