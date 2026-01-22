@@ -1354,4 +1354,3 @@ function SettingsScreen({ onBack }) {
             </div>
         </PageTransition>
     ); 
-}
