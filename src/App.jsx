@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2 } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.2.5"; 
+const APP_VERSION = "14.2.7"; 
 
 const RELEASE_NOTES = [
     {
-        version: "14.2.5",
-        title: "Architecture & Ergonomie",
-        desc: "Optimisation de l'affichage des listes.",
+        version: "14.2.7",
+        title: "Correctif Urgent",
+        desc: "Restauration de l'accès aux données.",
         changes: [
-            { icon: LayoutGrid, text: "Scroll Infini : Les listes (Registre, Cibles, etc.) défilent désormais proprement sans que l'en-tête ou le formulaire du bas ne bougent." },
-            { icon: Trash2, text: "Rappel : La suppression administrative est active dans le Registre." }
+            { icon: BarChart3, text: "La Salle des Cartes (Statistiques) est de retour dans la barre de navigation." },
+            { icon: History, text: "L'Historique reste accessible juste à côté pour annuler vos actions." }
         ]
     }
 ];
@@ -278,6 +278,7 @@ function Dashboard({ onNavigate }) {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false); // STATE POUR L'HISTORIQUE
   const [showTaxModal, setShowTaxModal] = useState(false);
   const [pendingTransaction, setPendingTransaction] = useState(null);
 
@@ -418,6 +419,22 @@ function Dashboard({ onNavigate }) {
       setBunkerAmount('');
       setIsBunkerModalOpen(false);
   };
+  
+  // --- NOUVELLE FONCTION D'ANNULATION ---
+  const handleUndoTransaction = (txId) => {
+      if(!confirm("Annuler cette opération ? Le montant sera remboursé sur votre solde.")) return;
+      
+      const tx = transactions.find(t => t.id === txId);
+      if(!tx) return;
+      
+      if(tx.type === 'expense') {
+          setBalance(balance + tx.amount); // Remboursement
+      } else {
+          setBalance(balance - tx.amount); // Retrait du revenu
+      }
+      
+      setTransactions(transactions.filter(t => t.id !== txId));
+  };
 
   return (
     <PageTransition>
@@ -426,6 +443,7 @@ function Dashboard({ onNavigate }) {
       <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
          <div className="flex gap-2">
              <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><BarChart3 className="w-5 h-5"/></button>
+             <button onClick={() => setShowHistory(true)} className="w-8 flex justify-start text-gray-500 hover:text-gold"><History className="w-5 h-5"/></button>
          </div>
          <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
          <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white"><Settings className="w-5 h-5"/></button>
@@ -597,6 +615,44 @@ function Dashboard({ onNavigate }) {
              </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL HISTORIQUE (JOURNAL DE BORD) */}
+      {showHistory && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in">
+              <div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+                  <div className="flex justify-between items-center mb-6">
+                      <div className="flex items-center gap-2">
+                        <History className="w-5 h-5 text-gold"/>
+                        <h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal de Bord</h2>
+                      </div>
+                      <button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">
+                    {transactions.length === 0 ? (
+                        <p className="text-gray-500 text-xs text-center mt-10">Le journal est vierge.</p>
+                    ) : (
+                        transactions.map(tx => (
+                            <div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5">
+                                <div>
+                                    <p className="text-xs text-white font-bold">{tx.desc}</p>
+                                    <p className="text-[10px] text-gray-500">{tx.date} • {tx.type === 'expense' ? (tx.category === 'want' ? 'Futilité' : 'Besoin') : 'Revenu'}</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
+                                        {tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}
+                                    </span>
+                                    <button onClick={() => handleUndoTransaction(tx.id)} className="p-2 bg-red-900/10 text-red-500 rounded hover:bg-red-900/30 transition-colors">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                  </div>
+              </div>
+          </div>
       )}
 
       {/* MODAL DE L'IMPÔT IMPÉRIAL */}
