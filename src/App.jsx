@@ -1,22 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, Menu } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.3.1"; 
+const APP_VERSION = "14.3.2"; 
 
 const RELEASE_NOTES = [
     {
-        version: "14.3.1",
-        title: "Restauration du Cockpit",
-        desc: "Retour des commandes de navigation.",
+        version: "14.3.2",
+        title: "Ergonomie de Combat",
+        desc: "Repositionnement des commandes.",
         changes: [
-            { icon: BarChart3, text: "Salle des Cartes (Stats) : Restaurée." },
-            { icon: History, text: "Journal & Annulation : Restaurés." },
-            { icon: Settings, text: "Paramètres : Restaurés." },
-            { icon: Lock, text: "Sécurité : Toujours active." }
+            { icon: LayoutGrid, text: "Menu Tactique : Les boutons Stats, Journal et Paramètres sont maintenant de gros blocs visibles sous le titre." },
+            { icon: History, text: "Accès Rapide : L'annulation des dépenses est plus facile d'accès via le bouton 'Journal'." }
         ]
     }
 ];
@@ -317,7 +315,7 @@ function OnboardingScreen({ onComplete }) {
 }
 
 // ==========================================
-// 2. DASHBOARD (CORRIGÉ AVEC HEADER)
+// 2. DASHBOARD (ERGONOMIE CORRIGÉE)
 // ==========================================
 function Dashboard({ onNavigate }) {
   const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
@@ -464,18 +462,32 @@ function Dashboard({ onNavigate }) {
     <PageTransition>
     <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-40 flex flex-col relative shadow-2xl">
       
-      {/* HEADER RESTAURÉ */}
-      <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
-         <div className="flex gap-2">
-             <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold active:scale-90 transition-transform"><BarChart3 className="w-5 h-5"/></button>
-             <button onClick={() => setShowHistory(true)} className="w-8 flex justify-start text-gray-500 hover:text-gold active:scale-90 transition-transform"><History className="w-5 h-5"/></button>
-         </div>
-         <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
-         <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white active:scale-90 transition-transform"><Settings className="w-5 h-5"/></button>
+      {/* HEADER SIMPLIFIÉ (TITRE SEULEMENT) */}
+      <header className="px-5 py-6 border-b border-white/5 bg-dark sticky top-0 z-20 w-full pt-[env(safe-area-inset-top)] text-center">
+         <h1 className="text-2xl font-serif text-gold tracking-widest font-bold">IMPERIUM</h1>
+         <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-1">Version {APP_VERSION}</p>
       </header>
 
-      <div className="w-full px-4 mt-4">
-        <div className="flex justify-between items-end mb-4">
+      <main className="w-full px-4 grid gap-3 mt-4">
+        
+        {/* === NOUVEAU MENU TACTIQUE (GROS BOUTONS VISIBLES) === */}
+        {/* Ces boutons remplacent le header et sont dans le flux normal de la page */}
+        <div className="grid grid-cols-3 gap-2">
+            <button onClick={() => onNavigate('stats')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-lg p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
+                <BarChart3 className="w-5 h-5 text-gray-400"/>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Cartes</span>
+            </button>
+            <button onClick={() => setShowHistory(true)} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-lg p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
+                <History className="w-5 h-5 text-gray-400"/>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Journal</span>
+            </button>
+            <button onClick={() => onNavigate('settings')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-lg p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all">
+                <Settings className="w-5 h-5 text-gray-400"/>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Réglages</span>
+            </button>
+        </div>
+
+        <div className="flex justify-between items-end mb-1 mt-2">
             <button onClick={() => onNavigate('trophies')} className="flex flex-col items-start group active:scale-95 transition-transform">
                 <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-gold transition-colors">Grade</p>
                 <div className="flex items-center gap-2"><RankIcon className={`w-4 h-4 ${rank.color}`} /><h2 className={`text-sm font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2></div>
@@ -485,9 +497,7 @@ function Dashboard({ onNavigate }) {
                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}><Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} /><span className={`text-sm font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span></div>
             </button>
         </div>
-      </div>
 
-      <main className="w-full px-4 grid gap-3">
         {/* HUD */}
         <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
             <div className="p-5 pb-2 text-center relative">
