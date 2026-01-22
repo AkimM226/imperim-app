@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.2.1"; // Correctif Ecran Noir
+const APP_VERSION = "14.2.2"; 
 
 const RELEASE_NOTES = [
     {
-        version: "14.2",
-        title: "La Forteresse Wave",
-        desc: "Intégration de la stratégie de cloisonnement.",
+        version: "14.2.2",
+        title: "Calibrage Manuel",
+        desc: "Restauration des outils de correction.",
         changes: [
-            { icon: Smartphone, text: "Stratégie Wave : Votre compte Wave devient officiellement votre Bunker inviolable." },
-            { icon: Lock, text: "Logique de Dépôt : Pour épargner, l'application vous demande de faire un dépôt réel sur Wave." }
+            { icon: RefreshCw, text: "Recalibrage : Modifiez manuellement vos soldes (Cash ou Wave) dans les Paramètres en cas d'erreur." },
+            { icon: Smartphone, text: "Stratégie Wave : Votre compte Wave reste votre Bunker inviolable." }
         ]
     }
 ];
@@ -1279,6 +1279,10 @@ function ProjectScreen({ onBack }) {
 
 function SettingsScreen({ onBack }) { 
     const [importData, setImportData] = useState("");
+    
+    // CALIBRAGE STATES
+    const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+    const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
 
     const handleExport = () => { 
         const data = { 
@@ -1317,6 +1321,15 @@ function SettingsScreen({ onBack }) {
             window.location.reload(); 
         } catch (e) { alert("❌ ERREUR : Code invalide."); } 
     }; 
+
+    const handleRecalibrate = () => {
+        if(confirm("Confirmer le recalibrage manuel des soldes ?")) {
+            localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(calibBalance) || 0));
+            localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(calibBunker) || 0));
+            alert("SYSTÈME RECALIBRÉ.");
+            window.location.reload();
+        }
+    };
     
     const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; 
 
@@ -1330,6 +1343,27 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="p-5 space-y-8 flex-1 overflow-y-auto">
                     
+                    {/* SECTION CALIBRAGE RESTAURÉE */}
+                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
+                         <div className="absolute top-0 right-0 p-4 opacity-5"><RefreshCw className="w-24 h-24 text-white" /></div>
+                         <div className="flex items-center gap-3 mb-4 relative z-10">
+                            <div className="p-2 bg-white/10 text-white rounded-lg"><RefreshCw className="w-5 h-5"/></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Calibrage du Système</h3><p className="text-[10px] text-gray-500">Correction manuelle des soldes.</p></div>
+                        </div>
+                        
+                        <div className="space-y-4 relative z-10">
+                            <div>
+                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Cash/OM Actuel</label>
+                                <input type="number" value={calibBalance} onChange={(e) => setCalibBalance(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-gold outline-none" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Wave (Bunker) Actuel</label>
+                                <input type="number" value={calibBunker} onChange={(e) => setCalibBunker(e.target.value)} className="w-full bg-blue-900/10 border border-blue-500/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
+                            </div>
+                            <button onClick={handleRecalibrate} className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold py-3 rounded-lg text-xs uppercase tracking-widest transition-colors">Appliquer les Corrections</button>
+                        </div>
+                    </div>
+
                     <div className="bg-[#111] p-5 rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
