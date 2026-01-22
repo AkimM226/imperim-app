@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.1";
+const APP_VERSION = "14.2.1"; // Correctif Ecran Noir
 
 const RELEASE_NOTES = [
     {
-        version: "14.1",
-        title: "Retour à la Base",
-        desc: "Version stable et épurée.",
+        version: "14.2",
+        title: "La Forteresse Wave",
+        desc: "Intégration de la stratégie de cloisonnement.",
         changes: [
-            { icon: Shield, text: "Restauration du système central." },
-            { icon: LayoutGrid, text: "Gestion globale de la trésorerie." }
+            { icon: Smartphone, text: "Stratégie Wave : Votre compte Wave devient officiellement votre Bunker inviolable." },
+            { icon: Lock, text: "Logique de Dépôt : Pour épargner, l'application vous demande de faire un dépôt réel sur Wave." }
         ]
     }
 ];
@@ -201,7 +201,7 @@ function MainOS() {
 }
 
 // ==========================================
-// 1. ONBOARDING
+// 1. ONBOARDING (MODIFIÉ POUR WAVE)
 // ==========================================
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(1);
@@ -214,7 +214,7 @@ function OnboardingScreen({ onComplete }) {
   const holdTimer = useRef(null);
   const [progress, setProgress] = useState(0);
   const filteredCurrencies = CURRENCIES.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()));
-  const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(4); };
+  const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(3.5); }; // Vers l'étape Wave
   const selectZone = (selectedZone) => { setZone(selectedZone); setStep(5); };
   const startHold = () => { setIsHolding(true); let p = 0; holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30); };
   const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
@@ -234,8 +234,29 @@ function OnboardingScreen({ onComplete }) {
       {step === 1 && (<div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs"><h1 className="text-4xl font-serif font-bold tracking-widest mb-6">IMPERIUM</h1><p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p><button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button></div>)}
       {step === 2 && (<div className="animate-in zoom-in duration-500 flex flex-col items-center w-full max-w-xs"><h2 className="text-xl font-serif mb-2">Le Pacte</h2><p className="text-gray-500 text-xs mb-12">Jurez-vous de ne rien cacher ?</p><div className="relative w-24 h-24 rounded-full border-2 border-white/10 flex items-center justify-center select-none cursor-pointer active:scale-95 transition-transform" onMouseDown={startHold} onMouseUp={stopHold} onTouchStart={startHold} onTouchEnd={stopHold}><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="48" cy="48" r="46" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-gold" strokeDasharray="289" strokeDashoffset={289 - (289 * progress) / 100} style={{ transition: 'stroke-dashoffset 0.1s linear' }} /></svg><Fingerprint className={`w-10 h-10 ${isHolding ? 'text-gold animate-pulse' : 'text-gray-600'}`} /></div><p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p></div>)}
       {step === 3 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2><div className="relative mb-4"><Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" /><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none" placeholder="Rechercher (ex: Euro, FCFA...)" autoFocus /></div><div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">{filteredCurrencies.map((c) => (<button key={c.code} onClick={() => selectCurrency(c)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"><div className="flex items-center gap-3"><span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">{c.symbol.substring(0, 2)}</span><div className="text-left"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p><p className="text-[10px] text-gray-500">{c.code}</p></div></div><ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" /></button>))}</div></div>)}
+      
+      {/* NOUVELLE ÉTAPE WAVE */}
+      {step === 3.5 && (
+          <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs flex flex-col items-center">
+              <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/30">
+                  <Smartphone className="w-10 h-10 text-blue-500" />
+              </div>
+              <h2 className="text-xl font-serif text-white mb-4">La Stratégie Wave</h2>
+              <p className="text-gray-400 text-sm leading-relaxed mb-8">
+                  Dans ce système, <span className="text-blue-400 font-bold">Wave est votre Coffre-Fort</span>.
+                  <br/><br/>
+                  L'argent liquide et OM sont pour la guerre (dépenses). Wave est pour la sécurité (épargne).
+                  <br/><br/>
+                  <span className="text-xs italic text-gray-500">Si vous n'avez pas de compte Wave, ouvrez-en un maintenant.</span>
+              </p>
+              <button onClick={() => setStep(4)} className="w-full bg-blue-600 text-white font-bold py-3 rounded uppercase tracking-widest text-xs hover:bg-blue-500 transition-colors">
+                  C'est compris, continuons
+              </button>
+          </div>
+      )}
+
       {step === 4 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-2">Votre Terrain</h2><p className="text-xs text-gray-500 mb-6">Ajuste l'intelligence artificielle à votre marché.</p><div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">{ZONES.map((z) => (<button key={z.id} onClick={() => selectZone(z)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg text-left group transition-all active:scale-[0.98]"><div className="flex justify-between items-center mb-1"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{z.name}</p><Globe className="w-4 h-4 text-gray-600 group-hover:text-gold" /></div><p className="text-[10px] text-gray-500">{z.desc}</p></button>))}</div></div>)}
-      {step === 5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle ({currency})</label><input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus /><button onClick={() => setStep(6)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button></div>)}
+      {step === 5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle (Cash + OM)</label><input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus /><p className="text-[10px] text-gray-500 mb-4 text-left">*Ne comptez pas ce qu'il y a déjà sur Wave.</p><button onClick={() => setStep(6)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button></div>)}
       {step === 6 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label><input type="text" value={mainProject} onChange={(e) => setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="Ex: Agence IA" autoFocus /><button onClick={finishOnboarding} disabled={!mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">LANCER L'EMPIRE</button></div>)}
     </div></PageTransition>
   );
@@ -269,10 +290,13 @@ function Dashboard({ onNavigate }) {
   const [bunkerAmount, setBunkerAmount] = useState('');
 
   // CALCULS AGRÉGÉS
-  const totalBalance = balance; 
-  const totalBunker = bunker;
+  const totalBalance = balance; // Ce qu'il a en main + OM
+  const totalBunker = bunker;   // Ce qu'il a sur Wave
   const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
-  const availableCash = totalBalance - lockedCash - totalBunker;
+  
+  // Le disponible est seulement ce qui est dans Balance (Main/OM) moins ce qui est prévu pour les cibles.
+  // Le Bunker (Wave) est totalement à part.
+  const availableCash = totalBalance - lockedCash; 
 
   // Sync Storage
   useEffect(() => {
@@ -306,7 +330,7 @@ function Dashboard({ onNavigate }) {
   };
   
   const streak = calculateStreak();
-  const rank = getRank(totalBalance, currency);
+  const rank = getRank(totalBalance + totalBunker, currency); // Rank basé sur la richesse totale
   const RankIcon = rank.icon;
   const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
 
@@ -339,7 +363,7 @@ function Dashboard({ onNavigate }) {
     }
 
     if (transactionType === 'expense') {
-        if (value > balance) return alert("Fonds insuffisants.");
+        if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
         setBalance(balance - value);
     } else {
         setBalance(balance + value);
@@ -360,8 +384,12 @@ function Dashboard({ onNavigate }) {
       const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0;
       const incomeDesc = pendingTransaction.description || "Revenu";
 
-      const newBalance = balance + totalIncome;
-      const newBunker = applyTax ? (bunker || 0) + taxAmount : (bunker || 0);
+      // L'impot va DIRECTEMENT DANS WAVE (Bunker)
+      // Le reste va dans CASH/OM (Balance)
+      const keptAmount = totalIncome - taxAmount;
+
+      const newBalance = balance + keptAmount;
+      const newBunker = bunker + taxAmount;
       
       const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
       let newTransactions = [incomeTx, ...transactions];
@@ -378,11 +406,14 @@ function Dashboard({ onNavigate }) {
       const val = parseFloat(bunkerAmount);
       
       if (action === 'deposit') {
-          if (val > availableCash) return alert(`Fonds insuffisants.`);
-          setBunker(bunker + val);
+          // Logique : Je prends du Cash pour le mettre sur Wave
+          if (val > availableCash) return alert(`Fonds insuffisants en main pour faire ce dépôt.`);
+          setBalance(balance - val); // Ça sort du cash
+          setBunker(bunker + val);   // Ça rentre sur Wave
       } else if (action === 'withdraw') {
-          if (val > bunker) return alert(`Fonds insuffisants dans le Bunker.`);
-          setBunker(bunker - val);
+          if (val > bunker) return alert(`Fonds insuffisants sur Wave.`);
+          setBunker(bunker - val);   // Ça sort de Wave
+          setBalance(balance + val); // Ça revient en cash (retrait)
       }
       setBunkerAmount('');
       setIsBunkerModalOpen(false);
@@ -425,9 +456,9 @@ function Dashboard({ onNavigate }) {
         <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
             <div className="p-5 pb-2 text-center relative">
                  <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
-                 <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Solde Disponible</p>
+                 <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Disponible (Cash + OM)</p>
                  <span className={`text-3xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></span>
-                 <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Lock className="w-2 h-2"/> Total (Tout compris): {formatMoney(totalBalance)}</p>
+                 <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Wallet className="w-3 h-3"/> Argent facilement accessible</p>
             </div>
 
             <div className="w-full h-1 bg-gray-900 mt-2">
@@ -450,17 +481,18 @@ function Dashboard({ onNavigate }) {
              </div>
         </div>
 
-        {/* === CARTE BUNKER === */}
-        <div onClick={() => setIsBunkerModalOpen(true)} className="bg-[#1a1505] border border-gold/30 rounded-xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:bg-[#251e08] group relative overflow-hidden">
+        {/* === CARTE WAVE (BUNKER) === */}
+        <div onClick={() => setIsBunkerModalOpen(true)} className="bg-blue-900/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:bg-blue-900/20 group relative overflow-hidden">
              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
              <div className="flex items-center gap-4 relative z-10">
-                 <div className="p-3 bg-gold/10 rounded-full border border-gold/20 text-gold"><Landmark className="w-6 h-6"/></div>
+                 <div className="p-3 bg-blue-500/10 rounded-full border border-blue-500/20 text-blue-400"><Smartphone className="w-6 h-6"/></div>
                  <div>
-                     <p className="text-[9px] text-gold uppercase tracking-widest font-bold mb-1">Réserve de Guerre Totale</p>
+                     <p className="text-[9px] text-blue-400 uppercase tracking-widest font-bold mb-1">Coffre-Fort Wave</p>
                      <h3 className="text-xl font-bold text-white font-serif tracking-wide">{formatMoney(totalBunker)} {currency}</h3>
+                     <p className="text-[9px] text-gray-400">Ne pas toucher sauf urgence.</p>
                  </div>
              </div>
-             <ChevronRight className="w-5 h-5 text-gold/50 group-hover:text-gold relative z-10" />
+             <ChevronRight className="w-5 h-5 text-blue-500/50 group-hover:text-blue-400 relative z-10" />
         </div>
 
         {debtToPay && (
@@ -529,37 +561,37 @@ function Dashboard({ onNavigate }) {
         </div>
       )}
 
-      {/* MODAL DU BUNKER */}
+      {/* MODAL DU BUNKER (WAVE) */}
       {isBunkerModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#1a1505] border-t border-gold/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
              
              <div className="flex justify-between items-center mb-6">
                  <div className="flex items-center gap-2">
-                     <Landmark className="w-5 h-5 text-gold"/>
-                     <h2 className="font-serif text-gold text-sm tracking-widest uppercase font-bold">Le Bunker</h2>
+                     <Smartphone className="w-5 h-5 text-blue-400"/>
+                     <h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave (Bunker)</h2>
                  </div>
                  <button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button>
              </div>
 
-             <div className="text-center mb-4">
-                 <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Sécurisé</p>
+             <div className="text-center mb-6">
+                 <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Total Sécurisé</p>
                  <h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2>
-                 <p className="text-xs text-gray-500 mt-2 px-6">L'argent du Bunker n'est plus compté dans votre solde disponible.</p>
+                 <p className="text-xs text-blue-300 mt-2 px-6">Pour ajouter de l'argent ici, vous devez faire un dépôt physique sur votre compte Wave.</p>
              </div>
 
              <div className="space-y-4">
-                 <input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-black/50 border border-gold/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-gold focus:outline-none placeholder-gray-700" placeholder="0" autoFocus />
+                 <input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus />
                  
                  <div className="flex gap-3">
                      <button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 hover:bg-red-900/20 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-colors">
                          <Unlock className="w-4 h-4"/>
-                         <span>Libérer</span>
+                         <span>Urgence (Retrait)</span>
                      </button>
-                     <button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-gold text-black py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 hover:bg-yellow-400 transition-colors shadow-[0_0_20px_rgba(212,175,55,0.2)]">
+                     <button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 hover:bg-blue-500 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.2)]">
                          <Lock className="w-4 h-4"/>
-                         <span>Verrouiller Ici</span>
+                         <span>Confirmer le Dépôt</span>
                      </button>
                  </div>
              </div>
@@ -578,7 +610,7 @@ function Dashboard({ onNavigate }) {
                       </div>
                       <h3 className="text-gold font-serif text-xl font-bold mb-2 tracking-wide uppercase">L'Impôt Impérial</h3>
                       <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                          La règle d'or est de se payer en premier. L'Empire réclame <span className="text-white font-bold">20%</span> de ce revenu pour le <span className="text-gold">Bunker</span>.
+                          La règle d'or est de se payer en premier. L'Empire réclame <span className="text-white font-bold">20%</span> de ce revenu pour le <span className="text-blue-400 font-bold">Bunker (Wave)</span>.
                       </p>
                       
                       <div className="w-full bg-gray-900 rounded-lg p-4 mb-6 border border-white/5">
