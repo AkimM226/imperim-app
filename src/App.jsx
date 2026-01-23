@@ -305,7 +305,7 @@ export default function App() {
   }
   
   // ==========================================
-  // 1. ONBOARDING (Code inchangé, je le garde pour la structure)
+  // 1. ONBOARDING (Standard)
   // ==========================================
   function OnboardingScreen({ onComplete }) {
     const [step, setStep] = useState(1);
@@ -347,7 +347,7 @@ export default function App() {
   }
   
   // ==========================================
-  // 2. DASHBOARD (LE CŒUR DU SYSTÈME)
+  // 2. DASHBOARD (RETOUR AU DESIGN PROPRE + SCROLL)
   // ==========================================
   function Dashboard({ onNavigate }) {
     const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
@@ -512,97 +512,138 @@ export default function App() {
   
     return (
       <PageTransition>
-      {/* CONTAINER PRINCIPAL FIXE (HUD) */}
-      <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden relative shadow-2xl">
+      <div className="min-h-screen w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col relative shadow-2xl">
         
-        {/* 1. HEADER (Compact & Safe) */}
-        <header className="px-5 py-3 bg-transparent shrink-0 z-10 flex justify-between items-center w-full pt-16">
+        {/* HEADER FIXE "GLASS" - RESTE TOUJOURS EN HAUT */}
+        {/* Ajout d'une marge haute (pt-12) pour forcer le contenu sous la caméra */}
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/90 backdrop-blur-md border-b border-white/5 px-5 py-4 pt-12 flex justify-between items-center max-w-md mx-auto">
            <div className="flex gap-2">
-               <button onClick={() => onNavigate('stats')} className="w-9 h-9 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold active:scale-95"><BarChart3 className="w-4 h-4"/></button>
-               <button onClick={() => setShowHistory(true)} className="w-9 h-9 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold active:scale-95"><History className="w-4 h-4"/></button>
+               <button onClick={() => onNavigate('stats')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold hover:border-gold/30 transition-all active:scale-95 shadow-lg"><BarChart3 className="w-5 h-5"/></button>
+               <button onClick={() => setShowHistory(true)} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold hover:border-gold/30 transition-all active:scale-95 shadow-lg"><History className="w-5 h-5"/></button>
            </div>
-           <h1 className="text-lg font-serif text-gold tracking-widest font-bold text-center flex-1 drop-shadow-md">IMPERIUM</h1>
+           
+           <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">IMPERIUM</h1>
+  
            <div>
-               <button onClick={() => onNavigate('settings')} className="w-9 h-9 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95"><Settings className="w-4 h-4"/></button>
+               <button onClick={() => onNavigate('settings')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-all active:scale-95 shadow-lg"><Settings className="w-5 h-5"/></button>
            </div>
         </header>
   
-        {/* 2. ZONE DE CONTENU FLEXIBLE (Tout tient ici) */}
-        <main className="flex-1 w-full px-3 flex flex-col gap-2 min-h-0">
-          
-          {/* LIGNE 1 : INFOS GRADE & STREAK (Compact) */}
-          <div className="flex justify-between items-end px-1 shrink-0">
-              <button onClick={() => onNavigate('trophies')} className="flex items-center gap-2 group active:scale-95">
-                  <RankIcon className={`w-3.5 h-3.5 ${rank.color}`} />
-                  <h2 className={`text-xs font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2>
+        {/* ESPACE VIDE POUR COMPENSER LE HEADER FIXE */}
+        <div className="h-32 w-full"></div>
+  
+        <div className="w-full px-4 mt-2">
+          <div className="flex justify-between items-end mb-4">
+              <button onClick={() => onNavigate('trophies')} className="flex flex-col items-start group active:scale-95 transition-transform">
+                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-gold transition-colors">Grade</p>
+                  <div className="flex items-center gap-2">
+                      <RankIcon className={`w-4 h-4 ${rank.color}`} />
+                      <h2 className={`text-sm font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2>
+                  </div>
               </button>
-              <button onClick={() => onNavigate('trophies')} className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}>
-                  <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-600'}`} />
-                  <span className={`text-xs font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span>
+              <button onClick={() => onNavigate('trophies')} className="flex flex-col items-end group active:scale-95 transition-transform">
+                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-orange-500 transition-colors">Discipline</p>
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}>
+                      <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
+                      <span className={`text-sm font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span>
+                  </div>
+              </button>
+          </div>
+        </div>
+  
+        <main className="w-full px-4 grid gap-4 pb-40">
+          {/* === LE HUD === */}
+          <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
+              <div className="p-5 pb-2 text-center relative">
+                   <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
+                   <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Disponible (Cash + OM)</p>
+                   <span className={`text-3xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></span>
+                   <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Wallet className="w-3 h-3"/> Argent facilement accessible</p>
+              </div>
+  
+              <div className="w-full h-1 bg-gray-900 mt-2">
+                  <div className="h-full bg-blue-500/30" style={{ width: `${monthProgress}%` }}></div>
+              </div>
+  
+              <div className="grid grid-cols-2 divide-x divide-white/10 bg-white/5">
+                  <div className="p-3 text-center">
+                       <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Ration (J-{daysRemaining})</p>
+                       <p className={`text-lg font-bold ${dailyAllocation < 500 ? 'text-orange-500' : 'text-white'}`}>{formatMoney(dailyAllocation)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
+                  </div>
+                  <div className="p-3 text-center relative">
+                       <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Dépensé 24h</p>
+                       <p className={`text-lg font-bold ${spentToday > dailyAllocation ? 'text-red-500' : 'text-white'}`}>{formatMoney(spentToday)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
+                       <span className={`absolute top-2 right-2 w-2 h-2 rounded-full ${dailyStatus.color === 'text-green-500' ? 'bg-green-500' : dailyStatus.color === 'text-red-500' ? 'bg-red-500' : 'bg-gray-700'}`}></span>
+                  </div>
+              </div>
+               <div className="p-2 text-center bg-black/40 border-t border-white/5">
+                  <p className={`text-[10px] ${dailyStatus.color} font-bold uppercase tracking-widest`}>STATUT : {dailyStatus.text}</p>
+               </div>
+          </div>
+  
+          {/* === CARTE WAVE (BUNKER) === */}
+          <div onClick={() => setIsBunkerModalOpen(true)} className="bg-blue-900/10 border border-blue-500/30 rounded-xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:bg-blue-900/20 group relative overflow-hidden">
+               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+               <div className="flex items-center gap-4 relative z-10">
+                   <div className="p-3 bg-blue-500/10 rounded-full border border-blue-500/20 text-blue-400"><Smartphone className="w-6 h-6"/></div>
+                   <div>
+                       <p className="text-[9px] text-blue-400 uppercase tracking-widest font-bold mb-1">Coffre-Fort Wave</p>
+                       <h3 className="text-xl font-bold text-white font-serif tracking-wide">{formatMoney(totalBunker)} {currency}</h3>
+                       <p className="text-[9px] text-gray-400">Ne pas toucher sauf urgence.</p>
+                   </div>
+               </div>
+               <ChevronRight className="w-5 h-5 text-blue-500/50 group-hover:text-blue-400 relative z-10" />
+          </div>
+  
+          {debtToPay && (
+              <div className="bg-[#1a0f0f] p-3 rounded-xl border border-red-900/30 animate-in slide-in-from-right flex items-center gap-3">
+                  <div className="p-2 bg-red-900/20 text-red-500 rounded-lg shrink-0"><AlertTriangle className="w-4 h-4"/></div>
+                  <div className="flex-1">
+                      <p className="text-[9px] text-red-400 uppercase tracking-widest font-bold">Dette Prioritaire</p>
+                      <p className="text-xs text-white font-bold">{debtToPay.name} : {formatMoney(debtToPay.amount)} {currency}</p>
+                  </div>
+                  <button onClick={() => onNavigate('debts')} className="text-xs text-red-400 font-bold uppercase border border-red-900/50 px-3 py-1.5 rounded bg-red-900/10">Payer</button>
+              </div>
+          )}
+  
+          {/* === MENU RAPIDE HORIZONTAL === */}
+          <div className="grid grid-cols-4 gap-2">
+              <button onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                  <div className="text-indigo-500"><Repeat className="w-5 h-5"/></div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Protocoles</span>
+              </button>
+              <button onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                   <div className="text-purple-500"><Scroll className="w-5 h-5"/></div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Registre</span>
+              </button>
+              <button onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                   <div className="text-blue-500"><Target className="w-5 h-5"/></div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Cibles</span>
+              </button>
+               <button onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                   <div className="text-gold"><Trophy className="w-5 h-5"/></div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Succès</span>
               </button>
           </div>
   
-          {/* LIGNE 2 : HUD PRINCIPAL (Balance + Wave côte à côte pour gagner hauteur) */}
-          <div className="grid grid-cols-2 gap-2 shrink-0 h-28">
-              {/* CASH DISPO */}
-              <div className={`bg-[#111] border rounded-xl p-3 flex flex-col justify-between ${availableCash < 0 ? 'border-red-500/50' : 'border-white/5'}`}>
-                   <div>
-                       <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Cash Dispo</p>
-                       <span className={`text-2xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'} leading-none`}>{formatMoney(availableCash)}</span>
-                   </div>
-                   <div className="w-full bg-gray-900 h-1 mt-2 rounded-full"><div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${monthProgress}%` }}></div></div>
-                   <div className="flex justify-between items-end mt-1">
-                       <div><p className="text-[9px] text-gray-500">Ration J</p><p className="text-xs font-bold text-white">{formatMoney(dailyAllocation)}</p></div>
-                       <div><p className="text-[9px] text-gray-500 text-right">24h</p><p className={`text-xs font-bold text-right ${spentToday > dailyAllocation ? 'text-red-500' : 'text-gray-400'}`}>{formatMoney(spentToday)}</p></div>
-                   </div>
-              </div>
-  
-              {/* WAVE BUNKER */}
-              <div onClick={() => setIsBunkerModalOpen(true)} className="bg-blue-900/10 border border-blue-500/30 rounded-xl p-3 flex flex-col justify-between cursor-pointer active:scale-[0.98] relative overflow-hidden">
-                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
-                   <div className="flex justify-between items-start">
-                       <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400"><Smartphone className="w-4 h-4"/></div>
-                       <ChevronRight className="w-3 h-3 text-blue-500/50" />
-                   </div>
-                   <div>
-                       <p className="text-[9px] text-blue-400 uppercase tracking-widest font-bold mb-0.5">Coffre Wave</p>
-                       <h3 className="text-xl font-bold text-white font-serif leading-none">{formatMoney(totalBunker)}</h3>
-                   </div>
-              </div>
+          {/* === GRILLE PRINCIPALE === */}
+          <div className="grid grid-cols-2 gap-3">
+              <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-5 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-32 flex flex-col justify-between"><div className="flex justify-between items-start"><Sword className="w-6 h-6 text-gold opacity-80" /></div><div><h3 className="font-bold text-white text-sm uppercase tracking-wide">Arsenal</h3><p className="text-[10px] text-gray-500 mt-1">Compétences & Business</p></div></div>
+              <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-5 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-32 flex flex-col justify-between"><div className="flex justify-between items-start"><Castle className="w-6 h-6 text-gold opacity-80" /><span className="text-[10px] font-bold text-gray-500">{projects.length}</span></div><div><h3 className="font-bold text-white text-sm uppercase tracking-wide">Conquête</h3><p className="text-[10px] text-gray-500 mt-1">Projets Stratégiques</p></div></div>
           </div>
   
-          {/* LIGNE 3 : MENUS RAPIDES (Bandeau compact) */}
-          <div className="grid grid-cols-4 gap-2 shrink-0">
-              {[
-                  { id: 'protocols', icon: Repeat, color: 'text-indigo-500', label: 'Fixed' },
-                  { id: 'debts', icon: Scroll, color: 'text-purple-500', label: 'Dettes' },
-                  { id: 'goals', icon: Target, color: 'text-blue-500', label: 'Cibles' },
-                  { id: 'trophies', icon: Trophy, color: 'text-gold', label: 'Succès' }
-              ].map(btn => (
-                  <button key={btn.id} onClick={() => onNavigate(btn.id)} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-lg py-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                      <div className={btn.color}><btn.icon className="w-3.5 h-3.5"/></div>
-                      <span className="text-[9px] font-bold text-gray-400 uppercase">{btn.label}</span>
-                  </button>
-              ))}
-          </div>
-  
-          {/* LIGNE 4 : GRILLE PRINCIPALE (Prend tout l'espace restant) */}
-          <div className="flex-1 min-h-0 flex flex-col gap-2">
-              <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 flex-1 flex flex-col justify-center gap-2">
-                  <div className="flex justify-between items-center"><Sword className="w-5 h-5 text-gold opacity-80" /><ArrowUpCircle className="w-4 h-4 text-gray-700"/></div>
-                  <div><h3 className="font-bold text-white text-sm uppercase tracking-wide">Arsenal</h3><p className="text-[10px] text-gray-500">Générer du Cash</p></div>
-              </div>
-              
-              <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 flex-1 flex flex-col justify-center gap-2">
-                  <div className="flex justify-between items-center"><Castle className="w-5 h-5 text-gold opacity-80" /><span className="text-[10px] font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded">{projects.length}</span></div>
-                  <div><h3 className="font-bold text-white text-sm uppercase tracking-wide">Conquête</h3><p className="text-[10px] text-gray-500">Projets & Stratégie</p></div>
+          {/* === CITATION DU JOUR === */}
+          <div className="mt-2 bg-[#111] border border-white/5 rounded-xl p-5 flex gap-3 items-start opacity-80">
+              <Quote className="w-5 h-5 text-gold shrink-0 mt-1" />
+              <div>
+                  <p className="text-xs text-gray-300 italic font-serif leading-relaxed">"{dailyQuote.text}"</p>
+                  <p className="text-[10px] text-gold mt-2 font-bold uppercase">— {dailyQuote.author}</p>
               </div>
           </div>
         </main>
   
-        {/* 3. FOOTER : ACTION RAPIDE (Intégré au layout) */}
-        <div className="px-4 pb-6 pt-2 shrink-0 bg-transparent flex justify-center">
-          <button onClick={() => setIsModalOpen(true)} className="w-full bg-gold text-black font-serif font-bold h-12 rounded-lg shadow-[0_0_20px_rgba(212,175,55,0.15)] active:scale-95 transition-transform flex items-center justify-center gap-2 border border-yellow-200/50"><Plus className="w-4 h-4" /> <span className="tracking-widest text-xs">NOUVELLE ENTRÉE</span></button>
+        <div className="fixed bottom-0 left-0 right-0 flex justify-center z-20 pointer-events-none pb-[calc(2rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-dark via-dark/80 to-transparent pt-10">
+          <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200"><Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span></button>
         </div>
   
         {/* MODAL DE SAISIE */}
@@ -747,8 +788,7 @@ export default function App() {
       </PageTransition>
     );
   }
-
-  // ==========================================
+// ==========================================
 // 8. PROTOCOLES - GESTION DES FRÉQUENCES
 // ==========================================
 function ProtocolsScreen({ onBack }) {
