@@ -351,11 +351,10 @@ export default function App() {
       </div></PageTransition>
     );
   }
-  
-  // ==========================================
-  // 2. DASHBOARD - REPLIQUE EXACTE DE L'IMAGE
-  // ==========================================
-  function Dashboard({ onNavigate }) {
+ // ==========================================
+// 2. DASHBOARD (AVEC BOUTON TROPHÉES)
+// ==========================================
+function Dashboard({ onNavigate }) {
     // DONNÉES
     const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
     const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
@@ -379,16 +378,60 @@ export default function App() {
     const [description, setDescription] = useState('');
     const [bunkerAmount, setBunkerAmount] = useState('');
   
-    // CALCULS
-    const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
-    const dailyQuote = DAILY_QUOTES[quoteIndex];
+    // === CALCULS TEMPORELS & IMPACT ===
+    const today = new Date();
+    const currentDay = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysRemaining = Math.max(1, daysInMonth - currentDay + 1); 
+    const daysRemainingTomorrow = Math.max(1, daysRemaining - 1); 
+    
+    const todayStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    
+    // Soldes
     const totalBalance = balance; 
     const totalBunker = bunker;   
     const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
     const availableCash = totalBalance - lockedCash; 
+    
+    // Dépenses du Jour
+    const spentToday = transactions
+        .filter(t => t.type === 'expense' && t.date === todayStr)
+        .reduce((acc, t) => acc + t.amount, 0);
+  
+    // RATION DU JOUR
+    const realDailyAllocation = Math.floor((availableCash + spentToday) / daysRemaining);
+    const remainingDaily = realDailyAllocation - spentToday;
+    const dailyProgress = Math.min(100, (spentToday / realDailyAllocation) * 100);
+  
+    // PROJECTION DEMAIN
+    const projectedRationTomorrow = Math.floor(availableCash / daysRemainingTomorrow);
+    const impactValue = projectedRationTomorrow - realDailyAllocation;
+    let impactStatus = "neutre";
+    if (impactValue > 50) impactStatus = "bonus"; 
+    if (impactValue < -50) impactStatus = "malus"; 
+  
+    // Couleur barre
+    let rationColor = "bg-[#F4D35E]";
+    if (remainingDaily < 0) rationColor = "bg-red-600";
+    else if (dailyProgress < 50) rationColor = "bg-green-500";
+  
+    // === CALCUL DE LA FLAMME (STREAK) ===
+    const calculateStreak = () => {
+      if (transactions.length === 0) return 0;
+      const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want');
+      if (!lastSin) return Math.min(transactions.length, 30); 
+      const lastSinDate = new Date(lastSin.rawDate || Date.now());
+      const now = new Date();
+      const diffTime = Math.abs(now - lastSinDate);
+      return Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+    };
+    const streak = calculateStreak();
+  
+    // Grades & Autres
     const rank = getRank(totalBalance + totalBunker, currency); 
     const RankIcon = rank.icon;
-  
+    const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
+    const dailyQuote = DAILY_QUOTES[quoteIndex];
     const dailySurvivalCost = Math.max(availableCash / 30, 1);
     const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
   
@@ -399,7 +442,7 @@ export default function App() {
       localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
     }, [balance, bunker, transactions]);
   
-    // FONCTIONS DE GESTION (Copier-Coller logique existante)
+    // FONCTIONS
     const handleSubmit = (e) => {
       e.preventDefault();
       if (!amount) return;
@@ -461,29 +504,69 @@ export default function App() {
       <PageTransition>
       <div className="h-[100dvh] w-full max-w-md mx-auto bg-[#0d0d0d] text-gray-200 font-sans flex flex-col relative overflow-hidden">
         
-        {/* 1. EN-TÊTE COMPACT (Comme sur l'image) */}
+        {/* 1. EN-TÊTE */}
         <div className="px-5 pt-safe-top mt-4 flex justify-between items-start shrink-0">
            <div>
               <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest">IMPERIUM</h1>
-              <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Système V{APP_VERSION.split('-')[0]}</p>
+              <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">J-{daysRemaining} • {todayStr}</p>
            </div>
-           <button onClick={() => onNavigate('trophies')} className="flex items-center gap-1.5 bg-[#1a2333] border border-blue-500/30 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
-              <RankIcon className={`w-3 h-3 ${rank.color}`} />
-              <span className={`text-[10px] font-bold uppercase ${rank.color} tracking-wider`}>{rank.title}</span>
-           </button>
+           
+           <div className="flex gap-2">
+               {/* FLAMME */}
+               <div className={`flex items-center gap-1.5 bg-[#1a2333] border ${streak > 0 ? 'border-orange-500/30' : 'border-white/5'} px-3 py-1.5 rounded-full`}>
+                  <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
+                  <span className={`text-[10px] font-bold uppercase ${streak > 0 ? 'text-orange-400' : 'text-gray-600'} tracking-wider`}>{streak}J</span>
+               </div>
+  
+               {/* GRADE */}
+               <button onClick={() => onNavigate('trophies')} className="flex items-center gap-1.5 bg-[#1a2333] border border-blue-500/30 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
+                  <RankIcon className={`w-3 h-3 ${rank.color}`} />
+                  <span className={`text-[10px] font-bold uppercase ${rank.color} tracking-wider`}>{rank.title}</span>
+               </button>
+           </div>
         </div>
   
-        {/* 2. ZONE DE CONTENU SCROLLABLE */}
+        {/* 2. CONTENU SCROLLABLE */}
         <div className="flex-1 overflow-y-auto px-4 pt-6 pb-28 custom-scrollbar space-y-4">
           
-          {/* CARTE PRINCIPALE (CASH) - Style Image */}
-          <div className="bg-[#111] rounded-2xl border-t-2 border-[#F4D35E] p-6 text-center relative shadow-lg">
+          {/* CARTE PRINCIPALE */}
+          <div className="bg-[#111] rounded-2xl border-t-2 border-[#F4D35E] p-5 relative shadow-lg overflow-hidden">
                <div className="absolute inset-0 bg-gradient-to-b from-[#F4D35E]/5 to-transparent rounded-2xl pointer-events-none"></div>
-               <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-2">Disponible (Cash + OM)</p>
-               <h2 className="text-4xl font-serif font-bold text-white tracking-wide">{formatMoney(availableCash)} <span className="text-base text-[#F4D35E] font-sans font-bold">{currency}</span></h2>
+               
+               {/* Solde Global */}
+               <div className="text-center mb-6">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-2">Disponible (Cash + OM)</p>
+                  <h2 className="text-4xl font-serif font-bold text-white tracking-wide">{formatMoney(availableCash)} <span className="text-base text-[#F4D35E] font-sans font-bold">{currency}</span></h2>
+               </div>
+  
+               {/* RATION DU JOUR */}
+               <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 relative overflow-hidden">
+                  <div className="flex justify-between items-center mb-2">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1"><Clock className="w-3 h-3 text-[#F4D35E]"/> Ration du Jour</span>
+                      <span className={`text-xs font-bold ${remainingDaily < 0 ? 'text-red-500' : 'text-white'}`}>
+                          {remainingDaily < 0 ? 'DÉPASSÉ' : 'Reste : ' + formatMoney(remainingDaily)}
+                      </span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-2">
+                      <div className={`h-full transition-all duration-500 ${rationColor}`} style={{ width: `${dailyProgress}%` }}></div>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] mb-3">
+                       <span className="text-gray-500">Dépensé : <span className="text-white font-bold">{formatMoney(spentToday)}</span></span>
+                       <span className="text-gray-500">Budget Max : <span className="text-gray-400">{formatMoney(realDailyAllocation)}</span></span>
+                  </div>
+                  <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Projection Demain</p>
+                      <div className="text-right">
+                           <p className={`text-xs font-bold ${impactStatus === 'bonus' ? 'text-green-400' : impactStatus === 'malus' ? 'text-red-400' : 'text-gray-400'}`}>
+                               {formatMoney(projectedRationTomorrow)} {currency}
+                           </p>
+                           <p className="text-[9px] text-gray-500 italic">{impactStatus === 'bonus' ? "▲ Bonus (Discipline)" : impactStatus === 'malus' ? "▼ Malus (Dette)" : "= Stable"}</p>
+                      </div>
+                  </div>
+               </div>
           </div>
   
-          {/* CARTE WAVE (BUNKER) - Style Image */}
+          {/* CARTE WAVE */}
           <div onClick={() => setIsBunkerModalOpen(true)} className="bg-[#10141d] border border-blue-900/40 rounded-xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden group">
                <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
                <div className="flex items-center gap-4 relative z-10">
@@ -496,140 +579,60 @@ export default function App() {
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 relative z-10" />
           </div>
   
-          {/* GRILLE 2x2 - Style Image */}
+          {/* GRILLE 2x2 */}
           <div className="grid grid-cols-2 gap-3">
-              {/* PROJETS */}
               <button onClick={() => onNavigate('project')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                  <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" />
-                  <h3 className="text-sm font-bold text-white">Projets</h3>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
+                  <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Projets</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
               </button>
-              
-              {/* ARSENAL */}
               <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                  <Sword className="w-6 h-6 text-white mb-3 opacity-90" />
-                  <h3 className="text-sm font-bold text-white">Arsenal</h3>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Compétences</p>
+                  <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Arsenal</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Compétences</p>
               </button>
-              
-              {/* CIBLES */}
               <button onClick={() => onNavigate('goals')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                  <Target className="w-6 h-6 text-blue-400 mb-3 opacity-90" />
-                  <h3 className="text-sm font-bold text-white">Cibles</h3>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Objectifs</p>
+                  <Target className="w-6 h-6 text-blue-400 mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Cibles</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Objectifs</p>
               </button>
-              
-              {/* PROTOCOLE */}
               <button onClick={() => onNavigate('protocols')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                  <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" />
-                  <h3 className="text-sm font-bold text-white">Protocole</h3>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
+                  <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Protocole</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
               </button>
           </div>
   
-          {/* CITATION */}
-          <div className="text-center pt-4 opacity-60">
-               <p className="text-[10px] text-gray-400 italic">"{dailyQuote.text}"</p>
-          </div>
+          {/* --- NOUVEAU BOUTON : SALLE DES TROPHÉES --- */}
+          <button onClick={() => onNavigate('trophies')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+              <div className="flex items-center gap-4">
+                  <div className="p-2 bg-[#F4D35E]/10 rounded-full text-[#F4D35E] border border-[#F4D35E]/20">
+                      <Trophy className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                      <h3 className="text-sm font-bold text-white">Salle des Trophées</h3>
+                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Voir mes succès</p>
+                  </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
+          </button>
+  
+          <div className="text-center pt-4 opacity-60"><p className="text-[10px] text-gray-400 italic">"{dailyQuote.text}"</p></div>
         </div>
   
-        {/* 3. BOUTON FLOTTANT CENTRAL (FAB) */}
+        {/* 3. FAB */}
         <div className="absolute bottom-20 left-0 right-0 flex justify-center z-30 pointer-events-none">
             <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto w-14 h-14 rounded-full bg-[#EAB308] text-black shadow-[0_0_20px_rgba(234,179,8,0.4)] flex items-center justify-center active:scale-90 transition-transform border-4 border-[#0d0d0d]">
                 <Plus className="w-7 h-7" />
             </button>
         </div>
   
-        {/* 4. BARRE DE NAVIGATION INFÉRIEURE (FIXE) */}
+        {/* 4. NAV */}
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#161616] border-t border-white/5 px-6 pb-6 pt-3 flex justify-between items-end z-20">
-            <button onClick={() => onNavigate('dashboard')} className="flex flex-col items-center gap-1 text-[#F4D35E] opacity-100">
-                <div className="w-6 h-6 bg-[#F4D35E]/10 rounded flex items-center justify-center"><Castle className="w-4 h-4" /></div>
-                <span className="text-[9px] font-bold uppercase">QG</span>
-            </button>
-            
-            <button onClick={() => onNavigate('stats')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
-                <BarChart3 className="w-5 h-5" />
-                <span className="text-[9px] font-bold uppercase">Cartes</span>
-            </button>
-            
-            <div className="w-10"></div> {/* Espace pour le FAB central */}
-            
-            <button onClick={() => setShowHistory(true)} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
-                <History className="w-5 h-5" />
-                <span className="text-[9px] font-bold uppercase">Journal</span>
-            </button>
-            
-            <button onClick={() => onNavigate('settings')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
-                <Settings className="w-5 h-5" />
-                <span className="text-[9px] font-bold uppercase">Réglages</span>
-            </button>
+            <button onClick={() => onNavigate('dashboard')} className="flex flex-col items-center gap-1 text-[#F4D35E] opacity-100"><div className="w-6 h-6 bg-[#F4D35E]/10 rounded flex items-center justify-center"><Castle className="w-4 h-4" /></div><span className="text-[9px] font-bold uppercase">QG</span></button>
+            <button onClick={() => onNavigate('stats')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors"><BarChart3 className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Cartes</span></button>
+            <div className="w-10"></div> 
+            <button onClick={() => setShowHistory(true)} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors"><History className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Journal</span></button>
+            <button onClick={() => onNavigate('settings')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors"><Settings className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Réglages</span></button>
         </div>
   
-        {/* --- MODALES (Code Identique mais intégré) --- */}
-        
-        {/* MODAL DE SAISIE */}
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
-              <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Nouvelle Entrée</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
-              <div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5">
-                  <button onClick={() => setTransactionType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
-                  <button onClick={() => setTransactionType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
-              </div>
-              {transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}
-              {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (<div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Alerte</p><p className="text-gray-300 text-xs mt-1">Coût: <span className="text-white font-bold">{daysLost} jours</span> de survie.</p></div></div>)}
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus />
-                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} />
-                <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' ? 'bg-white text-black' : 'bg-[#EAB308] text-black'}`}>VALIDER</button>
-              </form>
-            </div>
-          </div>
-        )}
-  
-        {/* MODAL BUNKER WAVE */}
-        {isBunkerModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
-               <div className="flex justify-between items-center mb-6"><div className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-400"/><h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave</h2></div><button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
-               <div className="text-center mb-6"><h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2></div>
-               <div className="space-y-4">
-                   <input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus />
-                   <div className="flex gap-3"><button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase">Retrait</button><button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase">Dépôt</button></div>
-               </div>
-            </div>
-          </div>
-        )}
-  
-        {/* MODAL HISTORIQUE */}
-        {showHistory && (
-            <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in">
-                <div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
-                    <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">
-                      {transactions.map(tx => (
-                          <div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5">
-                              <div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div>
-                              <div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div>
-                          </div>
-                      ))}
-                    </div>
-                </div>
-            </div>
-        )}
-        
-        {/* MODAL IMPÔT */}
-        {showTaxModal && pendingTransaction && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
-                <div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center">
-                    <h3 className="text-[#F4D35E] font-serif text-xl font-bold mb-4">Impôt Impérial (20%)</h3>
-                    <p className="text-gray-400 text-sm mb-6">Sécuriser une partie de ce revenu dans Wave ?</p>
-                    <div className="flex gap-3 w-full"><button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase">Non (0%)</button><button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-[#F4D35E] text-black text-xs font-bold uppercase">Oui (20%)</button></div>
-                </div>
-            </div>
-        )}
-  
+        {/* MODALES INTEGREES (Code identique aux versions précédentes) */}
+        {isModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Nouvelle Entrée</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5"><button onClick={() => setTransactionType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button><button onClick={() => setTransactionType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button></div>{transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}{transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (<div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Alerte</p><p className="text-gray-300 text-xs mt-1">Coût: <span className="text-white font-bold">{daysLost} jours</span> de survie.</p></div></div>)}<form onSubmit={handleSubmit} className="space-y-5"><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus /><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} /><button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' ? 'bg-white text-black' : 'bg-[#EAB308] text-black'}`}>VALIDER</button></form></div></div>)}
+        {isBunkerModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden"><div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div><div className="flex justify-between items-center mb-6"><div className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-400"/><h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave</h2></div><button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="text-center mb-6"><h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2></div><div className="space-y-4"><input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus /><div className="flex gap-3"><button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase">Retrait</button><button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase">Dépôt</button></div></div></div></div>)}
+        {showHistory && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in"><div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">{transactions.map(tx => (<div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5"><div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div></div>))}</div></div></div>)}
+        {showTaxModal && pendingTransaction && (<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in"><div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center"><h3 className="text-[#F4D35E] font-serif text-xl font-bold mb-4">Impôt Impérial (20%)</h3><p className="text-gray-400 text-sm mb-6">Sécuriser une partie de ce revenu dans Wave ?</p><div className="flex gap-3 w-full"><button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase">Non (0%)</button><button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-[#F4D35E] text-black text-xs font-bold uppercase">Oui (20%)</button></div></div></div>)}
       </div>
       </PageTransition>
     );
