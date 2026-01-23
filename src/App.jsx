@@ -5,16 +5,16 @@ import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpC
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.3.0-Ghost"; 
+const APP_VERSION = "14.4.0-SafeZone"; 
 
 const RELEASE_NOTES = [
     {
-        version: "14.3.0",
-        title: "Protocole Sécurisé",
-        desc: "Restriction de l'accès à l'application.",
+        version: "14.4.0",
+        title: "Ergonomie Tactique",
+        desc: "Ajustement de l'interface pour les écrans modernes.",
         changes: [
-            { icon: Lock, text: "Accès Restreint : L'application est désormais verrouillée pour le grand public." },
-            { icon: Key, text: "Beta Privée : Seuls les détenteurs d'une Clé Impériale peuvent entrer." }
+            { icon: Smartphone, text: "Safe Area : L'interface respecte désormais l'encoche physique du téléphone." },
+            { icon: LayoutGrid, text: "Visibilité : Les boutons du QG sont déplacés pour être 100% accessibles." }
         ]
     }
 ];
@@ -536,8 +536,8 @@ export default function App() {
       <PageTransition>
       <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-40 flex flex-col relative shadow-2xl">
         
-        {/* HEADER : DESIGN "GHOST" (OPTION 3) */}
-        <header className="px-5 py-4 bg-transparent sticky top-0 z-10 flex justify-between items-center w-full pt-4">
+        {/* HEADER : AJUSTÉ AVEC SAFE AREA POUR ÉVITER L'ENCOCHE */}
+        <header className="px-5 py-4 bg-transparent sticky top-0 z-10 flex justify-between items-center w-full pt-[calc(env(safe-area-inset-top)+1rem)]">
            <div className="flex gap-2">
                <button onClick={() => onNavigate('stats')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold hover:border-gold/30 transition-all active:scale-95 shadow-lg"><BarChart3 className="w-5 h-5"/></button>
                <button onClick={() => setShowHistory(true)} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold hover:border-gold/30 transition-all active:scale-95 shadow-lg"><History className="w-5 h-5"/></button>
@@ -841,7 +841,7 @@ function ProtocolsScreen({ onBack }) {
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Protocoles</h1>
             </div>
@@ -935,7 +935,7 @@ function DebtsScreen({ onBack }) {
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Le Registre</h1>
             </div>
@@ -1020,7 +1020,7 @@ function GoalsScreen({ onBack }) {
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Cibles</h1>
             </div>
@@ -1136,7 +1136,7 @@ function StatsScreen({ onBack }) {
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Salle des Cartes</h1>
             </div>
@@ -1201,7 +1201,7 @@ function SkillsScreen({ onBack }) {
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Arsenal</h1><div className="flex items-center gap-2 mt-2"><Globe className="w-3 h-3 text-gold" /><span className="text-[10px] text-gray-400 uppercase">Marché : {userZone ? userZone.name : "Monde"}</span></div>
             </div>
@@ -1234,7 +1234,7 @@ function TrophiesScreen({ onBack }) {
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Salle des Trophées</h1>
             </div>
@@ -1354,7 +1354,7 @@ function ProjectScreen({ onBack }) {
         return (
             <PageTransition>
                 <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-                    <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+                    <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                         <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                         <h1 className="text-2xl font-serif text-white font-bold">Conquêtes</h1>
                         <p className="text-[10px] text-gray-500 mt-1">Gérez vos fronts actifs.</p>
@@ -1405,7 +1405,7 @@ function ProjectScreen({ onBack }) {
     return (
         <PageTransition>
             <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-                <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+                <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                     <button onClick={() => setActiveProject(null)} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour aux Conquêtes</span></button>
                     <h1 className="text-2xl font-serif text-white font-bold">{activeProject.title}</h1>
                     <div className="flex items-center gap-4 mt-4"><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div></div><span className="text-gold font-bold text-sm">{progress}%</span></div>
@@ -1518,7 +1518,7 @@ function SettingsScreen({ onBack }) {
     return (
         <PageTransition>
             <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-                <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[env(safe-area-inset-top)] z-10">
+                <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-[calc(env(safe-area-inset-top)+1rem)] z-10">
                     <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                     <h1 className="text-2xl font-serif text-white font-bold">Paramètres</h1>
                 </div>
@@ -1576,4 +1576,4 @@ function SettingsScreen({ onBack }) {
             </div>
         </PageTransition>
     ); 
-     }
+}
