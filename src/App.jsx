@@ -5,7 +5,7 @@ import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpC
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.3.0"; 
+const APP_VERSION = "14.3.0-Dynamic"; 
 
 const RELEASE_NOTES = [
     {
@@ -19,12 +19,10 @@ const RELEASE_NOTES = [
     }
 ];
 
-// LISTE DES CODES HACHÉS (Pour ne pas qu'ils soient lisibles en clair dans le code source facilement)
-// Ce sont les versions base64 de : IMP-ALPHA-77, IMP-BRAVO-88, etc.
 const VALID_HASHES = [
     "SU1QLUFMUEhBLTc3", "SU1QLUJSQVZPLTg4", "SU1QLUNIQVJMSUUtOTk=", "SU1QLURFTEVULTEw", 
     "SU1QLRUNITy0yMA==", "SU1QLUZPWFRST1QtMzA=", "SU1QLUdPTEYtNDA=", "SU1QLUhPVEVMLTUw", 
-    "SU1QLUlORElBLTYw", "SU1QLUpVTElFVFQtNzA=", "SU1QRVJBVE9SLVg=" // Le code maître
+    "SU1QLUlORElBLTYw", "SU1QLUpVTElFVFQtNzA=", "SU1QRVJBVE9SLVg=" 
 ];
 
 const DAILY_QUOTES = [
@@ -165,7 +163,22 @@ function PageTransition({ children }) {
 }
 
 // ==========================================
-// SYSTEME DE SECURITE (NOUVEAU)
+// NOUVEAU COMPOSANT : DYNAMIC ISLAND (ENCOCHE)
+// ==========================================
+function DynamicIsland() {
+    return (
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 duration-700 pointer-events-none">
+            <div className="bg-black/95 backdrop-blur-md border border-white/10 rounded-full px-5 py-2 flex items-center gap-3 shadow-[0_5px_20px_rgba(0,0,0,0.5)] min-w-[140px] justify-center pointer-events-auto">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                <span className="text-[10px] font-serif font-bold text-gray-200 tracking-[0.2em]">IMPERIUM</span>
+                <Lock className="w-3 h-3 text-gold" />
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// SYSTEME DE SECURITE
 // ==========================================
 function SecurityGate({ onAccessGranted }) {
     const [code, setCode] = useState("");
@@ -178,11 +191,8 @@ function SecurityGate({ onAccessGranted }) {
         setError(false);
 
         setTimeout(() => {
-            // Encodage de l'entrée utilisateur en Base64 pour comparer
             const inputHash = btoa(code.trim().toUpperCase());
-            
             if (VALID_HASHES.includes(inputHash)) {
-                // Succès
                 localStorage.setItem('imperium_license', 'GRANTED_V1');
                 onAccessGranted();
             } else {
@@ -190,7 +200,7 @@ function SecurityGate({ onAccessGranted }) {
                 setLoading(false);
                 setCode("");
             }
-        }, 1500); // Simulation de vérification serveur
+        }, 1500); 
     };
 
     return (
@@ -268,18 +278,17 @@ function PatchNotesModal({ onAck }) {
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false); // NOUVEAU STATE
+  const [isAuthorized, setIsAuthorized] = useState(false); 
 
   useEffect(() => { 
       const timer = setTimeout(() => { setLoading(false); }, 2500); 
       setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
-      setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); // VERIF LICENCE
+      setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); 
       return () => clearTimeout(timer); 
   }, []);
 
   if (loading) return <SplashScreen />;
   
-  // SI PAS AUTORISÉ, AFFICHER LA SECURITY GATE
   if (!isAuthorized) return <SecurityGate onAccessGranted={() => setIsAuthorized(true)} />;
   
   if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
@@ -300,6 +309,9 @@ function MainOS() {
 
   return (
     <>
+        {/* --- DYNAMIC ISLAND ACTIVE --- */}
+        <DynamicIsland />
+        
         {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
         {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
         {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
@@ -315,7 +327,7 @@ function MainOS() {
 }
 
 // ==========================================
-// 1. ONBOARDING (MODIFIÉ POUR WAVE)
+// 1. ONBOARDING
 // ==========================================
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(1);
@@ -328,7 +340,7 @@ function OnboardingScreen({ onComplete }) {
   const holdTimer = useRef(null);
   const [progress, setProgress] = useState(0);
   const filteredCurrencies = CURRENCIES.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()));
-  const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(3.5); }; // Vers l'étape Wave
+  const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(3.5); }; 
   const selectZone = (selectedZone) => { setZone(selectedZone); setStep(5); };
   const startHold = () => { setIsHolding(true); let p = 0; holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30); };
   const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
@@ -349,7 +361,6 @@ function OnboardingScreen({ onComplete }) {
       {step === 2 && (<div className="animate-in zoom-in duration-500 flex flex-col items-center w-full max-w-xs"><h2 className="text-xl font-serif mb-2">Le Pacte</h2><p className="text-gray-500 text-xs mb-12">Jurez-vous de ne rien cacher ?</p><div className="relative w-24 h-24 rounded-full border-2 border-white/10 flex items-center justify-center select-none cursor-pointer active:scale-95 transition-transform" onMouseDown={startHold} onMouseUp={stopHold} onTouchStart={startHold} onTouchEnd={stopHold}><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="48" cy="48" r="46" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-gold" strokeDasharray="289" strokeDashoffset={289 - (289 * progress) / 100} style={{ transition: 'stroke-dashoffset 0.1s linear' }} /></svg><Fingerprint className={`w-10 h-10 ${isHolding ? 'text-gold animate-pulse' : 'text-gray-600'}`} /></div><p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p></div>)}
       {step === 3 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2><div className="relative mb-4"><Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" /><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none" placeholder="Rechercher (ex: Euro, FCFA...)" autoFocus /></div><div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">{filteredCurrencies.map((c) => (<button key={c.code} onClick={() => selectCurrency(c)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"><div className="flex items-center gap-3"><span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">{c.symbol.substring(0, 2)}</span><div className="text-left"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p><p className="text-[10px] text-gray-500">{c.code}</p></div></div><ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" /></button>))}</div></div>)}
       
-      {/* NOUVELLE ÉTAPE WAVE */}
       {step === 3.5 && (
           <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs flex flex-col items-center">
               <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/30">
@@ -392,7 +403,7 @@ function Dashboard({ onNavigate }) {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
-  const [showHistory, setShowHistory] = useState(false); // STATE POUR L'HISTORIQUE
+  const [showHistory, setShowHistory] = useState(false);
   const [showTaxModal, setShowTaxModal] = useState(false);
   const [pendingTransaction, setPendingTransaction] = useState(null);
 
@@ -401,23 +412,16 @@ function Dashboard({ onNavigate }) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   
-  // Bunker State Local pour Modal
   const [bunkerAmount, setBunkerAmount] = useState('');
 
-  // CALCUL DE LA CITATION DU JOUR
   const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
   const dailyQuote = DAILY_QUOTES[quoteIndex];
 
-  // CALCULS AGRÉGÉS
-  const totalBalance = balance; // Ce qu'il a en main + OM
-  const totalBunker = bunker;   // Ce qu'il a sur Wave
+  const totalBalance = balance; 
+  const totalBunker = bunker;   
   const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
-  
-  // Le disponible est seulement ce qui est dans Balance (Main/OM) moins ce qui est prévu pour les cibles.
-  // Le Bunker (Wave) est totalement à part.
   const availableCash = totalBalance - lockedCash; 
 
-  // Sync Storage
   useEffect(() => {
     localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
     localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
@@ -426,7 +430,6 @@ function Dashboard({ onNavigate }) {
     localStorage.setItem('imperium_goals', JSON.stringify(goals));
   }, [balance, bunker, transactions, projects, goals]);
 
-  // --- LOGIQUE TEMPORELLE & RATION ---
   const today = new Date();
   const currentDay = today.getDate();
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
@@ -449,11 +452,10 @@ function Dashboard({ onNavigate }) {
   };
   
   const streak = calculateStreak();
-  const rank = getRank(totalBalance + totalBunker, currency); // Rank basé sur la richesse totale
+  const rank = getRank(totalBalance + totalBunker, currency); 
   const RankIcon = rank.icon;
   const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
 
-  // ANALYSE DU COMPORTEMENT DU JOUR
   let dailyStatus = { text: "Stable", color: "text-gray-500" };
   if (spentToday > dailyAllocation) {
       dailyStatus = { text: "Critique ⚠️", color: "text-red-500" };
@@ -472,7 +474,6 @@ function Dashboard({ onNavigate }) {
     if (!amount) return;
     const value = parseFloat(amount);
     
-    // INTERCEPTION DE L'IMPÔT IMPÉRIAL
     if (transactionType === 'income' && (goals.length > 0 || totalBunker >= 0)) {
         setPendingTransaction({ value, description });
         setShowTaxModal(true);
@@ -503,8 +504,6 @@ function Dashboard({ onNavigate }) {
       const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0;
       const incomeDesc = pendingTransaction.description || "Revenu";
 
-      // L'impot va DIRECTEMENT DANS WAVE (Bunker)
-      // Le reste va dans CASH/OM (Balance)
       const keptAmount = totalIncome - taxAmount;
 
       const newBalance = balance + keptAmount;
@@ -525,14 +524,13 @@ function Dashboard({ onNavigate }) {
       const val = parseFloat(bunkerAmount);
       
       if (action === 'deposit') {
-          // Logique : Je prends du Cash pour le mettre sur Wave
           if (val > availableCash) return alert(`Fonds insuffisants en main pour faire ce dépôt.`);
-          setBalance(balance - val); // Ça sort du cash
-          setBunker(bunker + val);   // Ça rentre sur Wave
+          setBalance(balance - val); 
+          setBunker(bunker + val);   
       } else if (action === 'withdraw') {
           if (val > bunker) return alert(`Fonds insuffisants sur Wave.`);
-          setBunker(bunker - val);   // Ça sort de Wave
-          setBalance(balance + val); // Ça revient en cash (retrait)
+          setBunker(bunker - val);    
+          setBalance(balance + val); 
       }
       setBunkerAmount('');
       setIsBunkerModalOpen(false);
@@ -545,9 +543,9 @@ function Dashboard({ onNavigate }) {
       if(!tx) return;
       
       if(tx.type === 'expense') {
-          setBalance(balance + tx.amount); // Remboursement
+          setBalance(balance + tx.amount); 
       } else {
-          setBalance(balance - tx.amount); // Retrait du revenu
+          setBalance(balance - tx.amount); 
       }
       
       setTransactions(transactions.filter(t => t.id !== txId));
@@ -557,17 +555,18 @@ function Dashboard({ onNavigate }) {
     <PageTransition>
     <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-40 flex flex-col relative shadow-2xl">
       
-      <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
+      {/* HEADER ADAPTÉ POUR DYNAMIC ISLAND */}
+      <header className="px-5 py-4 bg-transparent sticky top-0 z-10 flex justify-between items-start w-full pt-12">
          <div className="flex gap-2">
-             <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><BarChart3 className="w-5 h-5"/></button>
-             <button onClick={() => setShowHistory(true)} className="w-8 flex justify-start text-gray-500 hover:text-gold"><History className="w-5 h-5"/></button>
+             <button onClick={() => onNavigate('stats')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold shadow-lg"><BarChart3 className="w-5 h-5"/></button>
+             <button onClick={() => setShowHistory(true)} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold shadow-lg"><History className="w-5 h-5"/></button>
          </div>
-         <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
-         <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white"><Settings className="w-5 h-5"/></button>
+         <div>
+             <button onClick={() => onNavigate('settings')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white shadow-lg"><Settings className="w-5 h-5"/></button>
+         </div>
       </header>
 
-      <div className="w-full px-4 mt-4">
-        {/* === HEADER CLICKABLE POUR LES TROPHÉES === */}
+      <div className="w-full px-4 mt-2">
         <div className="flex justify-between items-end mb-4">
             <button onClick={() => onNavigate('trophies')} className="flex flex-col items-start group active:scale-95 transition-transform">
                 <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-gold transition-colors">Grade</p>
@@ -587,7 +586,7 @@ function Dashboard({ onNavigate }) {
       </div>
 
       <main className="w-full px-4 grid gap-3">
-        {/* === LE HUD (HEADS UP DISPLAY) === */}
+        {/* === LE HUD === */}
         <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
             <div className="p-5 pb-2 text-center relative">
                  <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
@@ -641,7 +640,7 @@ function Dashboard({ onNavigate }) {
             </div>
         )}
 
-        {/* === MENU RAPIDE HORIZONTAL (4 SLOTS) === */}
+        {/* === MENU RAPIDE HORIZONTAL === */}
         <div className="grid grid-cols-4 gap-2 mt-2">
             <button onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
                 <div className="text-indigo-500"><Repeat className="w-4 h-4"/></div>
@@ -667,7 +666,7 @@ function Dashboard({ onNavigate }) {
             <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Castle className="w-5 h-5 text-gold opacity-80" /><span className="text-[10px] font-bold text-gray-500">{projects.length}</span></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">Projets Stratégiques</p></div></div>
         </div>
 
-        {/* === CITATION DU JOUR (En bas, pour l'ergonomie) === */}
+        {/* === CITATION DU JOUR === */}
         <div className="mt-4 bg-[#111] border border-white/5 rounded-xl p-4 flex gap-3 items-start opacity-80">
             <Quote className="w-5 h-5 text-gold shrink-0 mt-1" />
             <div>
@@ -1472,7 +1471,7 @@ function ProjectScreen({ onBack }) {
 
 function SettingsScreen({ onBack }) { 
     const [importData, setImportData] = useState("");
-    const [exportCode, setExportCode] = useState(""); // NOUVEAU
+    const [exportCode, setExportCode] = useState(""); 
     
     // CALIBRAGE STATES
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
@@ -1490,12 +1489,11 @@ function SettingsScreen({ onBack }) {
             onboarded: localStorage.getItem('imperium_onboarded'), 
             bunker: localStorage.getItem('imperium_bunker'),
             version: localStorage.getItem('imperium_version'),
-            license: localStorage.getItem('imperium_license') // Include license in backup
+            license: localStorage.getItem('imperium_license') 
         }; 
         const encoded = btoa(JSON.stringify(data)); 
-        setExportCode(encoded); // Affiche le code
+        setExportCode(encoded); 
         
-        // Tente de copier quand même
         navigator.clipboard.writeText(encoded)
             .then(() => alert("CODE D'ARCHIVE COPIÉ."))
             .catch(() => alert("Copie automatique échouée. Veuillez copier le code affiché manuellement."));
@@ -1516,7 +1514,7 @@ function SettingsScreen({ onBack }) {
             if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); 
             if(decoded.bunker) localStorage.setItem('imperium_bunker', decoded.bunker);
             if(decoded.version) localStorage.setItem('imperium_version', decoded.version);
-            if(decoded.license) localStorage.setItem('imperium_license', decoded.license); // Restore license
+            if(decoded.license) localStorage.setItem('imperium_license', decoded.license); 
             alert("✅ RESTAURATION RÉUSSIE."); 
             window.location.reload(); 
         } catch (e) { alert("❌ ERREUR : Code invalide."); } 
@@ -1543,7 +1541,6 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
                     
-                    {/* SECTION CALIBRAGE RESTAURÉE */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                          <div className="absolute top-0 right-0 p-4 opacity-5"><RefreshCw className="w-24 h-24 text-white" /></div>
                          <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -1571,7 +1568,6 @@ function SettingsScreen({ onBack }) {
                         </div>
                         <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3"><Copy className="w-4 h-4" /> Générer Code</button>
                         
-                        {/* NOUVEAU : AFFICHAGE DU CODE */}
                         {exportCode && (
                             <div className="animate-in fade-in slide-in-from-top-2">
                                 <p className="text-[10px] text-gray-500 mb-1">Copiez ce code manuellement si besoin :</p>
