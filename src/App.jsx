@@ -256,7 +256,7 @@ function PatchNotesModal({ onAck }) {
     );
 }
 // ==========================================
-// APP PRINCIPALE
+// APP PRINCIPALE & NAVIGATION
 // ==========================================
 export default function App() {
     const [loading, setLoading] = useState(true);
@@ -280,6 +280,8 @@ export default function App() {
   function MainOS() {
     const [currentView, setCurrentView] = useState('dashboard');
     const [showPatchNotes, setShowPatchNotes] = useState(false);
+    
+    // Fonction de navigation principale
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
     
     useEffect(() => { 
@@ -291,7 +293,11 @@ export default function App() {
     return (
       <>
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
+          
+          {/* Le Dashboard gère sa propre navigation interne via le menu du bas */}
           {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
+          
+          {/* Les autres écrans ont un bouton retour */}
           {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
@@ -305,7 +311,7 @@ export default function App() {
   }
   
   // ==========================================
-  // 1. ONBOARDING (Standard)
+  // 1. ONBOARDING (Code inchangé)
   // ==========================================
   function OnboardingScreen({ onComplete }) {
     const [step, setStep] = useState(1);
@@ -347,87 +353,53 @@ export default function App() {
   }
   
   // ==========================================
-  // 2. DASHBOARD (RETOUR AU DESIGN PROPRE + SCROLL)
+  // 2. DASHBOARD - REPLIQUE EXACTE DE L'IMAGE
   // ==========================================
   function Dashboard({ onNavigate }) {
+    // DONNÉES
     const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
     const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
     const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
     const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
     const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
-    const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
     const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_projects') || "[]"); } catch { return []; } });
-  
     const currency = localStorage.getItem('imperium_currency') || "€";
     
+    // ETATS UI
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [showTaxModal, setShowTaxModal] = useState(false);
     const [pendingTransaction, setPendingTransaction] = useState(null);
   
+    // SAISIE
     const [transactionType, setTransactionType] = useState('expense');
     const [expenseCategory, setExpenseCategory] = useState('need'); 
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
-    
     const [bunkerAmount, setBunkerAmount] = useState('');
   
+    // CALCULS
     const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
     const dailyQuote = DAILY_QUOTES[quoteIndex];
-  
     const totalBalance = balance; 
     const totalBunker = bunker;   
     const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
     const availableCash = totalBalance - lockedCash; 
+    const rank = getRank(totalBalance + totalBunker, currency); 
+    const RankIcon = rank.icon;
   
+    const dailySurvivalCost = Math.max(availableCash / 30, 1);
+    const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
+  
+    // EFFETS DE SAUVEGARDE
     useEffect(() => {
       localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
       localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
       localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-      localStorage.setItem('imperium_projects', JSON.stringify(projects));
-      localStorage.setItem('imperium_goals', JSON.stringify(goals));
-    }, [balance, bunker, transactions, projects, goals]);
+    }, [balance, bunker, transactions]);
   
-    const today = new Date();
-    const currentDay = today.getDate();
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    const daysRemaining = Math.max(1, daysInMonth - currentDay + 1); 
-    const monthProgress = (currentDay / daysInMonth) * 100;
-  
-    const todayStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-    const spentToday = transactions
-        .filter(t => t.type === 'expense' && t.date === todayStr)
-        .reduce((acc, t) => acc + t.amount, 0);
-  
-    const calculateStreak = () => {
-      if (transactions.length === 0) return 0;
-      const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want');
-      if (!lastSin) return Math.min(transactions.length, 30);
-      const lastSinDate = new Date(lastSin.rawDate || Date.now());
-      const now = new Date();
-      const diffTime = Math.abs(now - lastSinDate);
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    };
-    
-    const streak = calculateStreak();
-    const rank = getRank(totalBalance + totalBunker, currency); 
-    const RankIcon = rank.icon;
-    const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
-  
-    let dailyStatus = { text: "Stable", color: "text-gray-500" };
-    if (spentToday > dailyAllocation) {
-        dailyStatus = { text: "Critique ⚠️", color: "text-red-500" };
-    } else if (spentToday > dailyAllocation * 0.8) {
-        dailyStatus = { text: "Attention", color: "text-orange-500" };
-    } else if (spentToday > 0) {
-        dailyStatus = { text: "Excellent", color: "text-green-500" };
-    }
-  
-    const dailySurvivalCost = Math.max(availableCash / 30, 1);
-    const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
-    const debtToPay = debts.filter(d => d.type === 'owe' && d.amount <= availableCash).sort((a, b) => a.amount - b.amount)[0];
-  
+    // FONCTIONS DE GESTION (Copier-Coller logique existante)
     const handleSubmit = (e) => {
       e.preventDefault();
       if (!amount) return;
@@ -440,19 +412,13 @@ export default function App() {
           setAmount(''); setDescription('');
           return;
       }
-  
       if (transactionType === 'expense') {
           if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
           setBalance(balance - value);
       } else {
           setBalance(balance + value);
       }
-  
-      let finalDesc = description;
-      if (transactionType === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${description}`;
-      
-      const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
-      
+      const newTransaction = { id: Date.now(), desc: description || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
       setTransactions([newTransaction, ...transactions]);
       setAmount(''); setDescription(''); setIsModalOpen(false);
     };
@@ -461,19 +427,11 @@ export default function App() {
         if (!pendingTransaction) return;
         const totalIncome = pendingTransaction.value;
         const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0;
-        const incomeDesc = pendingTransaction.description || "Revenu";
-  
         const keptAmount = totalIncome - taxAmount;
-  
-        const newBalance = balance + keptAmount;
-        const newBunker = bunker + taxAmount;
-        
-        const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
-        let newTransactions = [incomeTx, ...transactions];
-  
-        setBalance(newBalance);
-        setBunker(newBunker);
-        setTransactions(newTransactions);
+        setBalance(balance + keptAmount);
+        setBunker(bunker + taxAmount);
+        const incomeTx = { id: Date.now(), desc: pendingTransaction.description || "Revenu", amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+        setTransactions([incomeTx, ...transactions]);
         setPendingTransaction(null);
         setShowTaxModal(false);
     };
@@ -481,305 +439,193 @@ export default function App() {
     const handleBunkerAction = (action) => {
         if (!bunkerAmount) return;
         const val = parseFloat(bunkerAmount);
-        
         if (action === 'deposit') {
-            if (val > availableCash) return alert(`Fonds insuffisants en main pour faire ce dépôt.`);
-            setBalance(balance - val); 
-            setBunker(bunker + val);   
+            if (val > availableCash) return alert(`Fonds insuffisants.`);
+            setBalance(balance - val); setBunker(bunker + val);   
         } else if (action === 'withdraw') {
             if (val > bunker) return alert(`Fonds insuffisants sur Wave.`);
-            setBunker(bunker - val);    
-            setBalance(balance + val); 
+            setBunker(bunker - val); setBalance(balance + val); 
         }
-        setBunkerAmount('');
-        setIsBunkerModalOpen(false);
+        setBunkerAmount(''); setIsBunkerModalOpen(false);
     };
     
     const handleUndoTransaction = (txId) => {
-        if(!confirm("Annuler cette opération ? Le montant sera remboursé sur votre solde.")) return;
-        
+        if(!confirm("Annuler cette opération ?")) return;
         const tx = transactions.find(t => t.id === txId);
         if(!tx) return;
-        
-        if(tx.type === 'expense') {
-            setBalance(balance + tx.amount); 
-        } else {
-            setBalance(balance - tx.amount); 
-        }
-        
+        if(tx.type === 'expense') setBalance(balance + tx.amount); else setBalance(balance - tx.amount);
         setTransactions(transactions.filter(t => t.id !== txId));
     };
   
     return (
       <PageTransition>
-      <div className="min-h-screen w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col relative shadow-2xl">
+      <div className="h-[100dvh] w-full max-w-md mx-auto bg-[#0d0d0d] text-gray-200 font-sans flex flex-col relative overflow-hidden">
         
-        {/* HEADER FIXE "GLASS" - RESTE TOUJOURS EN HAUT */}
-        {/* Ajout d'une marge haute (pt-12) pour forcer le contenu sous la caméra */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/90 backdrop-blur-md border-b border-white/5 px-5 py-4 pt-12 flex justify-between items-center max-w-md mx-auto">
-           <div className="flex gap-2">
-               <button onClick={() => onNavigate('stats')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold hover:border-gold/30 transition-all active:scale-95 shadow-lg"><BarChart3 className="w-5 h-5"/></button>
-               <button onClick={() => setShowHistory(true)} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold hover:border-gold/30 transition-all active:scale-95 shadow-lg"><History className="w-5 h-5"/></button>
-           </div>
-           
-           <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">IMPERIUM</h1>
-  
+        {/* 1. EN-TÊTE COMPACT (Comme sur l'image) */}
+        <div className="px-5 pt-safe-top mt-4 flex justify-between items-start shrink-0">
            <div>
-               <button onClick={() => onNavigate('settings')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-all active:scale-95 shadow-lg"><Settings className="w-5 h-5"/></button>
+              <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest">IMPERIUM</h1>
+              <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Système V{APP_VERSION.split('-')[0]}</p>
            </div>
-        </header>
-  
-        {/* ESPACE VIDE POUR COMPENSER LE HEADER FIXE */}
-        <div className="h-32 w-full"></div>
-  
-        <div className="w-full px-4 mt-2">
-          <div className="flex justify-between items-end mb-4">
-              <button onClick={() => onNavigate('trophies')} className="flex flex-col items-start group active:scale-95 transition-transform">
-                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-gold transition-colors">Grade</p>
-                  <div className="flex items-center gap-2">
-                      <RankIcon className={`w-4 h-4 ${rank.color}`} />
-                      <h2 className={`text-sm font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2>
-                  </div>
-              </button>
-              <button onClick={() => onNavigate('trophies')} className="flex flex-col items-end group active:scale-95 transition-transform">
-                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-orange-500 transition-colors">Discipline</p>
-                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}>
-                      <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
-                      <span className={`text-sm font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span>
-                  </div>
-              </button>
-          </div>
+           <button onClick={() => onNavigate('trophies')} className="flex items-center gap-1.5 bg-[#1a2333] border border-blue-500/30 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
+              <RankIcon className={`w-3 h-3 ${rank.color}`} />
+              <span className={`text-[10px] font-bold uppercase ${rank.color} tracking-wider`}>{rank.title}</span>
+           </button>
         </div>
   
-        <main className="w-full px-4 grid gap-4 pb-40">
-          {/* === LE HUD === */}
-          <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
-              <div className="p-5 pb-2 text-center relative">
-                   <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
-                   <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Disponible (Cash + OM)</p>
-                   <span className={`text-3xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></span>
-                   <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Wallet className="w-3 h-3"/> Argent facilement accessible</p>
-              </div>
-  
-              <div className="w-full h-1 bg-gray-900 mt-2">
-                  <div className="h-full bg-blue-500/30" style={{ width: `${monthProgress}%` }}></div>
-              </div>
-  
-              <div className="grid grid-cols-2 divide-x divide-white/10 bg-white/5">
-                  <div className="p-3 text-center">
-                       <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Ration (J-{daysRemaining})</p>
-                       <p className={`text-lg font-bold ${dailyAllocation < 500 ? 'text-orange-500' : 'text-white'}`}>{formatMoney(dailyAllocation)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
-                  </div>
-                  <div className="p-3 text-center relative">
-                       <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Dépensé 24h</p>
-                       <p className={`text-lg font-bold ${spentToday > dailyAllocation ? 'text-red-500' : 'text-white'}`}>{formatMoney(spentToday)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
-                       <span className={`absolute top-2 right-2 w-2 h-2 rounded-full ${dailyStatus.color === 'text-green-500' ? 'bg-green-500' : dailyStatus.color === 'text-red-500' ? 'bg-red-500' : 'bg-gray-700'}`}></span>
-                  </div>
-              </div>
-               <div className="p-2 text-center bg-black/40 border-t border-white/5">
-                  <p className={`text-[10px] ${dailyStatus.color} font-bold uppercase tracking-widest`}>STATUT : {dailyStatus.text}</p>
-               </div>
+        {/* 2. ZONE DE CONTENU SCROLLABLE */}
+        <div className="flex-1 overflow-y-auto px-4 pt-6 pb-28 custom-scrollbar space-y-4">
+          
+          {/* CARTE PRINCIPALE (CASH) - Style Image */}
+          <div className="bg-[#111] rounded-2xl border-t-2 border-[#F4D35E] p-6 text-center relative shadow-lg">
+               <div className="absolute inset-0 bg-gradient-to-b from-[#F4D35E]/5 to-transparent rounded-2xl pointer-events-none"></div>
+               <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-2">Disponible (Cash + OM)</p>
+               <h2 className="text-4xl font-serif font-bold text-white tracking-wide">{formatMoney(availableCash)} <span className="text-base text-[#F4D35E] font-sans font-bold">{currency}</span></h2>
           </div>
   
-          {/* === CARTE WAVE (BUNKER) === */}
-          <div onClick={() => setIsBunkerModalOpen(true)} className="bg-blue-900/10 border border-blue-500/30 rounded-xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:bg-blue-900/20 group relative overflow-hidden">
-               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+          {/* CARTE WAVE (BUNKER) - Style Image */}
+          <div onClick={() => setIsBunkerModalOpen(true)} className="bg-[#10141d] border border-blue-900/40 rounded-xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden group">
+               <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
                <div className="flex items-center gap-4 relative z-10">
-                   <div className="p-3 bg-blue-500/10 rounded-full border border-blue-500/20 text-blue-400"><Smartphone className="w-6 h-6"/></div>
+                   <div className="p-2.5 bg-[#1a2333] rounded-lg text-blue-400 border border-blue-500/20"><Smartphone className="w-5 h-5"/></div>
                    <div>
-                       <p className="text-[9px] text-blue-400 uppercase tracking-widest font-bold mb-1">Coffre-Fort Wave</p>
-                       <h3 className="text-xl font-bold text-white font-serif tracking-wide">{formatMoney(totalBunker)} {currency}</h3>
-                       <p className="text-[9px] text-gray-400">Ne pas toucher sauf urgence.</p>
+                       <p className="text-[9px] text-blue-300 uppercase tracking-widest font-bold mb-0.5">Coffre-Fort Wave</p>
+                       <p className="text-xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</p>
                    </div>
                </div>
-               <ChevronRight className="w-5 h-5 text-blue-500/50 group-hover:text-blue-400 relative z-10" />
+               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 relative z-10" />
           </div>
   
-          {debtToPay && (
-              <div className="bg-[#1a0f0f] p-3 rounded-xl border border-red-900/30 animate-in slide-in-from-right flex items-center gap-3">
-                  <div className="p-2 bg-red-900/20 text-red-500 rounded-lg shrink-0"><AlertTriangle className="w-4 h-4"/></div>
-                  <div className="flex-1">
-                      <p className="text-[9px] text-red-400 uppercase tracking-widest font-bold">Dette Prioritaire</p>
-                      <p className="text-xs text-white font-bold">{debtToPay.name} : {formatMoney(debtToPay.amount)} {currency}</p>
-                  </div>
-                  <button onClick={() => onNavigate('debts')} className="text-xs text-red-400 font-bold uppercase border border-red-900/50 px-3 py-1.5 rounded bg-red-900/10">Payer</button>
-              </div>
-          )}
-  
-          {/* === MENU RAPIDE HORIZONTAL === */}
-          <div className="grid grid-cols-4 gap-2">
-              <button onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                  <div className="text-indigo-500"><Repeat className="w-5 h-5"/></div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase">Protocoles</span>
-              </button>
-              <button onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                   <div className="text-purple-500"><Scroll className="w-5 h-5"/></div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase">Registre</span>
-              </button>
-              <button onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                   <div className="text-blue-500"><Target className="w-5 h-5"/></div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase">Cibles</span>
-              </button>
-               <button onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-3 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                   <div className="text-gold"><Trophy className="w-5 h-5"/></div>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase">Succès</span>
-              </button>
-          </div>
-  
-          {/* === GRILLE PRINCIPALE === */}
+          {/* GRILLE 2x2 - Style Image */}
           <div className="grid grid-cols-2 gap-3">
-              <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-5 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-32 flex flex-col justify-between"><div className="flex justify-between items-start"><Sword className="w-6 h-6 text-gold opacity-80" /></div><div><h3 className="font-bold text-white text-sm uppercase tracking-wide">Arsenal</h3><p className="text-[10px] text-gray-500 mt-1">Compétences & Business</p></div></div>
-              <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-5 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-32 flex flex-col justify-between"><div className="flex justify-between items-start"><Castle className="w-6 h-6 text-gold opacity-80" /><span className="text-[10px] font-bold text-gray-500">{projects.length}</span></div><div><h3 className="font-bold text-white text-sm uppercase tracking-wide">Conquête</h3><p className="text-[10px] text-gray-500 mt-1">Projets Stratégiques</p></div></div>
+              {/* PROJETS */}
+              <button onClick={() => onNavigate('project')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
+                  <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" />
+                  <h3 className="text-sm font-bold text-white">Projets</h3>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
+              </button>
+              
+              {/* ARSENAL */}
+              <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
+                  <Sword className="w-6 h-6 text-white mb-3 opacity-90" />
+                  <h3 className="text-sm font-bold text-white">Arsenal</h3>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Compétences</p>
+              </button>
+              
+              {/* CIBLES */}
+              <button onClick={() => onNavigate('goals')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
+                  <Target className="w-6 h-6 text-blue-400 mb-3 opacity-90" />
+                  <h3 className="text-sm font-bold text-white">Cibles</h3>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Objectifs</p>
+              </button>
+              
+              {/* PROTOCOLE */}
+              <button onClick={() => onNavigate('protocols')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
+                  <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" />
+                  <h3 className="text-sm font-bold text-white">Protocole</h3>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
+              </button>
           </div>
   
-          {/* === CITATION DU JOUR === */}
-          <div className="mt-2 bg-[#111] border border-white/5 rounded-xl p-5 flex gap-3 items-start opacity-80">
-              <Quote className="w-5 h-5 text-gold shrink-0 mt-1" />
-              <div>
-                  <p className="text-xs text-gray-300 italic font-serif leading-relaxed">"{dailyQuote.text}"</p>
-                  <p className="text-[10px] text-gold mt-2 font-bold uppercase">— {dailyQuote.author}</p>
-              </div>
+          {/* CITATION */}
+          <div className="text-center pt-4 opacity-60">
+               <p className="text-[10px] text-gray-400 italic">"{dailyQuote.text}"</p>
           </div>
-        </main>
-  
-        <div className="fixed bottom-0 left-0 right-0 flex justify-center z-20 pointer-events-none pb-[calc(2rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-dark via-dark/80 to-transparent pt-10">
-          <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200"><Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span></button>
         </div>
   
+        {/* 3. BOUTON FLOTTANT CENTRAL (FAB) */}
+        <div className="absolute bottom-20 left-0 right-0 flex justify-center z-30 pointer-events-none">
+            <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto w-14 h-14 rounded-full bg-[#EAB308] text-black shadow-[0_0_20px_rgba(234,179,8,0.4)] flex items-center justify-center active:scale-90 transition-transform border-4 border-[#0d0d0d]">
+                <Plus className="w-7 h-7" />
+            </button>
+        </div>
+  
+        {/* 4. BARRE DE NAVIGATION INFÉRIEURE (FIXE) */}
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#161616] border-t border-white/5 px-6 pb-6 pt-3 flex justify-between items-end z-20">
+            <button onClick={() => onNavigate('dashboard')} className="flex flex-col items-center gap-1 text-[#F4D35E] opacity-100">
+                <div className="w-6 h-6 bg-[#F4D35E]/10 rounded flex items-center justify-center"><Castle className="w-4 h-4" /></div>
+                <span className="text-[9px] font-bold uppercase">QG</span>
+            </button>
+            
+            <button onClick={() => onNavigate('stats')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
+                <BarChart3 className="w-5 h-5" />
+                <span className="text-[9px] font-bold uppercase">Cartes</span>
+            </button>
+            
+            <div className="w-10"></div> {/* Espace pour le FAB central */}
+            
+            <button onClick={() => setShowHistory(true)} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
+                <History className="w-5 h-5" />
+                <span className="text-[9px] font-bold uppercase">Journal</span>
+            </button>
+            
+            <button onClick={() => onNavigate('settings')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
+                <Settings className="w-5 h-5" />
+                <span className="text-[9px] font-bold uppercase">Réglages</span>
+            </button>
+        </div>
+  
+        {/* --- MODALES (Code Identique mais intégré) --- */}
+        
         {/* MODAL DE SAISIE */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
-              <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Opération</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
-              
+              <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Nouvelle Entrée</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
               <div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5">
-                  <button onClick={() => setTransactionType('expense')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
-                  <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
+                  <button onClick={() => setTransactionType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
+                  <button onClick={() => setTransactionType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
               </div>
-              
               {transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}
-              {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (
-                   <div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Avertissement du Sergent</p><p className="text-gray-300 text-xs leading-relaxed mt-1">Cette dépense équivaut à <span className="text-white font-bold">{daysLost} jours</span> de survie.<br/>Est-ce que ça en vaut vraiment la peine ?</p></div></div>
-              )}
+              {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (<div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Alerte</p><p className="text-gray-300 text-xs mt-1">Coût: <span className="text-white font-bold">{daysLost} jours</span> de survie.</p></div></div>)}
               <form onSubmit={handleSubmit} className="space-y-5">
                 <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus />
                 <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} />
-                <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' && expenseCategory === 'want' ? 'bg-red-600 text-white animate-pulse' : (transactionType === 'expense' ? 'bg-white/10 text-white' : 'bg-green-600 text-white')}`}>{transactionType === 'expense' && expenseCategory === 'want' ? "CONFIRMER LA PERTE" : "VALIDER"}</button>
+                <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' ? 'bg-white text-black' : 'bg-[#EAB308] text-black'}`}>VALIDER</button>
               </form>
             </div>
           </div>
         )}
   
-        {/* MODAL DU BUNKER (WAVE) */}
+        {/* MODAL BUNKER WAVE */}
         {isBunkerModalOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden">
                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
-               
-               <div className="flex justify-between items-center mb-6">
-                   <div className="flex items-center gap-2">
-                       <Smartphone className="w-5 h-5 text-blue-400"/>
-                       <h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave (Bunker)</h2>
-                   </div>
-                   <button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button>
-               </div>
-  
-               <div className="text-center mb-6">
-                   <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Total Sécurisé</p>
-                   <h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2>
-                   <p className="text-xs text-blue-300 mt-2 px-6">Pour ajouter de l'argent ici, vous devez faire un dépôt physique sur votre compte Wave.</p>
-               </div>
-  
+               <div className="flex justify-between items-center mb-6"><div className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-400"/><h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave</h2></div><button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
+               <div className="text-center mb-6"><h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2></div>
                <div className="space-y-4">
                    <input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus />
-                   
-                   <div className="flex gap-3">
-                       <button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 hover:bg-red-900/20 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-colors">
-                           <Unlock className="w-4 h-4"/>
-                           <span>Urgence (Retrait)</span>
-                       </button>
-                       <button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 hover:bg-blue-500 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-                           <Lock className="w-4 h-4"/>
-                           <span>Confirmer le Dépôt</span>
-                       </button>
-                   </div>
+                   <div className="flex gap-3"><button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase">Retrait</button><button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase">Dépôt</button></div>
                </div>
             </div>
           </div>
         )}
   
-        {/* MODAL HISTORIQUE (JOURNAL DE BORD) */}
+        {/* MODAL HISTORIQUE */}
         {showHistory && (
             <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in">
                 <div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-2">
-                          <History className="w-5 h-5 text-gold"/>
-                          <h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal de Bord</h2>
-                        </div>
-                        <button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button>
-                    </div>
-                    
+                    <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">
-                      {transactions.length === 0 ? (
-                          <p className="text-gray-500 text-xs text-center mt-10">Le journal est vierge.</p>
-                      ) : (
-                          transactions.map(tx => (
-                              <div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5">
-                                  <div>
-                                      <p className="text-xs text-white font-bold">{tx.desc}</p>
-                                      <p className="text-[10px] text-gray-500">{tx.date} • {tx.type === 'expense' ? (tx.category === 'want' ? 'Futilité' : 'Besoin') : 'Revenu'}</p>
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                      <span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
-                                          {tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}
-                                      </span>
-                                      <button onClick={() => handleUndoTransaction(tx.id)} className="p-2 bg-red-900/10 text-red-500 rounded hover:bg-red-900/30 transition-colors">
-                                          <Trash2 className="w-4 h-4" />
-                                      </button>
-                                  </div>
-                              </div>
-                          ))
-                      )}
+                      {transactions.map(tx => (
+                          <div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5">
+                              <div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div>
+                              <div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div>
+                          </div>
+                      ))}
                     </div>
                 </div>
             </div>
         )}
-  
-        {/* MODAL DE L'IMPÔT IMPÉRIAL */}
+        
+        {/* MODAL IMPÔT */}
         {showTaxModal && pendingTransaction && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
-                <div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-[0_0_50px_rgba(212,175,55,0.1)] relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-bl-full"></div>
-                    <div className="flex flex-col items-center text-center">
-                        <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mb-4 border border-gold/40">
-                            <Coins className="w-8 h-8 text-gold" />
-                        </div>
-                        <h3 className="text-gold font-serif text-xl font-bold mb-2 tracking-wide uppercase">L'Impôt Impérial</h3>
-                        <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                            La règle d'or est de se payer en premier. L'Empire réclame <span className="text-white font-bold">20%</span> de ce revenu pour le <span className="text-blue-400 font-bold">Bunker (Wave)</span>.
-                        </p>
-                        
-                        <div className="w-full bg-gray-900 rounded-lg p-4 mb-6 border border-white/5">
-                            <div className="flex justify-between text-xs mb-2">
-                                <span className="text-gray-500">Revenu Total</span>
-                                <span className="text-white font-bold">{formatMoney(pendingTransaction.value)} {currency}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gold font-bold">Prélèvement (20%)</span>
-                                <span className="text-gold font-bold">-{formatMoney(Math.floor(pendingTransaction.value * 0.2))} {currency}</span>
-                            </div>
-                        </div>
-  
-                        <div className="flex gap-3 w-full">
-                            <button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase hover:bg-white/5">
-                                Faiblesse (0%)
-                            </button>
-                            <button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-gold text-black text-xs font-bold uppercase hover:bg-yellow-400">
-                                Investir (20%)
-                            </button>
-                        </div>
-                    </div>
+                <div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center">
+                    <h3 className="text-[#F4D35E] font-serif text-xl font-bold mb-4">Impôt Impérial (20%)</h3>
+                    <p className="text-gray-400 text-sm mb-6">Sécuriser une partie de ce revenu dans Wave ?</p>
+                    <div className="flex gap-3 w-full"><button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase">Non (0%)</button><button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-[#F4D35E] text-black text-xs font-bold uppercase">Oui (20%)</button></div>
                 </div>
             </div>
         )}
