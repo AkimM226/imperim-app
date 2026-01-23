@@ -1,22 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2 } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.2.7"; 
+const APP_VERSION = "14.3.0-Ghost"; 
 
 const RELEASE_NOTES = [
     {
-        version: "14.2.7",
-        title: "Correctif Urgent",
-        desc: "Restauration de l'accès aux données.",
+        version: "14.3.0",
+        title: "Protocole Sécurisé",
+        desc: "Restriction de l'accès à l'application.",
         changes: [
-            { icon: BarChart3, text: "La Salle des Cartes (Statistiques) est de retour dans la barre de navigation." },
-            { icon: History, text: "L'Historique reste accessible juste à côté pour annuler vos actions." }
+            { icon: Lock, text: "Accès Restreint : L'application est désormais verrouillée pour le grand public." },
+            { icon: Key, text: "Beta Privée : Seuls les détenteurs d'une Clé Impériale peuvent entrer." }
         ]
     }
+];
+
+const VALID_HASHES = [
+    "SU1QLUFMUEhBLTc3", "SU1QLUJSQVZPLTg4", "SU1QLUNIQVJMSUUtOTk=", "SU1QLURFTEVULTEw", 
+    "SU1QLRUNITy0yMA==", "SU1QLUZPWFRST1QtMzA=", "SU1QLUdPTEYtNDA=", "SU1QLUhPVEVMLTUw", 
+    "SU1QLUlORElBLTYw", "SU1QLUpVTElFVFQtNzA=", "SU1QRVJBVE9SLVg=" 
+];
+
+const DAILY_QUOTES = [
+    { text: "Ce n'est pas parce que les choses sont difficiles que nous n'osons pas, c'est parce que nous n'osons pas qu'elles sont difficiles.", author: "Sénèque" },
+    { text: "La richesse consiste bien plus dans l'usage qu'on en fait que dans la possession.", author: "Aristote" },
+    { text: "Ne dépensez pas votre argent avant de l'avoir gagné.", author: "Thomas Jefferson" },
+    { text: "L'art de la guerre, c'est de soumettre l'ennemi sans combat.", author: "Sun Tzu" },
+    { text: "La discipline est mère du succès.", author: "Eschyle" },
+    { text: "Fais ce que tu dois, advienne que pourra.", author: "Devise Chevaleresque" },
+    { text: "Si tu achètes des choses dont tu n'as pas besoin, tu devras bientôt vendre des choses dont tu as besoin.", author: "Warren Buffett" },
+    { text: "Le prix est ce que vous payez. La valeur est ce que vous obtenez.", author: "Warren Buffett" },
+    { text: "Un voyage de mille lieues commence toujours par un premier pas.", author: "Lao Tseu" },
+    { text: "La pauvreté n'est pas le manque de biens, mais le désir insatiable d'en avoir plus.", author: "Sénèque" },
+    { text: "Celui qui a le contrôle sur lui-même est plus puissant que celui qui contrôle une cité.", author: "Proverbe" },
+    { text: "L'intérêt composé est la huitième merveille du monde.", author: "Einstein" }
 ];
 
 const CURRENCIES = [
@@ -141,6 +162,81 @@ function PageTransition({ children }) {
     return (<div className="animate-in slide-in-from-bottom-8 fade-in duration-500 w-full flex-1 flex flex-col overflow-hidden">{children}</div>);
 }
 
+// ==========================================
+// SYSTEME DE SECURITE
+// ==========================================
+function SecurityGate({ onAccessGranted }) {
+    const [code, setCode] = useState("");
+    const [error, setError] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const checkCode = (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(false);
+
+        setTimeout(() => {
+            const inputHash = btoa(code.trim().toUpperCase());
+            if (VALID_HASHES.includes(inputHash)) {
+                localStorage.setItem('imperium_license', 'GRANTED_V1');
+                onAccessGranted();
+            } else {
+                setError(true);
+                setLoading(false);
+                setCode("");
+            }
+        }, 1500); 
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black z-[200] flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-full max-w-sm">
+                <div className="w-24 h-24 bg-red-900/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/30 animate-pulse">
+                    <Lock className="w-10 h-10 text-red-500" />
+                </div>
+                
+                <h1 className="text-2xl font-serif text-white font-bold mb-2 uppercase tracking-widest">Zone Restreinte</h1>
+                <p className="text-gray-500 text-xs mb-8 leading-relaxed">
+                    Cette application est en phase de test classifiée.<br/>
+                    L'accès est limité au personnel autorisé disposant d'une Clé Impériale.
+                </p>
+
+                <form onSubmit={checkCode} className="space-y-4">
+                    <div className="relative">
+                        <Key className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+                        <input 
+                            type="text" 
+                            value={code} 
+                            onChange={(e) => setCode(e.target.value)} 
+                            className={`w-full bg-[#111] border rounded-lg pl-10 pr-4 py-3 text-white font-mono text-center uppercase tracking-widest focus:outline-none transition-all ${error ? 'border-red-500 animate-shake' : 'border-white/20 focus:border-gold'}`}
+                            placeholder="XXX-XXXXX-00" 
+                            autoFocus
+                        />
+                    </div>
+                    
+                    <button 
+                        type="submit" 
+                        disabled={!code || loading}
+                        className={`w-full font-bold py-4 rounded-lg uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-800 text-gray-500' : 'bg-white text-black hover:bg-gray-200'}`}
+                    >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Unlock className="w-4 h-4"/>}
+                        {loading ? "Vérification..." : "Déverrouiller"}
+                    </button>
+                </form>
+
+                {error && (
+                    <div className="mt-6 p-3 bg-red-900/20 border border-red-500/20 rounded text-red-400 text-xs flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2">
+                        <AlertTriangle className="w-4 h-4" /> Code invalide ou expiré.
+                    </div>
+                )}
+                
+                <p className="fixed bottom-6 w-full left-0 text-[9px] text-gray-700 uppercase tracking-widest">Security Protocol v{APP_VERSION}</p>
+            </div>
+            <style>{`@keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } } .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }`}</style>
+        </div>
+    );
+}
+
 function PatchNotesModal({ onAck }) {
     const note = RELEASE_NOTES[0];
     return (
@@ -160,545 +256,558 @@ function PatchNotesModal({ onAck }) {
         </div>
     );
 }
-
 // ==========================================
 // APP PRINCIPALE
 // ==========================================
 export default function App() {
-  const [loading, setLoading] = useState(true);
-  const [hasOnboarded, setHasOnboarded] = useState(false);
-  useEffect(() => { const timer = setTimeout(() => { setLoading(false); }, 2500); setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true'); return () => clearTimeout(timer); }, []);
-  if (loading) return <SplashScreen />;
-  if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
-  return <MainOS />;
-}
-
-function MainOS() {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [showPatchNotes, setShowPatchNotes] = useState(false);
-  const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
+    const [loading, setLoading] = useState(true);
+    const [hasOnboarded, setHasOnboarded] = useState(false);
+    const [isAuthorized, setIsAuthorized] = useState(false); 
   
-  useEffect(() => { 
-      const lastVersion = localStorage.getItem('imperium_version');
-      if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
-  }, []);
-  const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
-
-  return (
-    <>
-        {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
-        {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
-        {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
-        {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
-        {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
-        {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
-        {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
-        {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
-        {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
-        {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
-    </>
-  );
-}
-
-// ==========================================
-// 1. ONBOARDING (MODIFIÉ POUR WAVE)
-// ==========================================
-function OnboardingScreen({ onComplete }) {
-  const [step, setStep] = useState(1);
-  const [initialBalance, setInitialBalance] = useState('');
-  const [mainProject, setMainProject] = useState('');
-  const [currency, setCurrency] = useState('');
-  const [zone, setZone] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isHolding, setIsHolding] = useState(false);
-  const holdTimer = useRef(null);
-  const [progress, setProgress] = useState(0);
-  const filteredCurrencies = CURRENCIES.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()));
-  const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(3.5); }; // Vers l'étape Wave
-  const selectZone = (selectedZone) => { setZone(selectedZone); setStep(5); };
-  const startHold = () => { setIsHolding(true); let p = 0; holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30); };
-  const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
+    useEffect(() => { 
+        const timer = setTimeout(() => { setLoading(false); }, 2500); 
+        setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
+        setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); 
+        return () => clearTimeout(timer); 
+    }, []);
   
-  const finishOnboarding = () => {
-    localStorage.setItem('imperium_balance', initialBalance || 0);
-    const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
-    localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
-    localStorage.setItem('imperium_currency', currency || "€");
-    localStorage.setItem('imperium_zone', JSON.stringify(zone || ZONES[0]));
-    localStorage.setItem('imperium_onboarded', 'true');
-    window.location.reload();
-  };
-
-  return (
-    <PageTransition><div className="fixed inset-0 bg-black text-gold flex flex-col items-center justify-center p-6 text-center z-50 overflow-hidden w-full h-full">
-      {step === 1 && (<div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs"><h1 className="text-4xl font-serif font-bold tracking-widest mb-6">IMPERIUM</h1><p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p><button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button></div>)}
-      {step === 2 && (<div className="animate-in zoom-in duration-500 flex flex-col items-center w-full max-w-xs"><h2 className="text-xl font-serif mb-2">Le Pacte</h2><p className="text-gray-500 text-xs mb-12">Jurez-vous de ne rien cacher ?</p><div className="relative w-24 h-24 rounded-full border-2 border-white/10 flex items-center justify-center select-none cursor-pointer active:scale-95 transition-transform" onMouseDown={startHold} onMouseUp={stopHold} onTouchStart={startHold} onTouchEnd={stopHold}><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="48" cy="48" r="46" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-gold" strokeDasharray="289" strokeDashoffset={289 - (289 * progress) / 100} style={{ transition: 'stroke-dashoffset 0.1s linear' }} /></svg><Fingerprint className={`w-10 h-10 ${isHolding ? 'text-gold animate-pulse' : 'text-gray-600'}`} /></div><p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p></div>)}
-      {step === 3 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2><div className="relative mb-4"><Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" /><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none" placeholder="Rechercher (ex: Euro, FCFA...)" autoFocus /></div><div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">{filteredCurrencies.map((c) => (<button key={c.code} onClick={() => selectCurrency(c)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"><div className="flex items-center gap-3"><span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">{c.symbol.substring(0, 2)}</span><div className="text-left"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p><p className="text-[10px] text-gray-500">{c.code}</p></div></div><ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" /></button>))}</div></div>)}
-      
-      {/* NOUVELLE ÉTAPE WAVE */}
-      {step === 3.5 && (
-          <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs flex flex-col items-center">
-              <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/30">
-                  <Smartphone className="w-10 h-10 text-blue-500" />
-              </div>
-              <h2 className="text-xl font-serif text-white mb-4">La Stratégie Wave</h2>
-              <p className="text-gray-400 text-sm leading-relaxed mb-8">
-                  Dans ce système, <span className="text-blue-400 font-bold">Wave est votre Coffre-Fort</span>.
-                  <br/><br/>
-                  L'argent liquide et OM sont pour la guerre (dépenses). Wave est pour la sécurité (épargne).
-                  <br/><br/>
-                  <span className="text-xs italic text-gray-500">Si vous n'avez pas de compte Wave, ouvrez-en un maintenant.</span>
-              </p>
-              <button onClick={() => setStep(4)} className="w-full bg-blue-600 text-white font-bold py-3 rounded uppercase tracking-widest text-xs hover:bg-blue-500 transition-colors">
-                  C'est compris, continuons
-              </button>
-          </div>
-      )}
-
-      {step === 4 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-2">Votre Terrain</h2><p className="text-xs text-gray-500 mb-6">Ajuste l'intelligence artificielle à votre marché.</p><div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">{ZONES.map((z) => (<button key={z.id} onClick={() => selectZone(z)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg text-left group transition-all active:scale-[0.98]"><div className="flex justify-between items-center mb-1"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{z.name}</p><Globe className="w-4 h-4 text-gray-600 group-hover:text-gold" /></div><p className="text-[10px] text-gray-500">{z.desc}</p></button>))}</div></div>)}
-      {step === 5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle (Cash + OM)</label><input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus /><p className="text-[10px] text-gray-500 mb-4 text-left">*Ne comptez pas ce qu'il y a déjà sur Wave.</p><button onClick={() => setStep(6)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button></div>)}
-      {step === 6 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label><input type="text" value={mainProject} onChange={(e) => setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="Ex: Agence IA" autoFocus /><button onClick={finishOnboarding} disabled={!mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">LANCER L'EMPIRE</button></div>)}
-    </div></PageTransition>
-  );
-}
-
-// ==========================================
-// 2. DASHBOARD
-// ==========================================
-function Dashboard({ onNavigate }) {
-  const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
-  const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
-  const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
-  const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
-  const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
-  const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
-  const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_projects') || "[]"); } catch { return []; } });
-
-  const currency = localStorage.getItem('imperium_currency') || "€";
-  
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
-  const [showHistory, setShowHistory] = useState(false); // STATE POUR L'HISTORIQUE
-  const [showTaxModal, setShowTaxModal] = useState(false);
-  const [pendingTransaction, setPendingTransaction] = useState(null);
-
-  const [transactionType, setTransactionType] = useState('expense');
-  const [expenseCategory, setExpenseCategory] = useState('need'); 
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  
-  // Bunker State Local pour Modal
-  const [bunkerAmount, setBunkerAmount] = useState('');
-
-  // CALCULS AGRÉGÉS
-  const totalBalance = balance; // Ce qu'il a en main + OM
-  const totalBunker = bunker;   // Ce qu'il a sur Wave
-  const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
-  
-  // Le disponible est seulement ce qui est dans Balance (Main/OM) moins ce qui est prévu pour les cibles.
-  // Le Bunker (Wave) est totalement à part.
-  const availableCash = totalBalance - lockedCash; 
-
-  // Sync Storage
-  useEffect(() => {
-    localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
-    localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
-    localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-    localStorage.setItem('imperium_projects', JSON.stringify(projects));
-    localStorage.setItem('imperium_goals', JSON.stringify(goals));
-  }, [balance, bunker, transactions, projects, goals]);
-
-  // --- LOGIQUE TEMPORELLE & RATION ---
-  const today = new Date();
-  const currentDay = today.getDate();
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const daysRemaining = Math.max(1, daysInMonth - currentDay + 1); 
-  const monthProgress = (currentDay / daysInMonth) * 100;
-
-  const todayStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-  const spentToday = transactions
-      .filter(t => t.type === 'expense' && t.date === todayStr)
-      .reduce((acc, t) => acc + t.amount, 0);
-
-  const calculateStreak = () => {
-    if (transactions.length === 0) return 0;
-    const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want');
-    if (!lastSin) return Math.min(transactions.length, 30);
-    const lastSinDate = new Date(lastSin.rawDate || Date.now());
-    const now = new Date();
-    const diffTime = Math.abs(now - lastSinDate);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-  };
-  
-  const streak = calculateStreak();
-  const rank = getRank(totalBalance + totalBunker, currency); // Rank basé sur la richesse totale
-  const RankIcon = rank.icon;
-  const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
-
-  // ANALYSE DU COMPORTEMENT DU JOUR
-  let dailyStatus = { text: "Stable", color: "text-gray-500" };
-  if (spentToday > dailyAllocation) {
-      dailyStatus = { text: "Critique ⚠️", color: "text-red-500" };
-  } else if (spentToday > dailyAllocation * 0.8) {
-      dailyStatus = { text: "Attention", color: "text-orange-500" };
-  } else if (spentToday > 0) {
-      dailyStatus = { text: "Excellent", color: "text-green-500" };
+    if (loading) return <SplashScreen />;
+    
+    if (!isAuthorized) return <SecurityGate onAccessGranted={() => setIsAuthorized(true)} />;
+    
+    if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
+    
+    return <MainOS />;
   }
-
-  const dailySurvivalCost = Math.max(availableCash / 30, 1);
-  const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
-  const debtToPay = debts.filter(d => d.type === 'owe' && d.amount <= availableCash).sort((a, b) => a.amount - b.amount)[0];
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!amount) return;
-    const value = parseFloat(amount);
-    
-    // INTERCEPTION DE L'IMPÔT IMPÉRIAL
-    if (transactionType === 'income' && (goals.length > 0 || totalBunker >= 0)) {
-        setPendingTransaction({ value, description });
-        setShowTaxModal(true);
-        setIsModalOpen(false);
-        setAmount(''); setDescription('');
-        return;
-    }
-
-    if (transactionType === 'expense') {
-        if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
-        setBalance(balance - value);
-    } else {
-        setBalance(balance + value);
-    }
-
-    let finalDesc = description;
-    if (transactionType === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${description}`;
-    
-    const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
-    
-    setTransactions([newTransaction, ...transactions]);
-    setAmount(''); setDescription(''); setIsModalOpen(false);
-  };
-
-  const processIncomeWithTax = (applyTax) => {
-      if (!pendingTransaction) return;
-      const totalIncome = pendingTransaction.value;
-      const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0;
-      const incomeDesc = pendingTransaction.description || "Revenu";
-
-      // L'impot va DIRECTEMENT DANS WAVE (Bunker)
-      // Le reste va dans CASH/OM (Balance)
-      const keptAmount = totalIncome - taxAmount;
-
-      const newBalance = balance + keptAmount;
-      const newBunker = bunker + taxAmount;
-      
-      const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
-      let newTransactions = [incomeTx, ...transactions];
-
-      setBalance(newBalance);
-      setBunker(newBunker);
-      setTransactions(newTransactions);
-      setPendingTransaction(null);
-      setShowTaxModal(false);
-  };
-
-  const handleBunkerAction = (action) => {
-      if (!bunkerAmount) return;
-      const val = parseFloat(bunkerAmount);
-      
-      if (action === 'deposit') {
-          // Logique : Je prends du Cash pour le mettre sur Wave
-          if (val > availableCash) return alert(`Fonds insuffisants en main pour faire ce dépôt.`);
-          setBalance(balance - val); // Ça sort du cash
-          setBunker(bunker + val);   // Ça rentre sur Wave
-      } else if (action === 'withdraw') {
-          if (val > bunker) return alert(`Fonds insuffisants sur Wave.`);
-          setBunker(bunker - val);   // Ça sort de Wave
-          setBalance(balance + val); // Ça revient en cash (retrait)
-      }
-      setBunkerAmount('');
-      setIsBunkerModalOpen(false);
-  };
   
-  // --- NOUVELLE FONCTION D'ANNULATION ---
-  const handleUndoTransaction = (txId) => {
-      if(!confirm("Annuler cette opération ? Le montant sera remboursé sur votre solde.")) return;
-      
-      const tx = transactions.find(t => t.id === txId);
-      if(!tx) return;
-      
-      if(tx.type === 'expense') {
-          setBalance(balance + tx.amount); // Remboursement
-      } else {
-          setBalance(balance - tx.amount); // Retrait du revenu
-      }
-      
-      setTransactions(transactions.filter(t => t.id !== txId));
-  };
-
-  return (
-    <PageTransition>
-    <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-40 flex flex-col relative shadow-2xl">
-      
-      <header className="px-5 py-4 border-b border-white/5 bg-dark/95 backdrop-blur sticky top-0 z-10 flex justify-between items-center w-full pt-[env(safe-area-inset-top)]">
-         <div className="flex gap-2">
-             <button onClick={() => onNavigate('stats')} className="w-8 flex justify-start text-gray-500 hover:text-gold"><BarChart3 className="w-5 h-5"/></button>
-             <button onClick={() => setShowHistory(true)} className="w-8 flex justify-start text-gray-500 hover:text-gold"><History className="w-5 h-5"/></button>
-         </div>
-         <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1">IMPERIUM</h1>
-         <button onClick={() => onNavigate('settings')} className="w-8 flex justify-end text-gray-500 hover:text-white"><Settings className="w-5 h-5"/></button>
-      </header>
-
-      <div className="w-full px-4 mt-4">
-        {/* === HEADER CLICKABLE POUR LES TROPHÉES === */}
-        <div className="flex justify-between items-end mb-4">
-            <button onClick={() => onNavigate('trophies')} className="flex flex-col items-start group active:scale-95 transition-transform">
-                <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-gold transition-colors">Grade</p>
-                <div className="flex items-center gap-2">
-                    <RankIcon className={`w-4 h-4 ${rank.color}`} />
-                    <h2 className={`text-sm font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2>
+  function MainOS() {
+    const [currentView, setCurrentView] = useState('dashboard');
+    const [showPatchNotes, setShowPatchNotes] = useState(false);
+    const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
+    
+    useEffect(() => { 
+        const lastVersion = localStorage.getItem('imperium_version');
+        if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
+    }, []);
+    const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
+  
+    return (
+      <>
+          {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
+          {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
+          {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
+      </>
+    );
+  }
+  
+  // ==========================================
+  // 1. ONBOARDING
+  // ==========================================
+  function OnboardingScreen({ onComplete }) {
+    const [step, setStep] = useState(1);
+    const [initialBalance, setInitialBalance] = useState('');
+    const [mainProject, setMainProject] = useState('');
+    const [currency, setCurrency] = useState('');
+    const [zone, setZone] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isHolding, setIsHolding] = useState(false);
+    const holdTimer = useRef(null);
+    const [progress, setProgress] = useState(0);
+    const filteredCurrencies = CURRENCIES.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()));
+    const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(3.5); }; 
+    const selectZone = (selectedZone) => { setZone(selectedZone); setStep(5); };
+    const startHold = () => { setIsHolding(true); let p = 0; holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30); };
+    const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
+    
+    const finishOnboarding = () => {
+      localStorage.setItem('imperium_balance', initialBalance || 0);
+      const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
+      localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
+      localStorage.setItem('imperium_currency', currency || "€");
+      localStorage.setItem('imperium_zone', JSON.stringify(zone || ZONES[0]));
+      localStorage.setItem('imperium_onboarded', 'true');
+      window.location.reload();
+    };
+  
+    return (
+      <PageTransition><div className="fixed inset-0 bg-black text-gold flex flex-col items-center justify-center p-6 text-center z-50 overflow-hidden w-full h-full">
+        {step === 1 && (<div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs"><h1 className="text-4xl font-serif font-bold tracking-widest mb-6">IMPERIUM</h1><p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p><button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button></div>)}
+        {step === 2 && (<div className="animate-in zoom-in duration-500 flex flex-col items-center w-full max-w-xs"><h2 className="text-xl font-serif mb-2">Le Pacte</h2><p className="text-gray-500 text-xs mb-12">Jurez-vous de ne rien cacher ?</p><div className="relative w-24 h-24 rounded-full border-2 border-white/10 flex items-center justify-center select-none cursor-pointer active:scale-95 transition-transform" onMouseDown={startHold} onMouseUp={stopHold} onTouchStart={startHold} onTouchEnd={stopHold}><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="48" cy="48" r="46" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-gold" strokeDasharray="289" strokeDashoffset={289 - (289 * progress) / 100} style={{ transition: 'stroke-dashoffset 0.1s linear' }} /></svg><Fingerprint className={`w-10 h-10 ${isHolding ? 'text-gold animate-pulse' : 'text-gray-600'}`} /></div><p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p></div>)}
+        {step === 3 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2><div className="relative mb-4"><Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" /><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none" placeholder="Rechercher (ex: Euro, FCFA...)" autoFocus /></div><div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">{filteredCurrencies.map((c) => (<button key={c.code} onClick={() => selectCurrency(c)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"><div className="flex items-center gap-3"><span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">{c.symbol.substring(0, 2)}</span><div className="text-left"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p><p className="text-[10px] text-gray-500">{c.code}</p></div></div><ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" /></button>))}</div></div>)}
+        
+        {step === 3.5 && (
+            <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs flex flex-col items-center">
+                <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/30">
+                    <Smartphone className="w-10 h-10 text-blue-500" />
                 </div>
-            </button>
-            <button onClick={() => onNavigate('trophies')} className="flex flex-col items-end group active:scale-95 transition-transform">
-                <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-orange-500 transition-colors">Discipline</p>
-                <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}>
-                    <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
-                    <span className={`text-sm font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span>
-                </div>
-            </button>
-        </div>
-      </div>
-
-      <main className="w-full px-4 grid gap-3">
-        {/* === LE HUD (HEADS UP DISPLAY) === */}
-        <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
-            <div className="p-5 pb-2 text-center relative">
-                 <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
-                 <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Disponible (Cash + OM)</p>
-                 <span className={`text-3xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></span>
-                 <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Wallet className="w-3 h-3"/> Argent facilement accessible</p>
-            </div>
-
-            <div className="w-full h-1 bg-gray-900 mt-2">
-                <div className="h-full bg-blue-500/30" style={{ width: `${monthProgress}%` }}></div>
-            </div>
-
-            <div className="grid grid-cols-2 divide-x divide-white/10 bg-white/5">
-                <div className="p-3 text-center">
-                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Ration (J-{daysRemaining})</p>
-                     <p className={`text-lg font-bold ${dailyAllocation < 500 ? 'text-orange-500' : 'text-white'}`}>{formatMoney(dailyAllocation)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
-                </div>
-                <div className="p-3 text-center relative">
-                     <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Dépensé 24h</p>
-                     <p className={`text-lg font-bold ${spentToday > dailyAllocation ? 'text-red-500' : 'text-white'}`}>{formatMoney(spentToday)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
-                     <span className={`absolute top-2 right-2 w-2 h-2 rounded-full ${dailyStatus.color === 'text-green-500' ? 'bg-green-500' : dailyStatus.color === 'text-red-500' ? 'bg-red-500' : 'bg-gray-700'}`}></span>
-                </div>
-            </div>
-             <div className="p-2 text-center bg-black/40 border-t border-white/5">
-                <p className={`text-[10px] ${dailyStatus.color} font-bold uppercase tracking-widest`}>STATUT : {dailyStatus.text}</p>
-             </div>
-        </div>
-
-        {/* === CARTE WAVE (BUNKER) === */}
-        <div onClick={() => setIsBunkerModalOpen(true)} className="bg-blue-900/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:bg-blue-900/20 group relative overflow-hidden">
-             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
-             <div className="flex items-center gap-4 relative z-10">
-                 <div className="p-3 bg-blue-500/10 rounded-full border border-blue-500/20 text-blue-400"><Smartphone className="w-6 h-6"/></div>
-                 <div>
-                     <p className="text-[9px] text-blue-400 uppercase tracking-widest font-bold mb-1">Coffre-Fort Wave</p>
-                     <h3 className="text-xl font-bold text-white font-serif tracking-wide">{formatMoney(totalBunker)} {currency}</h3>
-                     <p className="text-[9px] text-gray-400">Ne pas toucher sauf urgence.</p>
-                 </div>
-             </div>
-             <ChevronRight className="w-5 h-5 text-blue-500/50 group-hover:text-blue-400 relative z-10" />
-        </div>
-
-        {debtToPay && (
-            <div className="bg-[#1a0f0f] p-3 rounded-xl border border-red-900/30 animate-in slide-in-from-right flex items-center gap-3">
-                <div className="p-2 bg-red-900/20 text-red-500 rounded-lg shrink-0"><AlertTriangle className="w-4 h-4"/></div>
-                <div className="flex-1">
-                    <p className="text-[9px] text-red-400 uppercase tracking-widest font-bold">Dette Prioritaire</p>
-                    <p className="text-xs text-white font-bold">{debtToPay.name} : {formatMoney(debtToPay.amount)} {currency}</p>
-                </div>
-                <button onClick={() => onNavigate('debts')} className="text-xs text-red-400 font-bold uppercase border border-red-900/50 px-3 py-1.5 rounded bg-red-900/10">Payer</button>
+                <h2 className="text-xl font-serif text-white mb-4">La Stratégie Wave</h2>
+                <p className="text-gray-400 text-sm leading-relaxed mb-8">
+                    Dans ce système, <span className="text-blue-400 font-bold">Wave est votre Coffre-Fort</span>.
+                    <br/><br/>
+                    L'argent liquide et OM sont pour la guerre (dépenses). Wave est pour la sécurité (épargne).
+                    <br/><br/>
+                    <span className="text-xs italic text-gray-500">Si vous n'avez pas de compte Wave, ouvrez-en un maintenant.</span>
+                </p>
+                <button onClick={() => setStep(4)} className="w-full bg-blue-600 text-white font-bold py-3 rounded uppercase tracking-widest text-xs hover:bg-blue-500 transition-colors">
+                    C'est compris, continuons
+                </button>
             </div>
         )}
-
-        {/* === MENU RAPIDE HORIZONTAL (4 SLOTS) === */}
-        <div className="grid grid-cols-4 gap-2 mt-2">
-            <button onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                <div className="text-indigo-500"><Repeat className="w-4 h-4"/></div>
-                <span className="text-[9px] font-bold text-gray-400 uppercase">Protocoles</span>
-            </button>
-            <button onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                 <div className="text-purple-500"><Scroll className="w-4 h-4"/></div>
-                <span className="text-[9px] font-bold text-gray-400 uppercase">Registre</span>
-            </button>
-            <button onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                 <div className="text-blue-500"><Target className="w-4 h-4"/></div>
-                <span className="text-[9px] font-bold text-gray-400 uppercase">Cibles</span>
-            </button>
-             <button onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                 <div className="text-gold"><Trophy className="w-4 h-4"/></div>
-                <span className="text-[9px] font-bold text-gray-400 uppercase">Succès</span>
-            </button>
+  
+        {step === 4 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-2">Votre Terrain</h2><p className="text-xs text-gray-500 mb-6">Ajuste l'intelligence artificielle à votre marché.</p><div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">{ZONES.map((z) => (<button key={z.id} onClick={() => selectZone(z)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg text-left group transition-all active:scale-[0.98]"><div className="flex justify-between items-center mb-1"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{z.name}</p><Globe className="w-4 h-4 text-gray-600 group-hover:text-gold" /></div><p className="text-[10px] text-gray-500">{z.desc}</p></button>))}</div></div>)}
+        {step === 5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle (Cash + OM)</label><input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus /><p className="text-[10px] text-gray-500 mb-4 text-left">*Ne comptez pas ce qu'il y a déjà sur Wave.</p><button onClick={() => setStep(6)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button></div>)}
+        {step === 6 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label><input type="text" value={mainProject} onChange={(e) => setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="Ex: Agence IA" autoFocus /><button onClick={finishOnboarding} disabled={!mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">LANCER L'EMPIRE</button></div>)}
+      </div></PageTransition>
+    );
+  }
+  
+  // ==========================================
+  // 2. DASHBOARD
+  // ==========================================
+  function Dashboard({ onNavigate }) {
+    const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
+    const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
+    const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
+    const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
+    const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
+    const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
+    const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_projects') || "[]"); } catch { return []; } });
+  
+    const currency = localStorage.getItem('imperium_currency') || "€";
+    
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+    const [showTaxModal, setShowTaxModal] = useState(false);
+    const [pendingTransaction, setPendingTransaction] = useState(null);
+  
+    const [transactionType, setTransactionType] = useState('expense');
+    const [expenseCategory, setExpenseCategory] = useState('need'); 
+    const [amount, setAmount] = useState('');
+    const [description, setDescription] = useState('');
+    
+    const [bunkerAmount, setBunkerAmount] = useState('');
+  
+    const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
+    const dailyQuote = DAILY_QUOTES[quoteIndex];
+  
+    const totalBalance = balance; 
+    const totalBunker = bunker;   
+    const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
+    const availableCash = totalBalance - lockedCash; 
+  
+    useEffect(() => {
+      localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
+      localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
+      localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
+      localStorage.setItem('imperium_projects', JSON.stringify(projects));
+      localStorage.setItem('imperium_goals', JSON.stringify(goals));
+    }, [balance, bunker, transactions, projects, goals]);
+  
+    const today = new Date();
+    const currentDay = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysRemaining = Math.max(1, daysInMonth - currentDay + 1); 
+    const monthProgress = (currentDay / daysInMonth) * 100;
+  
+    const todayStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    const spentToday = transactions
+        .filter(t => t.type === 'expense' && t.date === todayStr)
+        .reduce((acc, t) => acc + t.amount, 0);
+  
+    const calculateStreak = () => {
+      if (transactions.length === 0) return 0;
+      const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want');
+      if (!lastSin) return Math.min(transactions.length, 30);
+      const lastSinDate = new Date(lastSin.rawDate || Date.now());
+      const now = new Date();
+      const diffTime = Math.abs(now - lastSinDate);
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    };
+    
+    const streak = calculateStreak();
+    const rank = getRank(totalBalance + totalBunker, currency); 
+    const RankIcon = rank.icon;
+    const dailyAllocation = Math.max(0, Math.floor(availableCash / daysRemaining));
+  
+    let dailyStatus = { text: "Stable", color: "text-gray-500" };
+    if (spentToday > dailyAllocation) {
+        dailyStatus = { text: "Critique ⚠️", color: "text-red-500" };
+    } else if (spentToday > dailyAllocation * 0.8) {
+        dailyStatus = { text: "Attention", color: "text-orange-500" };
+    } else if (spentToday > 0) {
+        dailyStatus = { text: "Excellent", color: "text-green-500" };
+    }
+  
+    const dailySurvivalCost = Math.max(availableCash / 30, 1);
+    const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
+    const debtToPay = debts.filter(d => d.type === 'owe' && d.amount <= availableCash).sort((a, b) => a.amount - b.amount)[0];
+  
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      if (!amount) return;
+      const value = parseFloat(amount);
+      
+      if (transactionType === 'income' && (goals.length > 0 || totalBunker >= 0)) {
+          setPendingTransaction({ value, description });
+          setShowTaxModal(true);
+          setIsModalOpen(false);
+          setAmount(''); setDescription('');
+          return;
+      }
+  
+      if (transactionType === 'expense') {
+          if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
+          setBalance(balance - value);
+      } else {
+          setBalance(balance + value);
+      }
+  
+      let finalDesc = description;
+      if (transactionType === 'expense' && expenseCategory === 'want') finalDesc = `⚠️ ${description}`;
+      
+      const newTransaction = { id: Date.now(), desc: finalDesc || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+      
+      setTransactions([newTransaction, ...transactions]);
+      setAmount(''); setDescription(''); setIsModalOpen(false);
+    };
+  
+    const processIncomeWithTax = (applyTax) => {
+        if (!pendingTransaction) return;
+        const totalIncome = pendingTransaction.value;
+        const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0;
+        const incomeDesc = pendingTransaction.description || "Revenu";
+  
+        const keptAmount = totalIncome - taxAmount;
+  
+        const newBalance = balance + keptAmount;
+        const newBunker = bunker + taxAmount;
+        
+        const incomeTx = { id: Date.now(), desc: incomeDesc, amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+        let newTransactions = [incomeTx, ...transactions];
+  
+        setBalance(newBalance);
+        setBunker(newBunker);
+        setTransactions(newTransactions);
+        setPendingTransaction(null);
+        setShowTaxModal(false);
+    };
+  
+    const handleBunkerAction = (action) => {
+        if (!bunkerAmount) return;
+        const val = parseFloat(bunkerAmount);
+        
+        if (action === 'deposit') {
+            if (val > availableCash) return alert(`Fonds insuffisants en main pour faire ce dépôt.`);
+            setBalance(balance - val); 
+            setBunker(bunker + val);   
+        } else if (action === 'withdraw') {
+            if (val > bunker) return alert(`Fonds insuffisants sur Wave.`);
+            setBunker(bunker - val);    
+            setBalance(balance + val); 
+        }
+        setBunkerAmount('');
+        setIsBunkerModalOpen(false);
+    };
+    
+    const handleUndoTransaction = (txId) => {
+        if(!confirm("Annuler cette opération ? Le montant sera remboursé sur votre solde.")) return;
+        
+        const tx = transactions.find(t => t.id === txId);
+        if(!tx) return;
+        
+        if(tx.type === 'expense') {
+            setBalance(balance + tx.amount); 
+        } else {
+            setBalance(balance - tx.amount); 
+        }
+        
+        setTransactions(transactions.filter(t => t.id !== txId));
+    };
+  
+    return (
+      <PageTransition>
+      <div className="min-h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans pb-40 flex flex-col relative shadow-2xl">
+        
+        {/* HEADER : DESIGN "GHOST" (OPTION 3) */}
+        <header className="px-5 py-4 bg-transparent sticky top-0 z-10 flex justify-between items-center w-full pt-4">
+           <div className="flex gap-2">
+               <button onClick={() => onNavigate('stats')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold hover:border-gold/30 transition-all active:scale-95 shadow-lg"><BarChart3 className="w-5 h-5"/></button>
+               <button onClick={() => setShowHistory(true)} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-gold hover:border-gold/30 transition-all active:scale-95 shadow-lg"><History className="w-5 h-5"/></button>
+           </div>
+           
+           {/* TITRE FANTÔME CENTRAL */}
+           <h1 className="text-xl font-serif text-gold tracking-widest font-bold text-center flex-1 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">IMPERIUM</h1>
+  
+           <div>
+               <button onClick={() => onNavigate('settings')} className="w-10 h-10 bg-[#111] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-all active:scale-95 shadow-lg"><Settings className="w-5 h-5"/></button>
+           </div>
+        </header>
+  
+        <div className="w-full px-4 mt-2">
+          <div className="flex justify-between items-end mb-4">
+              <button onClick={() => onNavigate('trophies')} className="flex flex-col items-start group active:scale-95 transition-transform">
+                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-gold transition-colors">Grade</p>
+                  <div className="flex items-center gap-2">
+                      <RankIcon className={`w-4 h-4 ${rank.color}`} />
+                      <h2 className={`text-sm font-serif font-bold tracking-wide ${rank.color}`}>{rank.title}</h2>
+                  </div>
+              </button>
+              <button onClick={() => onNavigate('trophies')} className="flex flex-col items-end group active:scale-95 transition-transform">
+                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-orange-500 transition-colors">Discipline</p>
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${streak > 2 ? 'border-orange-500/50 bg-orange-900/10' : 'border-gray-800 bg-gray-900'}`}>
+                      <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
+                      <span className={`text-sm font-bold ${streak > 0 ? 'text-orange-400' : 'text-gray-600'}`}>{streak}J</span>
+                  </div>
+              </button>
+          </div>
         </div>
-
-        {/* === GRILLE PRINCIPALE === */}
-        <div className="grid grid-cols-2 gap-3 mt-1">
-            <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Sword className="w-5 h-5 text-gold opacity-80" /></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3><p className="text-[9px] text-gray-500 mt-1">Compétences & Business</p></div></div>
-            <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Castle className="w-5 h-5 text-gold opacity-80" /><span className="text-[10px] font-bold text-gray-500">{projects.length}</span></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">Projets Stratégiques</p></div></div>
+  
+        <main className="w-full px-4 grid gap-3">
+          {/* === LE HUD === */}
+          <div className={`bg-[#111] border rounded-xl p-0 relative overflow-hidden transition-colors ${availableCash < 0 ? 'border-red-500/50 bg-red-900/10' : 'border-white/5'}`}>
+              <div className="p-5 pb-2 text-center relative">
+                   <div className="absolute top-4 right-4 text-[9px] text-gray-600 uppercase tracking-widest font-bold">{currentDay}/{daysInMonth}</div>
+                   <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Disponible (Cash + OM)</p>
+                   <span className={`text-3xl font-bold font-serif ${availableCash < 0 ? 'text-red-500' : 'text-white'}`}>{formatMoney(availableCash)} <span className="text-sm text-gray-500">{currency}</span></span>
+                   <p className="text-[9px] text-gray-600 mt-1 flex items-center justify-center gap-1"><Wallet className="w-3 h-3"/> Argent facilement accessible</p>
+              </div>
+  
+              <div className="w-full h-1 bg-gray-900 mt-2">
+                  <div className="h-full bg-blue-500/30" style={{ width: `${monthProgress}%` }}></div>
+              </div>
+  
+              <div className="grid grid-cols-2 divide-x divide-white/10 bg-white/5">
+                  <div className="p-3 text-center">
+                       <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Ration (J-{daysRemaining})</p>
+                       <p className={`text-lg font-bold ${dailyAllocation < 500 ? 'text-orange-500' : 'text-white'}`}>{formatMoney(dailyAllocation)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
+                  </div>
+                  <div className="p-3 text-center relative">
+                       <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Dépensé 24h</p>
+                       <p className={`text-lg font-bold ${spentToday > dailyAllocation ? 'text-red-500' : 'text-white'}`}>{formatMoney(spentToday)} <span className="text-[10px] font-normal text-gray-500">{currency}</span></p>
+                       <span className={`absolute top-2 right-2 w-2 h-2 rounded-full ${dailyStatus.color === 'text-green-500' ? 'bg-green-500' : dailyStatus.color === 'text-red-500' ? 'bg-red-500' : 'bg-gray-700'}`}></span>
+                  </div>
+              </div>
+               <div className="p-2 text-center bg-black/40 border-t border-white/5">
+                  <p className={`text-[10px] ${dailyStatus.color} font-bold uppercase tracking-widest`}>STATUT : {dailyStatus.text}</p>
+               </div>
+          </div>
+  
+          {/* === CARTE WAVE (BUNKER) === */}
+          <div onClick={() => setIsBunkerModalOpen(true)} className="bg-blue-900/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all hover:bg-blue-900/20 group relative overflow-hidden">
+               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+               <div className="flex items-center gap-4 relative z-10">
+                   <div className="p-3 bg-blue-500/10 rounded-full border border-blue-500/20 text-blue-400"><Smartphone className="w-6 h-6"/></div>
+                   <div>
+                       <p className="text-[9px] text-blue-400 uppercase tracking-widest font-bold mb-1">Coffre-Fort Wave</p>
+                       <h3 className="text-xl font-bold text-white font-serif tracking-wide">{formatMoney(totalBunker)} {currency}</h3>
+                       <p className="text-[9px] text-gray-400">Ne pas toucher sauf urgence.</p>
+                   </div>
+               </div>
+               <ChevronRight className="w-5 h-5 text-blue-500/50 group-hover:text-blue-400 relative z-10" />
+          </div>
+  
+          {debtToPay && (
+              <div className="bg-[#1a0f0f] p-3 rounded-xl border border-red-900/30 animate-in slide-in-from-right flex items-center gap-3">
+                  <div className="p-2 bg-red-900/20 text-red-500 rounded-lg shrink-0"><AlertTriangle className="w-4 h-4"/></div>
+                  <div className="flex-1">
+                      <p className="text-[9px] text-red-400 uppercase tracking-widest font-bold">Dette Prioritaire</p>
+                      <p className="text-xs text-white font-bold">{debtToPay.name} : {formatMoney(debtToPay.amount)} {currency}</p>
+                  </div>
+                  <button onClick={() => onNavigate('debts')} className="text-xs text-red-400 font-bold uppercase border border-red-900/50 px-3 py-1.5 rounded bg-red-900/10">Payer</button>
+              </div>
+          )}
+  
+          {/* === MENU RAPIDE HORIZONTAL === */}
+          <div className="grid grid-cols-4 gap-2 mt-2">
+              <button onClick={() => onNavigate('protocols')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                  <div className="text-indigo-500"><Repeat className="w-4 h-4"/></div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Protocoles</span>
+              </button>
+              <button onClick={() => onNavigate('debts')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                   <div className="text-purple-500"><Scroll className="w-4 h-4"/></div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Registre</span>
+              </button>
+              <button onClick={() => onNavigate('goals')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                   <div className="text-blue-500"><Target className="w-4 h-4"/></div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Cibles</span>
+              </button>
+               <button onClick={() => onNavigate('trophies')} className="bg-[#111] border border-white/5 hover:border-gold/30 rounded-xl p-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                   <div className="text-gold"><Trophy className="w-4 h-4"/></div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Succès</span>
+              </button>
+          </div>
+  
+          {/* === GRILLE PRINCIPALE === */}
+          <div className="grid grid-cols-2 gap-3 mt-1">
+              <div onClick={() => onNavigate('skills')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Sword className="w-5 h-5 text-gold opacity-80" /></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Arsenal</h3><p className="text-[9px] text-gray-500 mt-1">Compétences & Business</p></div></div>
+              <div onClick={() => onNavigate('project')} className="bg-[#111] border border-white/5 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-gold/30 h-28 flex flex-col justify-between"><div className="flex justify-between items-start"><Castle className="w-5 h-5 text-gold opacity-80" /><span className="text-[10px] font-bold text-gray-500">{projects.length}</span></div><div><h3 className="font-bold text-white text-xs uppercase tracking-wide">Conquête</h3><p className="text-[9px] text-gray-500 mt-1">Projets Stratégiques</p></div></div>
+          </div>
+  
+          {/* === CITATION DU JOUR === */}
+          <div className="mt-4 bg-[#111] border border-white/5 rounded-xl p-4 flex gap-3 items-start opacity-80">
+              <Quote className="w-5 h-5 text-gold shrink-0 mt-1" />
+              <div>
+                  <p className="text-xs text-gray-300 italic font-serif leading-relaxed">"{dailyQuote.text}"</p>
+                  <p className="text-[10px] text-gold mt-2 font-bold uppercase">— {dailyQuote.author}</p>
+              </div>
+          </div>
+        </main>
+  
+        <div className="fixed bottom-0 left-0 right-0 flex justify-center z-20 pointer-events-none pb-[calc(2rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-dark via-dark/80 to-transparent pt-10">
+          <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200"><Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span></button>
         </div>
-      </main>
-
-      <div className="fixed bottom-0 left-0 right-0 flex justify-center z-20 pointer-events-none pb-[calc(2rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-dark via-dark/80 to-transparent pt-10">
-        <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto bg-gold text-black font-serif font-bold h-14 px-10 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.2)] active:scale-95 transition-transform flex items-center gap-2 border border-yellow-200"><Plus className="w-5 h-5" /> <span className="tracking-widest text-xs">ACTION</span></button>
-      </div>
-
-      {/* MODAL DE SAISIE */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
-            <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Opération</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
-            
-            <div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5">
-                <button onClick={() => setTransactionType('expense')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
-                <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
+  
+        {/* MODAL DE SAISIE */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]">
+              <div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Opération</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div>
+              
+              <div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5">
+                  <button onClick={() => setTransactionType('expense')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button>
+                  <button onClick={() => setTransactionType('income')} className={`flex-1 py-2 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button>
+              </div>
+              
+              {transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}
+              {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (
+                   <div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Avertissement du Sergent</p><p className="text-gray-300 text-xs leading-relaxed mt-1">Cette dépense équivaut à <span className="text-white font-bold">{daysLost} jours</span> de survie.<br/>Est-ce que ça en vaut vraiment la peine ?</p></div></div>
+              )}
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus />
+                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} />
+                <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' && expenseCategory === 'want' ? 'bg-red-600 text-white animate-pulse' : (transactionType === 'expense' ? 'bg-white/10 text-white' : 'bg-green-600 text-white')}`}>{transactionType === 'expense' && expenseCategory === 'want' ? "CONFIRMER LA PERTE" : "VALIDER"}</button>
+              </form>
             </div>
-            
-            {transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}
-            {transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (
-                 <div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Avertissement du Sergent</p><p className="text-gray-300 text-xs leading-relaxed mt-1">Cette dépense équivaut à <span className="text-white font-bold">{daysLost} jours</span> de survie.<br/>Est-ce que ça en vaut vraiment la peine ?</p></div></div>
-            )}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus />
-              <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} />
-              <button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' && expenseCategory === 'want' ? 'bg-red-600 text-white animate-pulse' : (transactionType === 'expense' ? 'bg-white/10 text-white' : 'bg-green-600 text-white')}`}>{transactionType === 'expense' && expenseCategory === 'want' ? "CONFIRMER LA PERTE" : "VALIDER"}</button>
-            </form>
           </div>
-        </div>
-      )}
-
-      {/* MODAL DU BUNKER (WAVE) */}
-      {isBunkerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
-             
-             <div className="flex justify-between items-center mb-6">
-                 <div className="flex items-center gap-2">
-                     <Smartphone className="w-5 h-5 text-blue-400"/>
-                     <h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave (Bunker)</h2>
-                 </div>
-                 <button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button>
-             </div>
-
-             <div className="text-center mb-6">
-                 <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Total Sécurisé</p>
-                 <h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2>
-                 <p className="text-xs text-blue-300 mt-2 px-6">Pour ajouter de l'argent ici, vous devez faire un dépôt physique sur votre compte Wave.</p>
-             </div>
-
-             <div className="space-y-4">
-                 <input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus />
-                 
-                 <div className="flex gap-3">
-                     <button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 hover:bg-red-900/20 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-colors">
-                         <Unlock className="w-4 h-4"/>
-                         <span>Urgence (Retrait)</span>
-                     </button>
-                     <button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 hover:bg-blue-500 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-                         <Lock className="w-4 h-4"/>
-                         <span>Confirmer le Dépôt</span>
-                     </button>
-                 </div>
-             </div>
+        )}
+  
+        {/* MODAL DU BUNKER (WAVE) */}
+        {isBunkerModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+               
+               <div className="flex justify-between items-center mb-6">
+                   <div className="flex items-center gap-2">
+                       <Smartphone className="w-5 h-5 text-blue-400"/>
+                       <h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave (Bunker)</h2>
+                   </div>
+                   <button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button>
+               </div>
+  
+               <div className="text-center mb-6">
+                   <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Total Sécurisé</p>
+                   <h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2>
+                   <p className="text-xs text-blue-300 mt-2 px-6">Pour ajouter de l'argent ici, vous devez faire un dépôt physique sur votre compte Wave.</p>
+               </div>
+  
+               <div className="space-y-4">
+                   <input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus />
+                   
+                   <div className="flex gap-3">
+                       <button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 hover:bg-red-900/20 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-colors">
+                           <Unlock className="w-4 h-4"/>
+                           <span>Urgence (Retrait)</span>
+                       </button>
+                       <button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 hover:bg-blue-500 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+                           <Lock className="w-4 h-4"/>
+                           <span>Confirmer le Dépôt</span>
+                       </button>
+                   </div>
+               </div>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* MODAL HISTORIQUE (JOURNAL DE BORD) */}
-      {showHistory && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in">
-              <div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
-                  <div className="flex justify-between items-center mb-6">
-                      <div className="flex items-center gap-2">
-                        <History className="w-5 h-5 text-gold"/>
-                        <h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal de Bord</h2>
-                      </div>
-                      <button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">
-                    {transactions.length === 0 ? (
-                        <p className="text-gray-500 text-xs text-center mt-10">Le journal est vierge.</p>
-                    ) : (
-                        transactions.map(tx => (
-                            <div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5">
-                                <div>
-                                    <p className="text-xs text-white font-bold">{tx.desc}</p>
-                                    <p className="text-[10px] text-gray-500">{tx.date} • {tx.type === 'expense' ? (tx.category === 'want' ? 'Futilité' : 'Besoin') : 'Revenu'}</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
-                                        {tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}
-                                    </span>
-                                    <button onClick={() => handleUndoTransaction(tx.id)} className="p-2 bg-red-900/10 text-red-500 rounded hover:bg-red-900/30 transition-colors">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
+        )}
+  
+        {/* MODAL HISTORIQUE (JOURNAL DE BORD) */}
+        {showHistory && (
+            <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in">
+                <div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-2">
+                          <History className="w-5 h-5 text-gold"/>
+                          <h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal de Bord</h2>
+                        </div>
+                        <button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">
+                      {transactions.length === 0 ? (
+                          <p className="text-gray-500 text-xs text-center mt-10">Le journal est vierge.</p>
+                      ) : (
+                          transactions.map(tx => (
+                              <div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5">
+                                  <div>
+                                      <p className="text-xs text-white font-bold">{tx.desc}</p>
+                                      <p className="text-[10px] text-gray-500">{tx.date} • {tx.type === 'expense' ? (tx.category === 'want' ? 'Futilité' : 'Besoin') : 'Revenu'}</p>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                      <span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
+                                          {tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}
+                                      </span>
+                                      <button onClick={() => handleUndoTransaction(tx.id)} className="p-2 bg-red-900/10 text-red-500 rounded hover:bg-red-900/30 transition-colors">
+                                          <Trash2 className="w-4 h-4" />
+                                      </button>
+                                  </div>
+                              </div>
+                          ))
+                      )}
+                    </div>
+                </div>
+            </div>
+        )}
+  
+        {/* MODAL DE L'IMPÔT IMPÉRIAL */}
+        {showTaxModal && pendingTransaction && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+                <div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-[0_0_50px_rgba(212,175,55,0.1)] relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-bl-full"></div>
+                    <div className="flex flex-col items-center text-center">
+                        <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mb-4 border border-gold/40">
+                            <Coins className="w-8 h-8 text-gold" />
+                        </div>
+                        <h3 className="text-gold font-serif text-xl font-bold mb-2 tracking-wide uppercase">L'Impôt Impérial</h3>
+                        <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                            La règle d'or est de se payer en premier. L'Empire réclame <span className="text-white font-bold">20%</span> de ce revenu pour le <span className="text-blue-400 font-bold">Bunker (Wave)</span>.
+                        </p>
+                        
+                        <div className="w-full bg-gray-900 rounded-lg p-4 mb-6 border border-white/5">
+                            <div className="flex justify-between text-xs mb-2">
+                                <span className="text-gray-500">Revenu Total</span>
+                                <span className="text-white font-bold">{formatMoney(pendingTransaction.value)} {currency}</span>
                             </div>
-                        ))
-                    )}
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {/* MODAL DE L'IMPÔT IMPÉRIAL */}
-      {showTaxModal && pendingTransaction && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
-              <div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-[0_0_50px_rgba(212,175,55,0.1)] relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-bl-full"></div>
-                  <div className="flex flex-col items-center text-center">
-                      <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mb-4 border border-gold/40">
-                          <Coins className="w-8 h-8 text-gold" />
-                      </div>
-                      <h3 className="text-gold font-serif text-xl font-bold mb-2 tracking-wide uppercase">L'Impôt Impérial</h3>
-                      <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                          La règle d'or est de se payer en premier. L'Empire réclame <span className="text-white font-bold">20%</span> de ce revenu pour le <span className="text-blue-400 font-bold">Bunker (Wave)</span>.
-                      </p>
-                      
-                      <div className="w-full bg-gray-900 rounded-lg p-4 mb-6 border border-white/5">
-                          <div className="flex justify-between text-xs mb-2">
-                              <span className="text-gray-500">Revenu Total</span>
-                              <span className="text-white font-bold">{formatMoney(pendingTransaction.value)} {currency}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                              <span className="text-gold font-bold">Prélèvement (20%)</span>
-                              <span className="text-gold font-bold">-{formatMoney(Math.floor(pendingTransaction.value * 0.2))} {currency}</span>
-                          </div>
-                      </div>
-
-                      <div className="flex gap-3 w-full">
-                          <button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase hover:bg-white/5">
-                              Faiblesse (0%)
-                          </button>
-                          <button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-gold text-black text-xs font-bold uppercase hover:bg-yellow-400">
-                              Investir (20%)
-                          </button>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      )}
-
-    </div>
-    </PageTransition>
-  );
-}
-
-// ==========================================
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gold font-bold">Prélèvement (20%)</span>
+                                <span className="text-gold font-bold">-{formatMoney(Math.floor(pendingTransaction.value * 0.2))} {currency}</span>
+                            </div>
+                        </div>
+  
+                        <div className="flex gap-3 w-full">
+                            <button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase hover:bg-white/5">
+                                Faiblesse (0%)
+                            </button>
+                            <button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-gold text-black text-xs font-bold uppercase hover:bg-yellow-400">
+                                Investir (20%)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+  
+      </div>
+      </PageTransition>
+    );
+  }
+  // ==========================================
 // 8. PROTOCOLES - GESTION DES FRÉQUENCES
 // ==========================================
 function ProtocolsScreen({ onBack }) {
@@ -1346,7 +1455,7 @@ function ProjectScreen({ onBack }) {
 
 function SettingsScreen({ onBack }) { 
     const [importData, setImportData] = useState("");
-    const [exportCode, setExportCode] = useState(""); // NOUVEAU
+    const [exportCode, setExportCode] = useState(""); 
     
     // CALIBRAGE STATES
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
@@ -1364,11 +1473,11 @@ function SettingsScreen({ onBack }) {
             onboarded: localStorage.getItem('imperium_onboarded'), 
             bunker: localStorage.getItem('imperium_bunker'),
             version: localStorage.getItem('imperium_version'),
+            license: localStorage.getItem('imperium_license') 
         }; 
         const encoded = btoa(JSON.stringify(data)); 
-        setExportCode(encoded); // Affiche le code
+        setExportCode(encoded); 
         
-        // Tente de copier quand même
         navigator.clipboard.writeText(encoded)
             .then(() => alert("CODE D'ARCHIVE COPIÉ."))
             .catch(() => alert("Copie automatique échouée. Veuillez copier le code affiché manuellement."));
@@ -1389,6 +1498,7 @@ function SettingsScreen({ onBack }) {
             if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); 
             if(decoded.bunker) localStorage.setItem('imperium_bunker', decoded.bunker);
             if(decoded.version) localStorage.setItem('imperium_version', decoded.version);
+            if(decoded.license) localStorage.setItem('imperium_license', decoded.license); 
             alert("✅ RESTAURATION RÉUSSIE."); 
             window.location.reload(); 
         } catch (e) { alert("❌ ERREUR : Code invalide."); } 
@@ -1415,7 +1525,6 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
                     
-                    {/* SECTION CALIBRAGE RESTAURÉE */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                          <div className="absolute top-0 right-0 p-4 opacity-5"><RefreshCw className="w-24 h-24 text-white" /></div>
                          <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -1443,7 +1552,6 @@ function SettingsScreen({ onBack }) {
                         </div>
                         <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3"><Copy className="w-4 h-4" /> Générer Code</button>
                         
-                        {/* NOUVEAU : AFFICHAGE DU CODE */}
                         {exportCode && (
                             <div className="animate-in fade-in slide-in-from-top-2">
                                 <p className="text-[10px] text-gray-500 mb-1">Copiez ce code manuellement si besoin :</p>
