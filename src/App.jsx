@@ -352,7 +352,7 @@ export default function App() {
     );
   }
  // ==========================================
-// 2. DASHBOARD (AVEC BOUTON TROPHÉES)
+// 2. DASHBOARD (AVEC REGISTRE & ALERTE DETTE)
 // ==========================================
 function Dashboard({ onNavigate }) {
     // DONNÉES
@@ -390,7 +390,7 @@ function Dashboard({ onNavigate }) {
     // Soldes
     const totalBalance = balance; 
     const totalBunker = bunker;   
-    const lockedCash = goals.reduce((acc, g) => acc + g.current, 0);
+    const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
     const availableCash = totalBalance - lockedCash; 
     
     // Dépenses du Jour
@@ -415,7 +415,7 @@ function Dashboard({ onNavigate }) {
     if (remainingDaily < 0) rationColor = "bg-red-600";
     else if (dailyProgress < 50) rationColor = "bg-green-500";
   
-    // === CALCUL DE LA FLAMME (STREAK) ===
+    // FLAMME (STREAK)
     const calculateStreak = () => {
       if (transactions.length === 0) return 0;
       const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want');
@@ -426,6 +426,11 @@ function Dashboard({ onNavigate }) {
       return Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
     };
     const streak = calculateStreak();
+  
+    // ALERTE DETTE PRIORITAIRE (Calculée ici pour l'affichage Dashboard)
+    const priorityDebt = debts
+          .filter(d => d.type === 'owe' && d.amount <= availableCash)
+          .sort((a, b) => a.amount - b.amount)[0];
   
     // Grades & Autres
     const rank = getRank(totalBalance + totalBunker, currency); 
@@ -566,6 +571,20 @@ function Dashboard({ onNavigate }) {
                </div>
           </div>
   
+          {/* --- ALERTE PRIORITAIRE SUR LE DASHBOARD --- */}
+          {priorityDebt && (
+              <div onClick={() => onNavigate('debts')} className="bg-red-600/10 border border-red-500/50 p-3 rounded-xl flex items-center justify-between animate-pulse cursor-pointer">
+                  <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-500/20 rounded-full"><AlertTriangle className="w-4 h-4 text-red-500"/></div>
+                      <div>
+                          <p className="text-[9px] text-red-400 font-bold uppercase tracking-widest">Dette Payable Immédiatement</p>
+                          <p className="text-xs text-white">Rembourser <span className="font-bold">{priorityDebt.name}</span> ({formatMoney(priorityDebt.amount)})</p>
+                      </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-red-500" />
+              </div>
+          )}
+  
           {/* CARTE WAVE */}
           <div onClick={() => setIsBunkerModalOpen(true)} className="bg-[#10141d] border border-blue-900/40 rounded-xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden group">
                <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
@@ -595,7 +614,26 @@ function Dashboard({ onNavigate }) {
               </button>
           </div>
   
-          {/* --- NOUVEAU BOUTON : SALLE DES TROPHÉES --- */}
+          {/* --- NOUVEAUX BOUTONS DE LISTE --- */}
+          
+          {/* BOUTON : LE REGISTRE (DETTES) */}
+          <button onClick={() => onNavigate('debts')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+              <div className="flex items-center gap-4">
+                  <div className="p-2 bg-red-900/20 rounded-full text-red-500 border border-red-500/20">
+                      <Scroll className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                      <h3 className="text-sm font-bold text-white">Le Registre</h3>
+                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Dettes & Créances</p>
+                  </div>
+              </div>
+              <div className="flex items-center gap-2">
+                   {(debts.length > 0) && <span className="bg-white/10 text-white text-[9px] font-bold px-2 py-0.5 rounded">{debts.length}</span>}
+                   <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-red-500 transition-colors" />
+              </div>
+          </button>
+  
+          {/* BOUTON : SALLE DES TROPHÉES */}
           <button onClick={() => onNavigate('trophies')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-[#F4D35E]/10 rounded-full text-[#F4D35E] border border-[#F4D35E]/20">
@@ -637,6 +675,7 @@ function Dashboard({ onNavigate }) {
       </PageTransition>
     );
   }
+
 // ==========================================
 // 8. PROTOCOLES - GESTION DES FRÉQUENCES
 // ==========================================
@@ -723,19 +762,31 @@ function ProtocolsScreen({ onBack }) {
 }
 
 // ==========================================
-// 8. LE GRAND LIVRE
+// 8. LE GRAND LIVRE (CORRIGÉ & STICKY)
 // ==========================================
 function DebtsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
-    const [balance, setBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
-    const [debts, setDebts] = useState(JSON.parse(localStorage.getItem('imperium_debts') || "[]"));
+    
+    // 1. ON RECUPERE TOUTES LES DONNEES FINANCIERES
+    const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
+    const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
+    const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
+    
+    // Etats de saisie
     const [newName, setNewName] = useState("");
     const [newAmount, setNewAmount] = useState("");
     const [type, setType] = useState('owe');
 
+    // Synchronisation
     useEffect(() => { localStorage.setItem('imperium_debts', JSON.stringify(debts)); }, [debts]);
     useEffect(() => { localStorage.setItem('imperium_balance', JSON.stringify(balance)); }, [balance]);
 
+    // CALCUL DU VRAI CASH DISPONIBLE (Comme sur le Dashboard)
+    // On ne peut pas payer une dette avec l'argent verrouillé dans les "Cibles"
+    const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
+    const availableCash = parseFloat(balance) - lockedCash;
+
+    // Ajouter une entrée
     const addEntry = (e) => {
         e.preventDefault();
         if (!newName || !newAmount) return;
@@ -743,18 +794,24 @@ function DebtsScreen({ onBack }) {
         setNewName(""); setNewAmount("");
     };
 
+    // Payer ou Encaisser
     const settleEntry = (item) => {
         if(item.type === 'owe') {
-            if(balance < item.amount) return alert("Trésorerie insuffisante pour honorer cette dette.");
-            setBalance(balance - item.amount);
+            if(availableCash < item.amount) return alert(`Trésorerie disponible insuffisante (${formatMoney(availableCash)}). L'argent des Cibles est verrouillé.`);
+            if(confirm(`Payer ${item.name} ? ${formatMoney(item.amount)} seront déduits de votre Cash.`)) {
+                setBalance(balance - item.amount);
+                setDebts(debts.filter(d => d.id !== item.id));
+            }
         } else {
-            setBalance(balance + item.amount);
+            if(confirm(`Avez-vous reçu l'argent de ${item.name} ? ${formatMoney(item.amount)} seront ajoutés à votre Cash.`)) {
+                setBalance(balance + item.amount);
+                setDebts(debts.filter(d => d.id !== item.id));
+            }
         }
-        setDebts(debts.filter(d => d.id !== item.id));
     };
     
     const deleteEntry = (id) => {
-        if(confirm("Supprimer cette entrée ? Cela n'affectera pas votre solde.")) {
+        if(confirm("Supprimer cette entrée ? (Aucun impact sur le solde)")) {
             setDebts(debts.filter(d => d.id !== id));
         }
     };
@@ -762,30 +819,84 @@ function DebtsScreen({ onBack }) {
     const totalOwe = debts.filter(d => d.type === 'owe').reduce((acc, d) => acc + d.amount, 0);
     const totalOwed = debts.filter(d => d.type === 'owed').reduce((acc, d) => acc + d.amount, 0);
 
+    // LOGIQUE DE L'ALERTE PRIORITAIRE
+    // On cherche la dette la plus petite que l'on peut payer MAINTENANT avec le CASH DISPONIBLE
+    const priorityDebt = debts
+        .filter(d => d.type === 'owe' && d.amount <= availableCash)
+        .sort((a, b) => a.amount - b.amount)[0]; 
+
     return (
         <PageTransition>
-        <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
-            <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
-                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
-                <h1 className="text-2xl font-serif text-white font-bold">Le Registre</h1>
+        <div className="h-[100dvh] w-full max-w-md mx-auto bg-[#0d0d0d] text-gray-200 font-sans flex flex-col relative overflow-hidden">
+            
+            {/* 1. EN-TÊTE */}
+            <div className="px-5 pt-safe-top mt-4 flex justify-between items-center shrink-0">
+                <div>
+                   <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest">LE REGISTRE</h1>
+                   <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Dispo: {formatMoney(availableCash)} {currency}</p>
+                </div>
+                <button onClick={onBack} className="w-10 h-10 bg-[#1a2333] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar">
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="bg-red-900/10 border border-red-500/20 p-4 rounded-xl"><p className="text-[10px] text-red-400 uppercase tracking-widest mb-1">Dettes (Tributs)</p><p className="text-xl font-bold text-white">{formatMoney(totalOwe)} {currency}</p></div>
-                    <div className="bg-green-900/10 border border-green-500/20 p-4 rounded-xl"><p className="text-[10px] text-green-400 uppercase tracking-widest mb-1">Créances (Butin)</p><p className="text-xl font-bold text-white">{formatMoney(totalOwed)} {currency}</p></div>
+            {/* 2. CONTENU SCROLLABLE */}
+            <div className="flex-1 overflow-y-auto px-4 pt-6 pb-40 custom-scrollbar relative">
+                
+                {/* RESUME DES TOTAUX */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-[#1a0f0f] border border-red-900/30 p-4 rounded-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-2 opacity-10"><UserMinus className="w-12 h-12 text-red-500"/></div>
+                        <p className="text-[9px] text-red-400 uppercase tracking-widest font-bold mb-1">Dettes (Tributs)</p>
+                        <p className="text-xl font-serif font-bold text-white">{formatMoney(totalOwe)} <span className="text-xs text-red-500">{currency}</span></p>
+                    </div>
+                    <div className="bg-[#0f1a13] border border-green-900/30 p-4 rounded-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-2 opacity-10"><UserPlus className="w-12 h-12 text-green-500"/></div>
+                        <p className="text-[9px] text-green-400 uppercase tracking-widest font-bold mb-1">Créances (Dû)</p>
+                        <p className="text-xl font-serif font-bold text-white">{formatMoney(totalOwed)} <span className="text-xs text-green-500">{currency}</span></p>
+                    </div>
                 </div>
 
-                <div className="space-y-3">
-                    {debts.length === 0 && <p className="text-center text-gray-600 text-xs mt-10">Le registre est vierge.</p>}
+                {/* --- ALERTE PRIORITAIRE (STICKY EN HAUT DE LISTE) --- */}
+                {priorityDebt && (
+                    <div className="sticky top-0 z-10 mb-4 animate-in slide-in-from-top-2">
+                        <div className="bg-[#2a0a0a] border border-red-500 p-4 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-between backdrop-blur-md">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest">Action Requise</p>
+                                </div>
+                                <p className="text-xs text-white leading-tight">Liquidité suffisante pour payer <span className="font-bold border-b border-red-500/50">{priorityDebt.name}</span>.</p>
+                                <p className="text-sm font-serif font-bold text-[#F4D35E] mt-1">{formatMoney(priorityDebt.amount)} {currency}</p>
+                            </div>
+                            <button onClick={() => settleEntry(priorityDebt)} className="bg-red-600 text-white font-bold px-4 py-3 rounded-lg text-xs uppercase tracking-wider hover:bg-red-500 transition-colors shadow-lg active:scale-95">
+                                Payer
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* LISTE DES ENTRÉES */}
+                <div className="space-y-3 pb-6">
+                    {debts.length === 0 && <div className="text-center py-10 opacity-50"><Scroll className="w-10 h-10 mx-auto mb-2 text-gray-600"/><p className="text-xs text-gray-500">Le registre est vierge.</p></div>}
+                    
                     {debts.map(item => (
-                        <div key={item.id} className={`p-4 rounded-xl border flex justify-between items-center ${item.type === 'owe' ? 'bg-[#111] border-red-500/20' : 'bg-[#111] border-green-500/20'}`}>
+                        <div key={item.id} className={`p-4 rounded-xl border flex justify-between items-center bg-[#111] transition-all hover:bg-[#161616] ${item.type === 'owe' ? 'border-red-500/10' : 'border-green-500/10'}`}>
                             <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${item.type === 'owe' ? 'bg-red-900/20 text-red-500' : 'bg-green-900/20 text-green-500'}`}>{item.type === 'owe' ? <UserMinus className="w-5 h-5"/> : <UserPlus className="w-5 h-5"/>}</div>
-                                <div><h3 className="text-sm font-bold text-gray-200">{item.name}</h3><p className="text-[10px] text-gray-500">{formatMoney(item.amount)} {currency}</p></div>
+                                <div className={`p-2 rounded-lg ${item.type === 'owe' ? 'bg-red-900/10 text-red-500' : 'bg-green-900/10 text-green-500'}`}>
+                                    {item.type === 'owe' ? <UserMinus className="w-5 h-5"/> : <UserPlus className="w-5 h-5"/>}
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-200">{item.name}</h3>
+                                    <p className={`text-xs font-serif font-bold ${item.type === 'owe' ? 'text-red-400' : 'text-green-400'}`}>
+                                        {formatMoney(item.amount)} {currency}
+                                    </p>
+                                </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => settleEntry(item)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase border ${item.type === 'owe' ? 'border-red-500 text-red-500 hover:bg-red-900/20' : 'border-green-500 text-green-500 hover:bg-green-900/20'}`}>{item.type === 'owe' ? "Honorer" : "Encaisser"}</button>
+                                <button onClick={() => settleEntry(item)} className={`px-4 py-2 rounded text-[10px] font-bold uppercase border transition-colors ${item.type === 'owe' ? 'border-red-500/30 text-red-400 hover:bg-red-900/20' : 'border-green-500/30 text-green-400 hover:bg-green-900/20'}`}>
+                                    {item.type === 'owe' ? "Payer" : "Reçu"}
+                                </button>
                                 <button onClick={() => deleteEntry(item.id)} className="p-2 text-gray-600 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4"/></button>
                             </div>
                         </div>
@@ -793,16 +904,20 @@ function DebtsScreen({ onBack }) {
                 </div>
             </div>
 
-            <div className="shrink-0 p-4 bg-[#0a0a0a] border-t border-white/10 pb-[calc(2rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full">
+            {/* 3. FORMULAIRE FIXE EN BAS */}
+            <div className="bg-[#161616] border-t border-white/5 p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shrink-0 z-20">
                 <div className="flex bg-black p-1 rounded-lg mb-3 border border-white/5">
                     <button onClick={() => setType('owe')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owe' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Je Dois (Dette)</button>
                     <button onClick={() => setType('owed')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owed' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>On me Doit (Créance)</button>
                 </div>
+                
                 <form onSubmit={addEntry} className="flex flex-col gap-3">
-                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Moussa)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Moussa)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-[#F4D35E] focus:outline-none placeholder-gray-600" />
                     <div className="flex gap-2">
-                        <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                        <button type="submit" disabled={!newName || !newAmount} className="bg-white/10 text-white font-bold px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-white/20 transition-colors"><Plus className="w-5 h-5" /></button>
+                        <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-[#F4D35E] focus:outline-none placeholder-gray-600" />
+                        <button type="submit" disabled={!newName || !newAmount} className="bg-[#F4D35E] text-black font-bold px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(244,211,94,0.2)]">
+                            <Plus className="w-5 h-5" />
+                        </button>
                     </div>
                 </form>
             </div>
