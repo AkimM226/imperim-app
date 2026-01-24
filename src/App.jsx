@@ -17,7 +17,44 @@ const RELEASE_NOTES = [
         ]
     }
 ];
-
+// --- AJOUT DU MANUEL DE FORMATION ---
+const TUTORIAL_STEPS = [
+    {
+        title: "BIENVENUE, COMMANDANT",
+        text: "La configuration est terminée. Imperium est votre poste de commandement. Ici, la discipline est votre seule arme contre la ruine.",
+        icon: Shield
+    },
+    {
+        title: "LE SOLDE VIRTUEL",
+        text: "Le chiffre central est votre 'Solde Disponible'. Ce n'est pas juste un nombre, c'est votre puissance de frappe réelle (Cash + Orange Money). S'il est positif, vous survivez.",
+        icon: PiggyBank
+    },
+    {
+        title: "LA STRATÉGIE WAVE",
+        text: "Votre compte Wave est votre 'Bunker'. C'est une réserve intouchable. L'application sépare visuellement votre argent de poche (Cash) de votre épargne de sécurité (Wave).",
+        icon: Smartphone
+    },
+    {
+        title: "LE REGISTRE",
+        text: "Ne laissez aucune dette traîner. Le Registre traque ce que vous devez (Tributs) et ce qu'on vous doit (Butin). Un Empire solide ne laisse personne oublier ses dettes.",
+        icon: Scroll
+    },
+    {
+        title: "LES CIBLES",
+        text: "Une Cible est un objectif de conquête (achat important). Quand vous allouez de l'argent à une cible, il est 'verrouillé' et retiré du solde disponible pour vous empêcher de le gaspiller.",
+        icon: Target
+    },
+    {
+        title: "L'ARSENAL & CONQUÊTE",
+        text: "L'Arsenal liste vos compétences. La section Conquête gère vos projets. C'est ici que vous transformez votre temps en argent.",
+        icon: Sword
+    },
+    {
+        title: "ARCHIVES (SAUVEGARDE)",
+        text: "L'Empire ne meurt jamais. Dans les Paramètres, générez un code d'exportation régulièrement. Il permet de restaurer votre progression sur n'importe quel appareil.",
+        icon: Save
+    }
+];
 const VALID_HASHES = [
     "SU1QLUFMUEhBLTc3", "SU1QLUJSQVZPLTg4", "SU1QLUNIQVJMSUUtOTk=", "SU1QLURFTEVULTEw", 
     "SU1QLRUNITy0yMA==", "SU1QLUZPWFRST1QtMzA=", "SU1QLUdPTEYtNDA=", "SU1QLUhPVEVMLTUw", 
@@ -310,11 +347,16 @@ export default function App() {
     );
   }
   
-  // ==========================================
-  // 1. ONBOARDING (Code inchangé)
-  // ==========================================
-  function OnboardingScreen({ onComplete }) {
+ // ==========================================
+// 1. ONBOARDING (CONFIG + TUTORIEL)
+// ==========================================
+
+function OnboardingScreen({ onComplete }) {
     const [step, setStep] = useState(1);
+    // Mode Tuto : false = Config, true = Slides
+    const [showTutorial, setShowTutorial] = useState(false);
+    const [slideIndex, setSlideIndex] = useState(0);
+
     const [initialBalance, setInitialBalance] = useState('');
     const [mainProject, setMainProject] = useState('');
     const [currency, setCurrency] = useState('');
@@ -323,22 +365,74 @@ export default function App() {
     const [isHolding, setIsHolding] = useState(false);
     const holdTimer = useRef(null);
     const [progress, setProgress] = useState(0);
+
     const filteredCurrencies = CURRENCIES.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()));
+    
     const selectCurrency = (selected) => { setCurrency(selected.symbol); setStep(3.5); }; 
     const selectZone = (selectedZone) => { setZone(selectedZone); setStep(5); };
+    
     const startHold = () => { setIsHolding(true); let p = 0; holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30); };
     const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
     
-    const finishOnboarding = () => {
-      localStorage.setItem('imperium_balance', initialBalance || 0);
-      const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
-      localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
-      localStorage.setItem('imperium_currency', currency || "€");
-      localStorage.setItem('imperium_zone', JSON.stringify(zone || ZONES[0]));
-      localStorage.setItem('imperium_onboarded', 'true');
-      window.location.reload();
+    // Transition Config -> Tuto
+    const startTutorial = () => {
+        // On sauvegarde les données mais on ne reload pas encore
+        localStorage.setItem('imperium_balance', initialBalance || 0);
+        const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
+        localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
+        localStorage.setItem('imperium_currency', currency || "€");
+        localStorage.setItem('imperium_zone', JSON.stringify(zone || ZONES[0]));
+        
+        setShowTutorial(true); // Lancement des slides
     };
-  
+
+    // Fin du Tuto -> Dashboard
+    const finishComplete = () => {
+        localStorage.setItem('imperium_onboarded', 'true');
+        window.location.reload();
+    };
+
+    // Navigation Slides
+    const nextSlide = () => {
+        if (slideIndex < TUTORIAL_STEPS.length - 1) {
+            setSlideIndex(slideIndex + 1);
+        } else {
+            finishComplete();
+        }
+    };
+
+    // --- AFFICHAGE DU TUTORIEL ---
+    if (showTutorial) {
+        const currentSlide = TUTORIAL_STEPS[slideIndex];
+        const Icon = currentSlide.icon;
+        
+        return (
+            <PageTransition>
+                <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 z-50 text-center">
+                    <div className="flex-1 flex flex-col items-center justify-center max-w-sm animate-in zoom-in duration-500">
+                        <div className="w-24 h-24 bg-[#111] rounded-full flex items-center justify-center mb-8 border border-gold/30 shadow-[0_0_30px_rgba(212,175,55,0.1)]">
+                            <Icon className="w-10 h-10 text-gold" />
+                        </div>
+                        <h2 className="text-2xl font-serif text-white font-bold mb-6 tracking-wide uppercase">{currentSlide.title}</h2>
+                        <p className="text-gray-400 text-sm leading-relaxed">{currentSlide.text}</p>
+                    </div>
+
+                    <div className="w-full max-w-xs mt-8">
+                        <div className="flex justify-center gap-1 mb-6">
+                            {TUTORIAL_STEPS.map((_, idx) => (
+                                <div key={idx} className={`h-1 rounded-full transition-all duration-300 ${idx === slideIndex ? 'w-8 bg-gold' : 'w-2 bg-gray-800'}`} />
+                            ))}
+                        </div>
+                        <button onClick={nextSlide} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-colors">
+                            {slideIndex === TUTORIAL_STEPS.length - 1 ? "ACCÉDER AU QG" : "SUIVANT"}
+                        </button>
+                    </div>
+                </div>
+            </PageTransition>
+        );
+    }
+
+    // --- AFFICHAGE DE LA CONFIGURATION (Classique) ---
     return (
       <PageTransition><div className="fixed inset-0 bg-black text-gold flex flex-col items-center justify-center p-6 text-center z-50 overflow-hidden w-full h-full">
         {step === 1 && (<div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs"><h1 className="text-4xl font-serif font-bold tracking-widest mb-6">IMPERIUM</h1><p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p><button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button></div>)}
@@ -347,11 +441,12 @@ export default function App() {
         {step === 3.5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs flex flex-col items-center"><div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/30"><Smartphone className="w-10 h-10 text-blue-500" /></div><h2 className="text-xl font-serif text-white mb-4">La Stratégie Wave</h2><p className="text-gray-400 text-sm leading-relaxed mb-8">Dans ce système, <span className="text-blue-400 font-bold">Wave est votre Coffre-Fort</span>.<br/><br/>L'argent liquide et OM sont pour la guerre (dépenses). Wave est pour la sécurité (épargne).<br/><br/><span className="text-xs italic text-gray-500">Si vous n'avez pas de compte Wave, ouvrez-en un maintenant.</span></p><button onClick={() => setStep(4)} className="w-full bg-blue-600 text-white font-bold py-3 rounded uppercase tracking-widest text-xs hover:bg-blue-500 transition-colors">C'est compris, continuons</button></div>)}
         {step === 4 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-2">Votre Terrain</h2><p className="text-xs text-gray-500 mb-6">Ajuste l'intelligence artificielle à votre marché.</p><div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">{ZONES.map((z) => (<button key={z.id} onClick={() => selectZone(z)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg text-left group transition-all active:scale-[0.98]"><div className="flex justify-between items-center mb-1"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{z.name}</p><Globe className="w-4 h-4 text-gray-600 group-hover:text-gold" /></div><p className="text-[10px] text-gray-500">{z.desc}</p></button>))}</div></div>)}
         {step === 5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle (Cash + OM)</label><input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus /><p className="text-[10px] text-gray-500 mb-4 text-left">*Ne comptez pas ce qu'il y a déjà sur Wave.</p><button onClick={() => setStep(6)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button></div>)}
-        {step === 6 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label><input type="text" value={mainProject} onChange={(e) => setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="Ex: Agence IA" autoFocus /><button onClick={finishOnboarding} disabled={!mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">LANCER L'EMPIRE</button></div>)}
+        {step === 6 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label><input type="text" value={mainProject} onChange={(e) => setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="Ex: Agence IA" autoFocus /><button onClick={startTutorial} disabled={!mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">LANCER L'EMPIRE</button></div>)}
       </div></PageTransition>
     );
-  }
- // ==========================================
+} 
+ 
+// ==========================================
 // 2. DASHBOARD (AVEC ESPACE POUR LA CITATION)
 // ==========================================
 function Dashboard({ onNavigate }) {
@@ -1520,4 +1615,4 @@ function SettingsScreen({ onBack }) {
             </div>
         </PageTransition>
     ); 
-                        }
+}
