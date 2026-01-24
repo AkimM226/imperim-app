@@ -5,19 +5,20 @@ import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpC
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "14.5.0-ManualFix"; 
+const APP_VERSION = "15.0.0-Citadel"; 
 
 const RELEASE_NOTES = [
     {
-        version: "14.5.0",
-        title: "Calibrage Forcé",
-        desc: "Correction visuelle prioritaire.",
+        version: "15.0.0",
+        title: "La Citadelle",
+        desc: "Module de survie activé.",
         changes: [
-            { icon: LayoutGrid, text: "Marge de Sécurité : Espace forcé en haut de l'écran pour éviter l'encoche." }
+            { icon: Shield, text: "Simulateur de Survie : Calculez votre autonomie financière réelle." },
+            { icon: LayoutGrid, text: "Optimisation du Dashboard." }
         ]
     }
 ];
-// --- AJOUT DU MANUEL DE FORMATION ---
+
 const TUTORIAL_STEPS = [
     {
         title: "BIENVENUE, COMMANDANT",
@@ -35,6 +36,11 @@ const TUTORIAL_STEPS = [
         icon: Smartphone
     },
     {
+        title: "LA CITADELLE",
+        text: "Nouveau module : Vérifiez combien de temps votre Empire peut tenir sans aucun revenu grâce au simulateur de survie.",
+        icon: Castle
+    },
+    {
         title: "LE REGISTRE",
         text: "Ne laissez aucune dette traîner. Le Registre traque ce que vous devez (Tributs) et ce qu'on vous doit (Butin). Un Empire solide ne laisse personne oublier ses dettes.",
         icon: Scroll
@@ -43,11 +49,6 @@ const TUTORIAL_STEPS = [
         title: "LES CIBLES",
         text: "Une Cible est un objectif de conquête (achat important). Quand vous allouez de l'argent à une cible, il est 'verrouillé' et retiré du solde disponible pour vous empêcher de le gaspiller.",
         icon: Target
-    },
-    {
-        title: "L'ARSENAL & CONQUÊTE",
-        text: "L'Arsenal liste vos compétences. La section Conquête gère vos projets. C'est ici que vous transformez votre temps en argent.",
-        icon: Sword
     },
     {
         title: "ARCHIVES (SAUVEGARDE)",
@@ -131,7 +132,7 @@ const getRank = (balance, currency) => {
   if (currency.includes('FCFA')) points = balance / 650;
   else if (currency.includes('GNF')) points = balance / 9000;
   else if (currency.includes('CDF')) points = balance / 2500;
-  
+   
   if (points < 0) return { title: "RUINE", color: "text-red-600", icon: AlertTriangle };
   if (points < 50) return { title: "VAGABOND", color: "text-gray-500", icon: Fingerprint };
   if (points < 200) return { title: "MERCENAIRE", color: "text-blue-400", icon: Sword };
@@ -328,30 +329,29 @@ export default function App() {
     const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
   
     return (
-        <>
-            {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
-            
-            {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
-            
-            {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
-            {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
-            {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
-            {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
-            {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
-            {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
-            {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
-            {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
-            
-            {/* --- AJOUT ICI --- */}
-            {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
-        </>
-      );
-    }
+      <>
+          {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
+          
+          {/* Le Dashboard gère sa propre navigation interne via le menu du bas */}
+          {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
+          
+          {/* Les autres écrans ont un bouton retour */}
+          {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
+      </>
+    );
+  }
   
- // ==========================================
+// ==========================================
 // 1. ONBOARDING (CONFIG + TUTORIEL)
 // ==========================================
-
 function OnboardingScreen({ onComplete }) {
     const [step, setStep] = useState(1);
     // Mode Tuto : false = Config, true = Slides
@@ -446,7 +446,6 @@ function OnboardingScreen({ onComplete }) {
       </div></PageTransition>
     );
 } 
-
  // ==========================================
 // 2. DASHBOARD (AVEC ESPACE POUR LA CITATION)
 // ==========================================
@@ -485,7 +484,7 @@ function Dashboard({ onNavigate }) {
     
     // Soldes
     const totalBalance = balance; 
-    const totalBunker = bunker;   
+    const totalBunker = bunker;    
     const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
     const availableCash = totalBalance - lockedCash; 
     
@@ -585,7 +584,7 @@ function Dashboard({ onNavigate }) {
         const val = parseFloat(bunkerAmount);
         if (action === 'deposit') {
             if (val > availableCash) return alert(`Fonds insuffisants.`);
-            setBalance(balance - val); setBunker(bunker + val);   
+            setBalance(balance - val); setBunker(bunker + val);    
         } else if (action === 'withdraw') {
             if (val > bunker) return alert(`Fonds insuffisants sur Wave.`);
             setBunker(bunker - val); setBalance(balance + val); 
@@ -652,8 +651,8 @@ function Dashboard({ onNavigate }) {
                       <div className={`h-full transition-all duration-500 ${rationColor}`} style={{ width: `${dailyProgress}%` }}></div>
                   </div>
                   <div className="flex justify-between items-center text-[10px] mb-3">
-                       <span className="text-gray-500">Dépensé : <span className="text-white font-bold">{formatMoney(spentToday)}</span></span>
-                       <span className="text-gray-500">Budget Max : <span className="text-gray-400">{formatMoney(realDailyAllocation)}</span></span>
+                        <span className="text-gray-500">Dépensé : <span className="text-white font-bold">{formatMoney(spentToday)}</span></span>
+                        <span className="text-gray-500">Budget Max : <span className="text-gray-400">{formatMoney(realDailyAllocation)}</span></span>
                   </div>
                   <div className="flex items-center justify-between pt-3 border-t border-white/5">
                       <p className="text-[9px] text-gray-500 uppercase tracking-wide">Projection Demain</p>
@@ -695,7 +694,7 @@ function Dashboard({ onNavigate }) {
           </div>
   
           {/* GRILLE 2x2 */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mb-2">
               <button onClick={() => onNavigate('project')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
                   <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Projets</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
               </button>
@@ -709,7 +708,8 @@ function Dashboard({ onNavigate }) {
                   <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Protocole</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
               </button>
           </div>
-                {/* --- AJOUT BOUTON CITADELLE --- */}
+          
+           {/* --- AJOUT BOUTON CITADELLE --- */}
           <button onClick={() => onNavigate('citadel')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors relative overflow-hidden">
                <div className="absolute inset-0 bg-[#F4D35E]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                <div className="flex items-center gap-4 relative z-10">
@@ -723,7 +723,7 @@ function Dashboard({ onNavigate }) {
                </div>
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
           </button>
-          
+
           {/* BOUTON REGISTRE */}
           <button onClick={() => onNavigate('debts')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
@@ -1382,7 +1382,7 @@ function ProjectScreen({ onBack }) {
     }; 
     
     const deleteTask = (taskId) => { 
-         const updatedProjects = projects.map(p => {
+          const updatedProjects = projects.map(p => {
             if (p.id === activeProject.id) {
                 return { ...p, tasks: p.tasks.filter(t => t.id !== taskId) };
             }
@@ -1393,7 +1393,7 @@ function ProjectScreen({ onBack }) {
     };
 
     const updateAnswer = (qId, value) => {
-         const updatedProjects = projects.map(p => {
+          const updatedProjects = projects.map(p => {
             if (p.id === activeProject.id) {
                 return { ...p, answers: { ...(p.answers || {}), [qId]: value } };
             }
@@ -1743,4 +1743,3 @@ function SettingsScreen({ onBack }) {
         </PageTransition>
     ); 
 }
-
