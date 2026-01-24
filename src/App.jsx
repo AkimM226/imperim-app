@@ -328,24 +328,25 @@ export default function App() {
     const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
   
     return (
-      <>
-          {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
-          
-          {/* Le Dashboard gère sa propre navigation interne via le menu du bas */}
-          {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
-          
-          {/* Les autres écrans ont un bouton retour */}
-          {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
-      </>
-    );
-  }
+        <>
+            {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
+            
+            {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
+            
+            {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
+            {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
+            {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
+            {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
+            {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
+            {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
+            {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
+            {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
+            
+            {/* --- AJOUT ICI --- */}
+            {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
+        </>
+      );
+    }
   
  // ==========================================
 // 1. ONBOARDING (CONFIG + TUTORIEL)
@@ -445,8 +446,8 @@ function OnboardingScreen({ onComplete }) {
       </div></PageTransition>
     );
 } 
- 
-// ==========================================
+
+ // ==========================================
 // 2. DASHBOARD (AVEC ESPACE POUR LA CITATION)
 // ==========================================
 function Dashboard({ onNavigate }) {
@@ -708,7 +709,21 @@ function Dashboard({ onNavigate }) {
                   <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Protocole</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
               </button>
           </div>
-  
+                {/* --- AJOUT BOUTON CITADELLE --- */}
+          <button onClick={() => onNavigate('citadel')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors relative overflow-hidden">
+               <div className="absolute inset-0 bg-[#F4D35E]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+               <div className="flex items-center gap-4 relative z-10">
+                   <div className="p-2 bg-[#F4D35E]/10 rounded-full text-[#F4D35E] border border-[#F4D35E]/20">
+                       <Shield className="w-5 h-5" />
+                   </div>
+                   <div className="text-left">
+                       <h3 className="text-sm font-bold text-white">La Citadelle</h3>
+                       <p className="text-[9px] text-gray-500 uppercase tracking-wide">Simulateur de Survie</p>
+                   </div>
+               </div>
+               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
+          </button>
+          
           {/* BOUTON REGISTRE */}
           <button onClick={() => onNavigate('debts')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
@@ -1492,6 +1507,118 @@ function ProjectScreen({ onBack }) {
     ); 
 }
 
+// ==========================================
+// 9. LA CITADELLE (CALCULATEUR DE SURVIE)
+// ==========================================
+function CitadelScreen({ onBack }) {
+    const currency = localStorage.getItem('imperium_currency') || "€";
+    const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
+    const bunker = JSON.parse(localStorage.getItem('imperium_bunker') || "0");
+    const protocols = JSON.parse(localStorage.getItem('imperium_protocols') || "[]");
+
+    // 1. CALCUL DES RESSOURCES TOTALES
+    const totalLiquidity = parseFloat(balance) + parseFloat(bunker);
+
+    // 2. CALCUL DE LA CONSOMMATION MENSUELLE (CHARGES FIXES)
+    const monthlyBurn = protocols
+        .filter(p => p.type === 'expense')
+        .reduce((acc, p) => {
+            const freq = FREQUENCIES.find(f => f.id === (p.freq || 'monthly'));
+            return acc + (p.amount * (freq ? freq.factor : 1));
+        }, 0);
+
+    // 3. CALCUL DE L'AUTONOMIE
+    let survivalMonths = 0;
+    let status = { title: "INCONNU", color: "text-gray-500", desc: "Données insuffisantes." };
+
+    if (monthlyBurn > 0) {
+        survivalMonths = totalLiquidity / monthlyBurn;
+        
+        if (survivalMonths < 1) status = { title: "CRITIQUE", color: "text-red-600", desc: "Effondrement imminent. Réduisez les charges immédiatement." };
+        else if (survivalMonths < 3) status = { title: "VULNÉRABLE", color: "text-orange-500", desc: "Position fragile. Renforcez le Bunker." };
+        else if (survivalMonths < 6) status = { title: "STABLE", color: "text-[#F4D35E]", desc: "Défense standard. Continuez l'expansion." };
+        else status = { title: "IMPRENABLE", color: "text-green-500", desc: "Forteresse économique. Vous dominez le temps." };
+    } else {
+        status = { title: "INFINI", color: "text-green-500", desc: "Aucune charge fixe détectée." };
+        survivalMonths = 999;
+    }
+
+    const survivalDays = Math.floor(survivalMonths * 30);
+
+    return (
+        <PageTransition>
+            <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
+                <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
+                    <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2">
+                        <ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span>
+                    </button>
+                    <h1 className="text-2xl font-serif text-white font-bold">La Citadelle</h1>
+                    <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">Simulateur de Siège</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar">
+                    
+                    {/* INDICATEUR PRINCIPAL */}
+                    <div className={`p-6 rounded-2xl border ${survivalMonths < 1 ? 'bg-red-900/10 border-red-500/30' : 'bg-[#111] border-white/10'} text-center mb-6 relative overflow-hidden`}>
+                        <div className={`absolute top-0 right-0 p-4 opacity-10 ${status.color}`}><Shield className="w-32 h-32"/></div>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-2">Autonomie Estimée</p>
+                        <h2 className={`text-5xl font-serif font-bold ${status.color} mb-2`}>
+                            {survivalMonths > 120 ? "∞" : survivalMonths.toFixed(1)} <span className="text-lg text-gray-500">Mois</span>
+                        </h2>
+                        <p className={`text-xs font-bold ${status.color} uppercase tracking-widest border px-3 py-1 rounded inline-block border-current/30`}>
+                            État : {status.title}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-4 italic">{status.desc}</p>
+                    </div>
+
+                    {/* DÉTAILS TECHNIQUES */}
+                    <div className="space-y-3">
+                        <div className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-900/20 rounded-lg text-blue-400"><Smartphone className="w-5 h-5"/></div>
+                                <div><p className="text-xs text-gray-400">Ressources Totales</p><p className="text-sm font-bold text-white">Cash + Wave</p></div>
+                            </div>
+                            <span className="font-mono text-white font-bold">{formatMoney(totalLiquidity)} {currency}</span>
+                        </div>
+
+                        <div className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-red-900/20 rounded-lg text-red-500"><Activity className="w-5 h-5"/></div>
+                                <div><p className="text-xs text-gray-400">Consommation</p><p className="text-sm font-bold text-white">Charges Mensuelles</p></div>
+                            </div>
+                            <span className="font-mono text-red-400 font-bold">-{formatMoney(monthlyBurn)} {currency}</span>
+                        </div>
+                    </div>
+
+                    {/* VISUALISATION */}
+                    <div className="mt-8">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase mb-4 text-center">Scénario de Survie (Jours)</h3>
+                        <div className="flex gap-1 h-12 items-end justify-center">
+                            {Array.from({ length: 12 }).map((_, i) => {
+                                const active = i < survivalMonths;
+                                return (
+                                    <div key={i} className={`w-2 rounded-t-sm transition-all duration-500 ${active ? status.color.replace('text-', 'bg-') : 'bg-gray-800'}`} style={{ height: active ? '100%' : '20%' }}></div>
+                                );
+                            })}
+                        </div>
+                        <div className="flex justify-between text-[9px] text-gray-600 mt-2 uppercase font-mono">
+                            <span>Aujourd'hui</span>
+                            <span>+6 Mois</span>
+                            <span>+1 An</span>
+                        </div>
+                    </div>
+
+                    {monthlyBurn === 0 && (
+                        <div className="mt-6 p-4 bg-yellow-900/10 border border-yellow-500/20 rounded-lg text-center">
+                            <p className="text-yellow-500 text-xs">⚠️ Configurez vos charges fixes dans "Protocoles" pour activer le calculateur.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </PageTransition>
+    );
+}
+
 function SettingsScreen({ onBack }) { 
     const [importData, setImportData] = useState("");
     const [exportCode, setExportCode] = useState(""); 
@@ -1616,3 +1743,4 @@ function SettingsScreen({ onBack }) {
         </PageTransition>
     ); 
 }
+
