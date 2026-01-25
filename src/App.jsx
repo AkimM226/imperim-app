@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -126,7 +126,43 @@ const BUSINESS_IDEAS = {
   'montage': { title: 'Vidéos TikTok/Reels', price: 40, task: 'Monte des vidéos dynamiques pour un influenceur local.' },
   'ia': { title: 'Formation ChatGPT', price: 80, task: 'Forme une petite équipe à utiliser l\'IA pour gagner du temps.' },
 };
-
+const KNOWLEDGE_BASE = [
+    { 
+        id: 'k1', 
+        title: "La Règle 50/30/20", 
+        subtitle: "Logistique de Base", 
+        icon: PieChart, 
+        content: "Pour qu'un Empire tienne, les ressources doivent être divisées avec rigueur :\n\n• 50% NÉCESSITÉS (Survie) : Loyer, Manger, Électricité. C'est le socle.\n• 30% FUTILITÉS (Moral) : Plaisirs, Sorties. C'est pour garder le moral des troupes. Si vous coupez tout, vous craquerez.\n• 20% BUNKER (Épargne) : C'est votre assurance vie. Cet argent ne doit jamais être touché sauf en cas de guerre totale." 
+    },
+    { 
+        id: 'k2', 
+        title: "L'Effet Boule de Neige", 
+        subtitle: "Intérêts Composés", 
+        icon: TrendingUp, 
+        content: "L'argent doit travailler, pas dormir. C'est ce qu'on appelle 'l'Intérêt Composé'.\n\nImaginez que chaque pièce d'or recrute un soldat, et que ce soldat recrute à son tour.\nAu début, c'est lent. Mais après 10 ans, votre armée grandit toute seule.\n\nAction : Placez votre Bunker sur un compte qui rapporte (DAT, Assurance Vie, Crypto Stable, Bourse), ne le laissez pas sous le matelas." 
+    },
+    { 
+        id: 'k3', 
+        title: "La Guerre des Prix", 
+        subtitle: "Négociation", 
+        icon: Sword, 
+        content: "Le prix affiché est une proposition, pas une loi. Un bon commandant ne paie jamais le prix fort sans combattre.\n\nTechnique du Silence : Annoncez votre prix. Si le vendeur refuse, taisez-vous et regardez-le dans les yeux. Le malaise le fera souvent baisser.\n\nChaque pièce économisée est une munition pour votre propre Empire." 
+    },
+    { 
+        id: 'k4', 
+        title: "Le Fonds d'Urgence", 
+        subtitle: "Défense Absolue", 
+        icon: Shield, 
+        content: "Avant d'attaquer (investir), il faut savoir défendre.\n\nVotre priorité absolue est d'avoir 3 mois de survie dans votre Bunker (voir module Citadelle).\nPourquoi ? Parce que si vous perdez votre source de revenu et que vous n'avez pas de réserve, vous devrez accepter n'importe quel travail d'esclave pour survivre.\n\nL'épargne, c'est la liberté de dire 'NON'." 
+    },
+    { 
+        id: 'k5', 
+        title: "Dette : L'Ennemi Intérieur", 
+        subtitle: "Gestion du Passif", 
+        icon: UserMinus, 
+        content: "Il y a deux types de dettes :\n\n1. La Dette Toxique : Emprunter pour du passif (téléphone, vêtements, fêtes). C'est se mettre les menottes soi-même.\n2. La Dette Stratégique : Emprunter pour investir (immobilier, commerce). C'est utiliser l'argent des autres pour s'enrichir.\n\nÉliminez toute dette toxique sans pitié avant de songer à l'expansion." 
+    }
+];
 const getRank = (balance, currency) => {
   let points = balance;
   if (currency.includes('FCFA')) points = balance / 650;
@@ -344,6 +380,7 @@ export default function App() {
           {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'academy' && <AcademyScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
       </>
     );
@@ -722,6 +759,20 @@ function Dashboard({ onNavigate }) {
                    </div>
                </div>
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
+          </button>
+
+            {/* --- AJOUT BOUTON ACADÉMIE --- */}
+          <button onClick={() => onNavigate('academy')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+              <div className="flex items-center gap-4">
+                  <div className="p-2 bg-purple-900/20 rounded-full text-purple-400 border border-purple-500/20">
+                      <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                      <h3 className="text-sm font-bold text-white">L'Académie</h3>
+                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Savoir Stratégique</p>
+                  </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-purple-400 transition-colors" />
           </button>
 
           {/* BOUTON REGISTRE */}
@@ -1615,6 +1666,82 @@ function CitadelScreen({ onBack }) {
                     )}
                 </div>
             </div>
+        </PageTransition>
+    );
+}
+
+// ==========================================
+// 10. L'ACADÉMIE (BIBLIOTHÈQUE)
+// ==========================================
+function AcademyScreen({ onBack }) {
+    const [selectedModule, setSelectedModule] = useState(null);
+
+    return (
+        <PageTransition>
+            <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
+                <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
+                    <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2">
+                        <ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span>
+                    </button>
+                    <h1 className="text-2xl font-serif text-white font-bold">Académie</h1>
+                    <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">Base de connaissances stratégiques</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar">
+                    <div className="grid gap-4">
+                        {KNOWLEDGE_BASE.map((item, index) => {
+                            const Icon = item.icon;
+                            return (
+                                <button 
+                                    key={item.id} 
+                                    onClick={() => setSelectedModule(item)}
+                                    className="bg-[#111] border border-white/5 hover:border-gold/30 p-5 rounded-xl text-left group transition-all active:scale-[0.98] relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity"><Icon className="w-16 h-16 text-white"/></div>
+                                    <div className="flex items-start gap-4 relative z-10">
+                                        <div className="p-3 bg-[#1a1a1a] rounded-lg text-gold border border-white/5 group-hover:bg-gold group-hover:text-black transition-colors">
+                                            <Icon className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-white group-hover:text-gold transition-colors">{item.title}</h3>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">{item.subtitle}</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* MODALE DE LECTURE */}
+            {selectedModule && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+                    <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative max-h-[80vh] flex flex-col">
+                        <button onClick={() => setSelectedModule(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X className="w-6 h-6"/></button>
+                        
+                        <div className="shrink-0 mb-6 text-center">
+                            <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-gold/20">
+                                <selectedModule.icon className="w-8 h-8 text-gold" />
+                            </div>
+                            <h2 className="text-xl font-serif font-bold text-white">{selectedModule.title}</h2>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">{selectedModule.subtitle}</p>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                            <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                                {selectedModule.content}
+                            </p>
+                        </div>
+
+                        <div className="shrink-0 mt-6 pt-4 border-t border-white/5">
+                            <button onClick={() => setSelectedModule(null)} className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-widest transition-colors">
+                                Compris, Commandant
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </PageTransition>
     );
 }
