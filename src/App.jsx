@@ -531,11 +531,124 @@ function OnboardingScreen({ onComplete }) {
       </div></PageTransition>
     );
 } 
+
+// ==========================================
+// 11. RADIO LINK (VERSION STABLE - FLASH LATEST)
+// ==========================================
+function RadioLink({ onClose }) {
+    // ⚠️ COLLE TA CLÉ API ICI ⚠️
+    const API_KEY = "AIzaSyBjPLcZ1CrRTmIKULCMPctu86D0W7KuRz0"; 
+    
+    const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
+        const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
+        const daysLeft = 30 - new Date().getDate(); 
+
+        const expenses = transactions.filter(t => t.type === 'expense');
+        const wants = expenses.filter(t => t.category === 'want').reduce((acc, t) => acc + t.amount, 0);
+        const totalExp = expenses.reduce((acc, t) => acc + t.amount, 0);
+        const ratio = totalExp > 0 ? Math.round((wants / totalExp) * 100) : 0;
+
+        const prompt = `
+            Tu es le Sergent Hartman. Ta recrue a ces stats :
+            - Solde : ${balance}
+            - Jours restants : ${daysLeft}
+            - Dépenses Futiles : ${ratio}%
+
+            Analyse ça en 2 phrases max.
+            Si futilité > 30% ou solde bas : Sois dur, autoritaire, secoue-le.
+            Sinon : Sois méfiant mais valide la discipline.
+            Termine impérativement par "ROMPEZ !".
+        `;
+
+        const callGemini = async () => {
+            try {
+                // CHANGEMENT ICI : On utilise "gemini-flash-latest" qui est dans ta liste et a de meilleurs quotas
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                const data = await response.json();
+
+                if (data.error) {
+                    // Si erreur de quota, on l'affiche gentiment
+                    if (data.error.message.includes("quota")) {
+                        setMessage("Le QG est saturé d'appels. Réessayez dans 1 minute.");
+                    } else {
+                        setMessage(`Erreur QG : ${data.error.message}`);
+                    }
+                } else if (data.candidates && data.candidates[0].content) {
+                    setMessage(data.candidates[0].content.parts[0].text);
+                } else {
+                    setMessage("Silence radio...");
+                }
+            } catch (error) {
+                setMessage("Liaison coupée. Vérifiez votre réseau.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        callGemini();
+    }, []);
+
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+            <div className="bg-[#1a1a1a] border border-green-900/50 w-full max-w-sm rounded-none p-6 shadow-[0_0_50px_rgba(34,197,94,0.1)] relative font-mono">
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 pointer-events-none bg-[length:100%_4px,3px_100%]"></div>
+                
+                <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-6 border-b border-green-900/30 pb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-900/20 text-green-500 animate-pulse border border-green-500/30">
+                                <Radio className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-green-500 font-bold text-lg tracking-widest uppercase">TRANSMISSION</h2>
+                                <p className="text-[10px] text-green-800 uppercase">Canal Sécurisé • Priorité Alpha</p>
+                            </div>
+                        </div>
+                        <button onClick={onClose}><X className="w-6 h-6 text-green-800 hover:text-green-500" /></button>
+                    </div>
+
+                    <div className="min-h-[100px] flex items-center justify-center text-left">
+                        {loading ? (
+                            <div className="flex flex-col items-center gap-2 text-green-800">
+                                <Loader2 className="w-8 h-8 animate-spin" />
+                                <span className="text-xs uppercase blink">Déchiffrement...</span>
+                            </div>
+                        ) : (
+                            <p className="text-green-400 text-sm leading-relaxed typing-effect">
+                                "{message}"
+                            </p>
+                        )}
+                    </div>
+
+                    <button onClick={onClose} className="w-full mt-6 bg-green-900/20 border border-green-500/30 text-green-500 font-bold py-3 uppercase tracking-widest text-xs hover:bg-green-500 hover:text-black transition-colors">
+                        Reçu, Terminé.
+                    </button>
+                </div>
+            </div>
+            <style>{`
+                .blink { animation: blinker 1s linear infinite; }
+                @keyframes blinker { 50% { opacity: 0; } }
+            `}</style>
+        </div>
+    );
+}
+
  // ==========================================
 // 2. DASHBOARD (AVEC ESPACE POUR LA CITATION)
 // ==========================================
 function Dashboard({ onNavigate }) {
+
     // DONNÉES
+    const [showRadio, setShowRadio] = useState(false);
     const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
     const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
     const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
@@ -785,11 +898,12 @@ function Dashboard({ onNavigate }) {
                   <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Projets</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
               </button>
               
-              <button onClick={() => setShowOrders(true)} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98] relative overflow-hidden">
-                   <div className="absolute top-0 right-0 p-2"><Radio className="w-12 h-12 text-orange-500/10 -rotate-12"/></div>
-                   <Radio className="w-6 h-6 text-orange-500 mb-3 opacity-90 relative z-10" />
-                   <h3 className="text-sm font-bold text-white relative z-10">Ordres</h3>
-                   <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Missions du Jour</p>
+             {/* BOUTON RADIO SERGENT */}
+             <button onClick={() => setShowRadio(true)} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98] relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20"><Radio className="w-12 h-12 text-green-500 -rotate-12"/></div>
+                   <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
+                   <h3 className="text-sm font-bold text-white relative z-10">Radio QG</h3>
+                   <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Rapport Sergent</p>
               </button>
 
               <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
@@ -900,6 +1014,7 @@ function Dashboard({ onNavigate }) {
         {showHistory && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in"><div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">{transactions.map(tx => (<div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5"><div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div></div>))}</div></div></div>)}
         {showTaxModal && pendingTransaction && (<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in"><div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center"><h3 className="text-[#F4D35E] font-serif text-xl font-bold mb-4">Impôt Impérial (20%)</h3><p className="text-gray-400 text-sm mb-6">Sécuriser une partie de ce revenu dans Wave ?</p><div className="flex gap-3 w-full"><button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase">Non (0%)</button><button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-[#F4D35E] text-black text-xs font-bold uppercase">Oui (20%)</button></div></div></div>)}
         {showOrders && <OrdersModal onClose={() => setShowOrders(false)} />}
+        {showRadio && <RadioLink onClose={() => setShowRadio(false)} />}
       </div>
       </PageTransition>
     );
