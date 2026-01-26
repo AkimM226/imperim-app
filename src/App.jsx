@@ -2,9 +2,68 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2 } from 'lucide-react';
 
 // ==========================================
+// MOTEUR SONORE TACTIQUE (SANS FICHIERS)
+// ==========================================
+const playSound = (type) => {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        
+        if (type === 'click') {
+            // Petit clic mécanique
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.1);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        } else if (type === 'success') {
+            // Bip de validation aigu
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'error') {
+            // Buzz grave d'erreur
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'radio') {
+            // Bruit blanc (static) pour la radio
+            const bufferSize = ctx.sampleRate * 0.5; // 0.5 sec
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.05, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            noise.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            noise.start(now);
+        }
+    } catch (e) { console.error("Audio error", e); }
+};
+
+// ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-
 const APP_VERSION = "16.0.0-Ultimate"; 
 
 const RELEASE_NOTES = [
@@ -642,9 +701,7 @@ function RadioLink({ onClose }) {
     );
 }
 
- // ==========================================
-// 2. DASHBOARD (AVEC ESPACE POUR LA CITATION)
-// ==========================================
+ // Remplace toute la fonction Dashboard par celle-ci
 function Dashboard({ onNavigate }) {
 
     // DONNÉES
@@ -801,7 +858,7 @@ function Dashboard({ onNavigate }) {
   
     return (
       <PageTransition>
-      <div className="h-[100dvh] w-full max-w-md mx-auto bg-[#0d0d0d] text-gray-200 font-sans flex flex-col relative overflow-hidden">
+      <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col relative overflow-hidden">
         
         {/* 1. EN-TÊTE */}
         <div className="px-5 pt-safe-top mt-4 flex justify-between items-start shrink-0">
@@ -825,7 +882,7 @@ function Dashboard({ onNavigate }) {
            </div>
         </div>
   
-        {/* 2. CONTENU SCROLLABLE (Padding augmenté à pb-48 pour dégager la citation) */}
+        {/* 2. CONTENU SCROLLABLE */}
         <div className="flex-1 overflow-y-auto px-4 pt-6 pb-48 custom-scrollbar space-y-4">
           
           {/* CARTE PRINCIPALE */}
@@ -865,7 +922,7 @@ function Dashboard({ onNavigate }) {
                </div>
           </div>
   
-          {/* ALERTE DETTE PRIORITAIRE */}
+          {/* ALERTE DETTE PRIORITAIRE (CORRECTION TYPO 'a') */}
           {priorityDebt && (
               <div onClick={() => onNavigate('debts')} className="bg-red-600/10 border border-red-500/50 p-3 rounded-xl flex items-center justify-between animate-pulse cursor-pointer">
                   <div className="flex items-center gap-3">
@@ -898,12 +955,11 @@ function Dashboard({ onNavigate }) {
                   <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Projets</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
               </button>
               
-             {/* BOUTON RADIO SERGENT */}
-             <button onClick={() => setShowRadio(true)} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98] relative overflow-hidden group">
-                   <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20"><Radio className="w-12 h-12 text-green-500 -rotate-12"/></div>
-                   <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
-                   <h3 className="text-sm font-bold text-white relative z-10">Radio QG</h3>
-                   <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Rapport Sergent</p>
+              <button onClick={() => { playSound('radio'); setShowRadio(true); }} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98] relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20"><Radio className="w-12 h-12 text-green-500 -rotate-12"/></div>
+                    <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
+                    <h3 className="text-sm font-bold text-white relative z-10">Radio QG</h3>
+                    <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Rapport Sergent</p>
               </button>
 
               <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
@@ -915,7 +971,7 @@ function Dashboard({ onNavigate }) {
           </div>
           
           {/* BOUTON CIBLES */}
-           <button onClick={() => onNavigate('goals')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mb-2 group hover:bg-[#222] transition-colors">
+           <button onClick={() => { playSound('click'); onNavigate('goals'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mb-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-blue-900/20 rounded-full text-blue-400 border border-blue-500/20">
                       <Target className="w-5 h-5" />
@@ -928,8 +984,8 @@ function Dashboard({ onNavigate }) {
               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />
           </button>
           
-           {/* --- AJOUT BOUTON CITADELLE --- */}
-          <button onClick={() => onNavigate('citadel')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors relative overflow-hidden">
+           {/* --- BOUTON CITADELLE CORRIGÉ --- */}
+          <button onClick={() => { playSound('citadel'); onNavigate('citadel'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors relative overflow-hidden">
                <div className="absolute inset-0 bg-[#F4D35E]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                <div className="flex items-center gap-4 relative z-10">
                    <div className="p-2 bg-[#F4D35E]/10 rounded-full text-[#F4D35E] border border-[#F4D35E]/20">
@@ -943,8 +999,8 @@ function Dashboard({ onNavigate }) {
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
           </button>
 
-            {/* --- AJOUT BOUTON ACADÉMIE --- */}
-          <button onClick={() => onNavigate('academy')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+            {/* --- BOUTON ACADÉMIE --- */}
+          <button onClick={() => { playSound('click'); onNavigate('academy'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-purple-900/20 rounded-full text-purple-400 border border-purple-500/20">
                       <BookOpen className="w-5 h-5" />
@@ -957,8 +1013,8 @@ function Dashboard({ onNavigate }) {
               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-purple-400 transition-colors" />
           </button>
 
-          {/* BOUTON REGISTRE */}
-          <button onClick={() => onNavigate('debts')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+          {/* BOUTON REGISTRE CORRIGÉ */}
+          <button onClick={() => { playSound('debts'); onNavigate('debts'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-red-900/20 rounded-full text-red-500 border border-red-500/20">
                       <Scroll className="w-5 h-5" />
@@ -974,8 +1030,8 @@ function Dashboard({ onNavigate }) {
               </div>
           </button>
   
-          {/* BOUTON TROPHÉES */}
-          <button onClick={() => onNavigate('trophies')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+          {/* BOUTON TROPHÉES CORRIGÉ */}
+          <button onClick={() => { playSound('trophies'); onNavigate('trophies'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-[#F4D35E]/10 rounded-full text-[#F4D35E] border border-[#F4D35E]/20">
                       <Trophy className="w-5 h-5" />
@@ -988,7 +1044,7 @@ function Dashboard({ onNavigate }) {
               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
           </button>
   
-          {/* CITATION (Désormais bien visible grâce au pb-48) */}
+          {/* CITATION */}
           <div className="text-center pt-4 opacity-60"><p className="text-[10px] text-gray-400 italic">"{dailyQuote.text}"</p></div>
         </div>
   
@@ -1008,7 +1064,7 @@ function Dashboard({ onNavigate }) {
             <button onClick={() => onNavigate('settings')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors"><Settings className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Réglages</span></button>
         </div>
   
-        {/* MODALES INTEGREES (Inchangées) */}
+        {/* MODALES INTEGREES */}
         {isModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Nouvelle Entrée</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5"><button onClick={() => setTransactionType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button><button onClick={() => setTransactionType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button></div>{transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}{transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (<div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Alerte</p><p className="text-gray-300 text-xs mt-1">Coût: <span className="text-white font-bold">{daysLost} jours</span> de survie.</p></div></div>)}<form onSubmit={handleSubmit} className="space-y-5"><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus /><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} /><button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' ? 'bg-white text-black' : 'bg-[#EAB308] text-black'}`}>VALIDER</button></form></div></div>)}
         {isBunkerModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden"><div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div><div className="flex justify-between items-center mb-6"><div className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-400"/><h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave</h2></div><button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="text-center mb-6"><h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2></div><div className="space-y-4"><input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus /><div className="flex gap-3"><button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase">Retrait</button><button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase">Dépôt</button></div></div></div></div>)}
         {showHistory && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in"><div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">{transactions.map(tx => (<div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5"><div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div></div>))}</div></div></div>)}
@@ -1171,7 +1227,7 @@ function DebtsScreen({ onBack }) {
 
     return (
         <PageTransition>
-        <div className="h-[100dvh] w-full max-w-md mx-auto bg-[#0d0d0d] text-gray-200 font-sans flex flex-col relative overflow-hidden">
+        <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col relative overflow-hidden">
             
             {/* 1. EN-TÊTE */}
             <div className="px-5 pt-safe-top mt-4 flex justify-between items-center shrink-0">
