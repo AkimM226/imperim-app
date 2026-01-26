@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2, Terminal, Cpu, AlertOctagon, Binary } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2 } from 'lucide-react';
 
 // ==========================================
 // CONFIGURATION & DONNÉES
@@ -12,7 +12,8 @@ const RELEASE_NOTES = [
         version: "16.0.0",
         title: "Opération Sentinelle",
         desc: "L'Empire est complet.",
-        changes: [            { icon: Radio, text: "Ordres du Jour : 3 missions quotidiennes pour maintenir la discipline." },
+        changes: [
+            { icon: Radio, text: "Ordres du Jour : 3 missions quotidiennes pour maintenir la discipline." },
             { icon: BookOpen, text: "Académie : Base de savoir stratégique." },
             { icon: Shield, text: "Citadelle : Calculateur de survie actif." }
         ]
@@ -190,9 +191,8 @@ function PageTransition({ children }) {
 }
 
 // ==========================================
-// SYSTEME DE SECURITE (VERSION STABLE)
+// SYSTEME DE SECURITE
 // ==========================================
-
 function SecurityGate({ onAccessGranted }) {
     const [code, setCode] = useState("");
     const [error, setError] = useState(false);
@@ -265,10 +265,29 @@ function SecurityGate({ onAccessGranted }) {
     );
 }
 
+function PatchNotesModal({ onAck }) {
+    const note = RELEASE_NOTES[0];
+    return (
+        <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+             <div className="bg-[#151515] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5"><FileText className="w-32 h-32 text-gold" /></div>
+                <div className="relative z-10">
+                     <div className="flex items-center gap-3 mb-6">
+                         <div className="w-10 h-10 bg-gold/10 rounded-full flex items-center justify-center border border-gold/20"><Info className="w-5 h-5 text-gold"/></div>
+                         <div><p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Rapport de Mise à Jour</p><h2 className="text-white font-serif font-bold text-lg">Version {note.version}</h2></div>
+                     </div>
+                     <div className="mb-6"><h3 className="text-gold font-bold text-sm uppercase mb-1">{note.title}</h3><p className="text-gray-400 text-xs italic">{note.desc}</p></div>
+                     <div className="space-y-3 mb-8">{note.changes.map((change, idx) => { const Icon = change.icon; return ( <div key={idx} className="flex gap-3 items-start bg-black/40 p-3 rounded-lg border border-white/5"><Icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" /><p className="text-xs text-gray-200 leading-relaxed">{change.text}</p></div> ) })}</div>
+                     <button onClick={onAck} className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all active:scale-95 shadow-[0_0_20px_rgba(212,175,55,0.2)]">Reçu, Retour au combat</button>
+                </div>
+             </div>
+        </div>
+    );
+}
+
 // ==========================================
 // COMPOSANT: ORDRES DU JOUR (MODAL)
 // ==========================================
-
 function OrdersModal({ onClose }) {
     const [missions, setMissions] = useState([]);
     const [progress, setProgress] = useState(0);
@@ -359,9 +378,8 @@ function OrdersModal({ onClose }) {
 }
 
 // ==========================================
-// APP PRINCIPALE & NAVIGATION (VERSION STABLE)
+// APP PRINCIPALE & NAVIGATION
 // ==========================================
-
 export default function App() {
     const [loading, setLoading] = useState(true);
     const [hasOnboarded, setHasOnboarded] = useState(false);
@@ -369,12 +387,8 @@ export default function App() {
   
     useEffect(() => { 
         const timer = setTimeout(() => { setLoading(false); }, 2500); 
-        try {
-            setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
-            setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); 
-        } catch (e) {
-            console.error("Erreur lecture", e);
-        }
+        setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
+        setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); 
         return () => clearTimeout(timer); 
     }, []);
   
@@ -383,9 +397,9 @@ export default function App() {
     if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
     
     return <MainOS />;
-}
+  }
   
-function MainOS() {
+  function MainOS() {
     const [currentView, setCurrentView] = useState('dashboard');
     const [showPatchNotes, setShowPatchNotes] = useState(false);
     
@@ -402,8 +416,10 @@ function MainOS() {
       <>
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
           
+          {/* Le Dashboard gère sa propre navigation interne via le menu du bas */}
           {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
           
+          {/* Les autres écrans ont un bouton retour */}
           {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
@@ -416,7 +432,7 @@ function MainOS() {
           {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
       </>
     );
-}
+  }
   
 // ==========================================
 // 1. ONBOARDING (CONFIG + TUTORIEL)
@@ -1916,15 +1932,6 @@ function SettingsScreen({ onBack }) {
                     </div>
                     
                     <div className="pt-10 border-t border-white/5">
-                    <button 
-                            onClick={() => { 
-                                localStorage.removeItem('imperium_license'); 
-                                window.location.reload(); 
-                            }} 
-                            className="w-full flex items-center justify-center gap-2 text-[#F4D35E] hover:text-white text-xs uppercase tracking-widest py-4 bg-[#F4D35E]/5 hover:bg-[#F4D35E]/10 border border-[#F4D35E]/20 rounded-lg transition-colors"
-                        >
-                            <Lock className="w-4 h-4" /> Verrouiller (Relogin)
-                        </button>
                         <button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button>
                     </div>
                 </div>
