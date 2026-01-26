@@ -1,61 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart } from 'lucide-react';
-
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2, Terminal, Cpu, AlertOctagon, Binary } from 'lucide-react';
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
 
-const APP_VERSION = "15.0.0-Citadel"; 
+const APP_VERSION = "16.0.0-Ultimate"; 
 
 const RELEASE_NOTES = [
     {
-        version: "15.0.0",
-        title: "La Citadelle",
-        desc: "Module de survie activé.",
+        version: "16.0.0",
+        title: "Opération Sentinelle",
+        desc: "L'Empire est complet.",
         changes: [
-            { icon: Shield, text: "Simulateur de Survie : Calculez votre autonomie financière réelle." },
-            { icon: LayoutGrid, text: "Optimisation du Dashboard." }
+            { icon: Radio, text: "Ordres du Jour : 3 missions quotidiennes pour maintenir la discipline." },
+            { icon: BookOpen, text: "Académie : Base de savoir stratégique." },
+            { icon: Shield, text: "Citadelle : Calculateur de survie actif." }
         ]
     }
 ];
 
 const TUTORIAL_STEPS = [
-    {
-        title: "BIENVENUE, COMMANDANT",
-        text: "La configuration est terminée. Imperium est votre poste de commandement. Ici, la discipline est votre seule arme contre la ruine.",
-        icon: Shield
-    },
-    {
-        title: "LE SOLDE VIRTUEL",
-        text: "Le chiffre central est votre 'Solde Disponible'. Ce n'est pas juste un nombre, c'est votre puissance de frappe réelle (Cash + Orange Money). S'il est positif, vous survivez.",
-        icon: PiggyBank
-    },
-    {
-        title: "LA STRATÉGIE WAVE",
-        text: "Votre compte Wave est votre 'Bunker'. C'est une réserve intouchable. L'application sépare visuellement votre argent de poche (Cash) de votre épargne de sécurité (Wave).",
-        icon: Smartphone
-    },
-    {
-        title: "LA CITADELLE",
-        text: "Nouveau module : Vérifiez combien de temps votre Empire peut tenir sans aucun revenu grâce au simulateur de survie.",
-        icon: Castle
-    },
-    {
-        title: "LE REGISTRE",
-        text: "Ne laissez aucune dette traîner. Le Registre traque ce que vous devez (Tributs) et ce qu'on vous doit (Butin). Un Empire solide ne laisse personne oublier ses dettes.",
-        icon: Scroll
-    },
-    {
-        title: "LES CIBLES",
-        text: "Une Cible est un objectif de conquête (achat important). Quand vous allouez de l'argent à une cible, il est 'verrouillé' et retiré du solde disponible pour vous empêcher de le gaspiller.",
-        icon: Target
-    },
-    {
-        title: "ARCHIVES (SAUVEGARDE)",
-        text: "L'Empire ne meurt jamais. Dans les Paramètres, générez un code d'exportation régulièrement. Il permet de restaurer votre progression sur n'importe quel appareil.",
-        icon: Save
-    }
+    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement. Ici, la discipline est votre seule arme.", icon: Shield },
+    { title: "LE SOLDE VIRTUEL", text: "Le chiffre central est votre Cash réel. S'il est positif, vous survivez.", icon: PiggyBank },
+    { title: "LA STRATÉGIE WAVE", text: "Wave est votre Bunker (Épargne). Ne touchez jamais à cet argent sans raison vitale.", icon: Smartphone },
+    { title: "LES ORDRES", text: "Chaque matin, recevez 3 missions. Accomplissez-les pour renforcer votre discipline.", icon: Radio },
+    { title: "LA CITADELLE", text: "Vérifiez votre temps de survie estimé si tous vos revenus s'arrêtent.", icon: Castle },
 ];
+
 const VALID_HASHES = [
     "SU1QLUFMUEhBLTc3", "SU1QLUJSQVZPLTg4", "SU1QLUNIQVJMSUUtOTk=", "SU1QLURFTEVULTEw", 
     "SU1QLRUNITy0yMA==", "SU1QLUZPWFRST1QtMzA=", "SU1QLUdPTEYtNDA=", "SU1QLUhPVEVMLTUw", 
@@ -126,43 +97,26 @@ const BUSINESS_IDEAS = {
   'montage': { title: 'Vidéos TikTok/Reels', price: 40, task: 'Monte des vidéos dynamiques pour un influenceur local.' },
   'ia': { title: 'Formation ChatGPT', price: 80, task: 'Forme une petite équipe à utiliser l\'IA pour gagner du temps.' },
 };
+
 const KNOWLEDGE_BASE = [
-    { 
-        id: 'k1', 
-        title: "La Règle 50/30/20", 
-        subtitle: "Logistique de Base", 
-        icon: PieChart, 
-        content: "Pour qu'un Empire tienne, les ressources doivent être divisées avec rigueur :\n\n• 50% NÉCESSITÉS (Survie) : Loyer, Manger, Électricité. C'est le socle.\n• 30% FUTILITÉS (Moral) : Plaisirs, Sorties. C'est pour garder le moral des troupes. Si vous coupez tout, vous craquerez.\n• 20% BUNKER (Épargne) : C'est votre assurance vie. Cet argent ne doit jamais être touché sauf en cas de guerre totale." 
-    },
-    { 
-        id: 'k2', 
-        title: "L'Effet Boule de Neige", 
-        subtitle: "Intérêts Composés", 
-        icon: TrendingUp, 
-        content: "L'argent doit travailler, pas dormir. C'est ce qu'on appelle 'l'Intérêt Composé'.\n\nImaginez que chaque pièce d'or recrute un soldat, et que ce soldat recrute à son tour.\nAu début, c'est lent. Mais après 10 ans, votre armée grandit toute seule.\n\nAction : Placez votre Bunker sur un compte qui rapporte (DAT, Assurance Vie, Crypto Stable, Bourse), ne le laissez pas sous le matelas." 
-    },
-    { 
-        id: 'k3', 
-        title: "La Guerre des Prix", 
-        subtitle: "Négociation", 
-        icon: Sword, 
-        content: "Le prix affiché est une proposition, pas une loi. Un bon commandant ne paie jamais le prix fort sans combattre.\n\nTechnique du Silence : Annoncez votre prix. Si le vendeur refuse, taisez-vous et regardez-le dans les yeux. Le malaise le fera souvent baisser.\n\nChaque pièce économisée est une munition pour votre propre Empire." 
-    },
-    { 
-        id: 'k4', 
-        title: "Le Fonds d'Urgence", 
-        subtitle: "Défense Absolue", 
-        icon: Shield, 
-        content: "Avant d'attaquer (investir), il faut savoir défendre.\n\nVotre priorité absolue est d'avoir 3 mois de survie dans votre Bunker (voir module Citadelle).\nPourquoi ? Parce que si vous perdez votre source de revenu et que vous n'avez pas de réserve, vous devrez accepter n'importe quel travail d'esclave pour survivre.\n\nL'épargne, c'est la liberté de dire 'NON'." 
-    },
-    { 
-        id: 'k5', 
-        title: "Dette : L'Ennemi Intérieur", 
-        subtitle: "Gestion du Passif", 
-        icon: UserMinus, 
-        content: "Il y a deux types de dettes :\n\n1. La Dette Toxique : Emprunter pour du passif (téléphone, vêtements, fêtes). C'est se mettre les menottes soi-même.\n2. La Dette Stratégique : Emprunter pour investir (immobilier, commerce). C'est utiliser l'argent des autres pour s'enrichir.\n\nÉliminez toute dette toxique sans pitié avant de songer à l'expansion." 
-    }
+    { id: 'k1', title: "La Règle 50/30/20", subtitle: "Logistique de Base", icon: PieChart, content: "Pour qu'un Empire tienne, les ressources doivent être divisées avec rigueur :\n\n• 50% NÉCESSITÉS (Survie) : Loyer, Manger, Électricité. C'est le socle.\n• 30% FUTILITÉS (Moral) : Plaisirs, Sorties. C'est pour garder le moral des troupes. Si vous coupez tout, vous craquerez.\n• 20% BUNKER (Épargne) : C'est votre assurance vie. Cet argent ne doit jamais être touché sauf en cas de guerre totale." },
+    { id: 'k2', title: "L'Effet Boule de Neige", subtitle: "Intérêts Composés", icon: TrendingUp, content: "L'argent doit travailler, pas dormir. C'est ce qu'on appelle 'l'Intérêt Composé'.\n\nImaginez que chaque pièce d'or recrute un soldat, et que ce soldat recrute à son tour.\nAu début, c'est lent. Mais après 10 ans, votre armée grandit toute seule.\n\nAction : Placez votre Bunker sur un compte qui rapporte (DAT, Assurance Vie, Crypto Stable, Bourse), ne le laissez pas sous le matelas." },
+    { id: 'k3', title: "La Guerre des Prix", subtitle: "Négociation", icon: Sword, content: "Le prix affiché est une proposition, pas une loi. Un bon commandant ne paie jamais le prix fort sans combattre.\n\nTechnique du Silence : Annoncez votre prix. Si le vendeur refuse, taisez-vous et regardez-le dans les yeux. Le malaise le fera souvent baisser.\n\nChaque pièce économisée est une munition pour votre propre Empire." },
+    { id: 'k4', title: "Le Fonds d'Urgence", subtitle: "Défense Absolue", icon: Shield, content: "Avant d'attaquer (investir), il faut savoir défendre.\n\nVotre priorité absolue est d'avoir 3 mois de survie dans votre Bunker (voir module Citadelle).\nPourquoi ? Parce que si vous perdez votre source de revenu et que vous n'avez pas de réserve, vous devrez accepter n'importe quel travail d'esclave pour survivre.\n\nL'épargne, c'est la liberté de dire 'NON'." },
+    { id: 'k5', title: "Dette : L'Ennemi Intérieur", subtitle: "Gestion du Passif", icon: UserMinus, content: "Il y a deux types de dettes :\n\n1. La Dette Toxique : Emprunter pour du passif (téléphone, vêtements, fêtes). C'est se mettre les menottes soi-même.\n2. La Dette Stratégique : Emprunter pour investir (immobilier, commerce). C'est utiliser l'argent des autres pour s'enrichir.\n\nÉliminez toute dette toxique sans pitié avant de songer à l'expansion." }
 ];
+
+const DAILY_MISSIONS_POOL = [
+    { id: 'm1', text: "Silence Radio : Aucune dépense 'Futilité' aujourd'hui.", type: 'discipline' },
+    { id: 'm2', text: "Ravitaillement : Verser un montant symbolique au Bunker.", type: 'savings' },
+    { id: 'm3', text: "Inspection : Vérifier le registre des dettes.", type: 'admin' },
+    { id: 'm4', text: "Renseignement : Lire une fiche de l'Académie.", type: 'learning' },
+    { id: 'm5', text: "Négociation : Essayer de baisser un prix aujourd'hui.", type: 'action' },
+    { id: 'm6', text: "Cartographie : Analyser la courbe de puissance (Stats).", type: 'admin' },
+    { id: 'm7', text: "Privation : Boire de l'eau au lieu d'une boisson payante.", type: 'discipline' },
+    { id: 'm8', text: "Stratégie : Mettre à jour l'avancement d'un Projet.", type: 'admin' }
+];
+
 const getRank = (balance, currency) => {
   let points = balance;
   if (currency.includes('FCFA')) points = balance / 650;
@@ -236,9 +190,10 @@ function PageTransition({ children }) {
 }
 
 // ==========================================
-// SYSTEME DE SECURITE
+// SYSTEME DE SECURITE (MODIFIÉ)
 // ==========================================
-function SecurityGate({ onAccessGranted }) {
+
+function SecurityGate({ onAccessGranted, onAdminAccess }) {
     const [code, setCode] = useState("");
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -250,7 +205,13 @@ function SecurityGate({ onAccessGranted }) {
 
         setTimeout(() => {
             const inputHash = btoa(code.trim().toUpperCase());
-            if (VALID_HASHES.includes(inputHash)) {
+            
+            // CODE MAITRE : IMPERATOR-X
+            if (inputHash === "SU1QRVJBVE9SLVg=") {
+                onAdminAccess(); // <-- Déclenche le mode Admin
+            } 
+            // CODES UTILISATEURS NORMAUX
+            else if (VALID_HASHES.includes(inputHash)) {
                 localStorage.setItem('imperium_license', 'GRANTED_V1');
                 onAccessGranted();
             } else {
@@ -310,33 +271,107 @@ function SecurityGate({ onAccessGranted }) {
     );
 }
 
-function PatchNotesModal({ onAck }) {
-    const note = RELEASE_NOTES[0];
+// ==========================================
+// COMPOSANT: ORDRES DU JOUR (MODAL)
+// ==========================================
+function OrdersModal({ onClose }) {
+    const [missions, setMissions] = useState([]);
+    const [progress, setProgress] = useState(0);
+
+    // Initialisation et Génération Quotidienne
+    useEffect(() => {
+        const todayStr = new Date().toLocaleDateString('fr-FR');
+        const savedDate = localStorage.getItem('imperium_missions_date');
+        const savedMissions = JSON.parse(localStorage.getItem('imperium_missions') || "[]");
+
+        if (savedDate !== todayStr) {
+            // C'est un nouveau jour : On génère 3 nouvelles missions aléatoires
+            const shuffled = [...DAILY_MISSIONS_POOL].sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 3).map(m => ({ ...m, done: false }));
+            setMissions(selected);
+            localStorage.setItem('imperium_missions', JSON.stringify(selected));
+            localStorage.setItem('imperium_missions_date', todayStr);
+        } else {
+            // C'est le même jour : On charge les missions existantes
+            setMissions(savedMissions);
+        }
+    }, []);
+
+    // Mise à jour de la progression
+    useEffect(() => {
+        if (missions.length > 0) {
+            const doneCount = missions.filter(m => m.done).length;
+            setProgress(Math.round((doneCount / missions.length) * 100));
+        }
+    }, [missions]);
+
+    const toggleMission = (id) => {
+        const updated = missions.map(m => m.id === id ? { ...m, done: !m.done } : m);
+        setMissions(updated);
+        localStorage.setItem('imperium_missions', JSON.stringify(updated));
+    };
+
     return (
-        <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-             <div className="bg-[#151515] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><FileText className="w-32 h-32 text-gold" /></div>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+            <div className="bg-[#151515] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                {/* DÉCORATION D'ARRIÈRE PLAN */}
+                <div className="absolute top-0 right-0 p-4 opacity-5"><Radio className="w-32 h-32 text-white" /></div>
+                
                 <div className="relative z-10">
-                     <div className="flex items-center gap-3 mb-6">
-                         <div className="w-10 h-10 bg-gold/10 rounded-full flex items-center justify-center border border-gold/20"><Info className="w-5 h-5 text-gold"/></div>
-                         <div><p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Rapport de Mise à Jour</p><h2 className="text-white font-serif font-bold text-lg">Version {note.version}</h2></div>
-                     </div>
-                     <div className="mb-6"><h3 className="text-gold font-bold text-sm uppercase mb-1">{note.title}</h3><p className="text-gray-400 text-xs italic">{note.desc}</p></div>
-                     <div className="space-y-3 mb-8">{note.changes.map((change, idx) => { const Icon = change.icon; return ( <div key={idx} className="flex gap-3 items-start bg-black/40 p-3 rounded-lg border border-white/5"><Icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" /><p className="text-xs text-gray-200 leading-relaxed">{change.text}</p></div> ) })}</div>
-                     <button onClick={onAck} className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all active:scale-95 shadow-[0_0_20px_rgba(212,175,55,0.2)]">Reçu, Retour au combat</button>
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-orange-900/20 rounded-full text-orange-500 border border-orange-500/20">
+                                <Radio className="w-6 h-6 animate-pulse" />
+                            </div>
+                            <div>
+                                <h2 className="text-white font-serif font-bold text-lg">Ordres du Jour</h2>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest">Priorité Absolue</p>
+                            </div>
+                        </div>
+                        <button onClick={onClose}><X className="w-6 h-6 text-gray-500 hover:text-white" /></button>
+                    </div>
+
+                    {/* BARRE DE PROGRESSION */}
+                    <div className="mb-6">
+                        <div className="flex justify-between text-xs mb-2">
+                            <span className="text-gray-400">Progression</span>
+                            <span className={progress === 100 ? "text-green-500 font-bold" : "text-white"}>{progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-900 rounded-full h-2">
+                            <div className={`h-2 rounded-full transition-all duration-500 ${progress === 100 ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-orange-500'}`} style={{ width: `${progress}%` }}></div>
+                        </div>
+                    </div>
+
+                    {/* LISTE DES MISSIONS */}
+                    <div className="space-y-3 mb-6">
+                        {missions.map((m, idx) => (
+                            <div key={idx} onClick={() => toggleMission(m.id)} className={`p-4 rounded-xl border flex items-start gap-3 cursor-pointer transition-all active:scale-[0.98] ${m.done ? 'bg-green-900/10 border-green-500/30' : 'bg-[#1a1a1a] border-white/5 hover:border-white/20'}`}>
+                                <div className={`mt-0.5 ${m.done ? 'text-green-500' : 'text-gray-600'}`}>
+                                    {m.done ? <CheckCircle2 className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                                </div>
+                                <p className={`text-sm leading-tight ${m.done ? 'text-gray-500 line-through' : 'text-gray-200'}`}>{m.text}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button onClick={onClose} className={`w-full font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs transition-all ${progress === 100 ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-white/10 text-gray-400 hover:bg-white/20'}`}>
+                        {progress === 100 ? "Mission Accomplie" : "Retour au Combat"}
+                    </button>
                 </div>
-             </div>
+            </div>
         </div>
     );
 }
+
 // ==========================================
-// APP PRINCIPALE & NAVIGATION
+// APP PRINCIPALE & NAVIGATION (MODIFIÉ)
 // ==========================================
 export default function App() {
     const [loading, setLoading] = useState(true);
     const [hasOnboarded, setHasOnboarded] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false); 
-  
+    const [adminMode, setAdminMode] = useState(false); // <-- NOUVEAU
+
     useEffect(() => { 
         const timer = setTimeout(() => { setLoading(false); }, 2500); 
         setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
@@ -345,33 +380,38 @@ export default function App() {
     }, []);
   
     if (loading) return <SplashScreen />;
-    if (!isAuthorized) return <SecurityGate onAccessGranted={() => setIsAuthorized(true)} />;
-    if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
     
-    return <MainOS />;
-  }
+    // Si on n'est pas autorisé ET qu'on n'est pas en mode Admin temporaire
+    if (!isAuthorized && !adminMode) {
+        return <SecurityGate 
+            onAccessGranted={() => setIsAuthorized(true)} 
+            onAdminAccess={() => { setAdminMode(true); setIsAuthorized(true); }} // <-- Activation Admin
+        />;
+    }
+
+    if (!hasOnboarded && !adminMode) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
+    
+    return <MainOS isAdmin={adminMode} />; // <-- On passe l'info à MainOS
+}
   
-  function MainOS() {
-    const [currentView, setCurrentView] = useState('dashboard');
+function MainOS({ isAdmin }) { // <-- On récupère l'info
+    const [currentView, setCurrentView] = useState(isAdmin ? 'imperator' : 'dashboard'); // <-- Si Admin, direct Console
     const [showPatchNotes, setShowPatchNotes] = useState(false);
     
-    // Fonction de navigation principale
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
     
     useEffect(() => { 
         const lastVersion = localStorage.getItem('imperium_version');
-        if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
-    }, []);
+        if (lastVersion !== APP_VERSION && !isAdmin) { setTimeout(() => setShowPatchNotes(true), 500); }
+    }, [isAdmin]);
+
     const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
   
     return (
       <>
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
           
-          {/* Le Dashboard gère sa propre navigation interne via le menu du bas */}
           {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
-          
-          {/* Les autres écrans ont un bouton retour */}
           {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
@@ -382,9 +422,12 @@ export default function App() {
           {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'academy' && <AcademyScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
+          
+          {/* L'ECRAN CACHÉ */}
+          {currentView === 'imperator' && <ImperatorScreen onBack={() => window.location.reload()} />} 
       </>
     );
-  }
+}
   
 // ==========================================
 // 1. ONBOARDING (CONFIG + TUTORIEL)
@@ -501,6 +544,7 @@ function Dashboard({ onNavigate }) {
     const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [showTaxModal, setShowTaxModal] = useState(false);
+    const [showOrders, setShowOrders] = useState(false);
     const [pendingTransaction, setPendingTransaction] = useState(null);
   
     // SAISIE
@@ -730,21 +774,40 @@ function Dashboard({ onNavigate }) {
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 relative z-10" />
           </div>
   
-          {/* GRILLE 2x2 */}
+          {/* GRILLE D'ACTIONS RAPIDES */}
           <div className="grid grid-cols-2 gap-3 mb-2">
               <button onClick={() => onNavigate('project')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
                   <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Projets</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
               </button>
+              
+              <button onClick={() => setShowOrders(true)} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98] relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-2"><Radio className="w-12 h-12 text-orange-500/10 -rotate-12"/></div>
+                   <Radio className="w-6 h-6 text-orange-500 mb-3 opacity-90 relative z-10" />
+                   <h3 className="text-sm font-bold text-white relative z-10">Ordres</h3>
+                   <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Missions du Jour</p>
+              </button>
+
               <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
                   <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Arsenal</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Compétences</p>
-              </button>
-              <button onClick={() => onNavigate('goals')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                  <Target className="w-6 h-6 text-blue-400 mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Cibles</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Objectifs</p>
               </button>
               <button onClick={() => onNavigate('protocols')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
                   <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Protocole</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
               </button>
           </div>
+          
+          {/* BOUTON CIBLES */}
+           <button onClick={() => onNavigate('goals')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mb-2 group hover:bg-[#222] transition-colors">
+              <div className="flex items-center gap-4">
+                  <div className="p-2 bg-blue-900/20 rounded-full text-blue-400 border border-blue-500/20">
+                      <Target className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                      <h3 className="text-sm font-bold text-white">Cibles</h3>
+                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Objectifs d'Achat</p>
+                  </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />
+          </button>
           
            {/* --- AJOUT BOUTON CITADELLE --- */}
           <button onClick={() => onNavigate('citadel')} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors relative overflow-hidden">
@@ -831,6 +894,7 @@ function Dashboard({ onNavigate }) {
         {isBunkerModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden"><div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div><div className="flex justify-between items-center mb-6"><div className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-400"/><h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave</h2></div><button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="text-center mb-6"><h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2></div><div className="space-y-4"><input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus /><div className="flex gap-3"><button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase">Retrait</button><button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase">Dépôt</button></div></div></div></div>)}
         {showHistory && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in"><div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">{transactions.map(tx => (<div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5"><div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div></div>))}</div></div></div>)}
         {showTaxModal && pendingTransaction && (<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in"><div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center"><h3 className="text-[#F4D35E] font-serif text-xl font-bold mb-4">Impôt Impérial (20%)</h3><p className="text-gray-400 text-sm mb-6">Sécuriser une partie de ce revenu dans Wave ?</p><div className="flex gap-3 w-full"><button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase">Non (0%)</button><button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-[#F4D35E] text-black text-xs font-bold uppercase">Oui (20%)</button></div></div></div>)}
+        {showOrders && <OrdersModal onClose={() => setShowOrders(false)} />}
       </div>
       </PageTransition>
     );
@@ -1745,6 +1809,135 @@ function AcademyScreen({ onBack }) {
         </PageTransition>
     );
 }
+// ==========================================
+// 11. CONSOLE IMPERATOR (ADMIN ROOT)
+// ==========================================
+function ImperatorScreen({ onBack }) {
+    // États locaux pour les modifications
+    const [rawBalance, setRawBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+    const [rawBunker, setRawBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
+    const [jsonExport, setJsonExport] = useState("");
+
+    // --- FONCTIONS DE DIEU ---
+
+    // 1. Force Majeure : Modification directe sans historique
+    const forceUpdate = () => {
+        if (confirm("⚠️ ATTENTION : Modification directe de la réalité financière. Confirmer ?")) {
+            localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(rawBalance)));
+            localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(rawBunker)));
+            alert("RÉALITÉ MODIFIÉE.");
+            window.location.reload();
+        }
+    };
+
+    // 2. Voyage Temporel : Reset des missions du jour
+    const timeTravel = () => {
+        localStorage.removeItem('imperium_missions_date');
+        alert("TEMPS RÉINITIALISÉ. De nouvelles missions seront générées au rechargement.");
+        window.location.reload();
+    };
+
+    // 3. Amnistie Partielle : Effacer l'historique (Garder le solde)
+    const clearHistory = () => {
+        if (confirm("CONFIRMER : Effacer tout l'historique des transactions ? Le solde actuel sera conservé.")) {
+            localStorage.setItem('imperium_transactions', "[]");
+            alert("HISTOIRE EFFACÉE.");
+            window.location.reload();
+        }
+    };
+
+    // 4. Reset Dettes : Effacer le registre
+    const wipeDebts = () => {
+        if (confirm("CONFIRMER : Annuler toutes les dettes et créances ?")) {
+            localStorage.setItem('imperium_debts', "[]");
+            alert("REGISTRE PURIFIÉ.");
+            window.location.reload();
+        }
+    };
+
+    // 5. Dump Mémoire (Voir tout le JSON)
+    const dumpMemory = () => {
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if(key.startsWith('imperium_')) {
+                data[key] = localStorage.getItem(key);
+            }
+        }
+        setJsonExport(JSON.stringify(data, null, 2));
+    };
+
+    return (
+        <PageTransition>
+            <div className="h-[100dvh] w-full max-w-md mx-auto bg-black text-green-500 font-mono flex flex-col overflow-hidden border-x-2 border-green-900/30">
+                {/* HEADER TYPE TERMINAL */}
+                <div className="shrink-0 px-5 py-4 border-b border-green-900/50 pt-16 z-10 bg-black">
+                    <button onClick={onBack} className="flex items-center gap-2 text-green-700 hover:text-green-400 mb-4 mt-2 uppercase text-[10px] tracking-widest">
+                        <ArrowLeft className="w-3 h-3" /> Deconnexion Root
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <Terminal className="w-6 h-6 animate-pulse" />
+                        <h1 className="text-xl font-bold tracking-widest">CONSOLE IMPERATOR</h1>
+                    </div>
+                    <p className="text-[10px] text-green-800 mt-1 uppercase">v{APP_VERSION} // ROOT ACCESS GRANTED</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar space-y-8">
+                    
+                    {/* SECTION 1 : FORCE MAJEURE */}
+                    <div className="border border-green-900/50 p-4 rounded bg-green-900/5">
+                        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2 border-b border-green-900/50 pb-2">
+                            <Cpu className="w-4 h-4"/> Modification Réalité
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[9px] uppercase opacity-70">Cash Disponible (Override)</label>
+                                <input type="number" value={rawBalance} onChange={(e) => setRawBalance(e.target.value)} className="w-full bg-black border border-green-800 p-2 text-green-400 focus:outline-none focus:border-green-500 font-mono" />
+                            </div>
+                            <div>
+                                <label className="text-[9px] uppercase opacity-70">Bunker Wave (Override)</label>
+                                <input type="number" value={rawBunker} onChange={(e) => setRawBunker(e.target.value)} className="w-full bg-black border border-green-800 p-2 text-green-400 focus:outline-none focus:border-green-500 font-mono" />
+                            </div>
+                            <button onClick={forceUpdate} className="w-full bg-green-900/20 hover:bg-green-500 hover:text-black border border-green-500 text-green-500 py-2 text-xs uppercase transition-colors">
+                                Injecter les nouvelles valeurs
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* SECTION 2 : OUTILS DEBUG */}
+                    <div className="border border-green-900/50 p-4 rounded bg-green-900/5">
+                        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2 border-b border-green-900/50 pb-2">
+                            <AlertOctagon className="w-4 h-4"/> Outils de Crise
+                        </h3>
+                        <div className="grid grid-cols-1 gap-3">
+                            <button onClick={timeTravel} className="text-left px-3 py-2 border border-green-900 hover:bg-green-900/20 text-xs flex items-center gap-2">
+                                <Clock className="w-3 h-3"/> Reset "Ordres du Jour" (Debug)
+                            </button>
+                            <button onClick={clearHistory} className="text-left px-3 py-2 border border-green-900 hover:bg-green-900/20 text-xs flex items-center gap-2">
+                                <Trash2 className="w-3 h-3"/> Purger l'Historique (Keep $$)
+                            </button>
+                            <button onClick={wipeDebts} className="text-left px-3 py-2 border border-green-900 hover:bg-green-900/20 text-xs flex items-center gap-2">
+                                <FileText className="w-3 h-3"/> Amnistie (Effacer Dettes)
+                            </button>
+                        </div>
+                    </div>
+
+                     {/* SECTION 3 : DUMP */}
+                     <div className="border border-green-900/50 p-4 rounded bg-green-900/5">
+                        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2 border-b border-green-900/50 pb-2">
+                            <Binary className="w-4 h-4"/> Dump Mémoire
+                        </h3>
+                        <button onClick={dumpMemory} className="w-full mb-3 bg-black border border-green-800 py-1 text-[10px] uppercase hover:bg-green-900/20">Extraire Données Brutes</button>
+                        {jsonExport && (
+                            <textarea readOnly value={jsonExport} className="w-full h-32 bg-black border border-green-900/50 p-2 text-[8px] text-green-600 font-mono focus:outline-none" onClick={(e) => e.target.select()}></textarea>
+                        )}
+                    </div>
+
+                </div>
+            </div>
+        </PageTransition>
+    );
+}
 
 function SettingsScreen({ onBack }) { 
     const [importData, setImportData] = useState("");
@@ -1863,6 +2056,15 @@ function SettingsScreen({ onBack }) {
                     </div>
                     
                     <div className="pt-10 border-t border-white/5">
+                    <button 
+                            onClick={() => { 
+                                localStorage.removeItem('imperium_license'); 
+                                window.location.reload(); 
+                            }} 
+                            className="w-full flex items-center justify-center gap-2 text-[#F4D35E] hover:text-white text-xs uppercase tracking-widest py-4 bg-[#F4D35E]/5 hover:bg-[#F4D35E]/10 border border-[#F4D35E]/20 rounded-lg transition-colors"
+                        >
+                            <Lock className="w-4 h-4" /> Verrouiller (Relogin)
+                        </button>
                         <button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button>
                     </div>
                 </div>
