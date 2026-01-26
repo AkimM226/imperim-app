@@ -2056,15 +2056,6 @@ function SettingsScreen({ onBack }) {
                     </div>
                     
                     <div className="pt-10 border-t border-white/5">
-                    <button 
-                            onClick={() => { 
-                                localStorage.removeItem('imperium_license'); 
-                                window.location.reload(); 
-                            }} 
-                            className="w-full flex items-center justify-center gap-2 text-[#F4D35E] hover:text-white text-xs uppercase tracking-widest py-4 bg-[#F4D35E]/5 hover:bg-[#F4D35E]/10 border border-[#F4D35E]/20 rounded-lg transition-colors"
-                        >
-                            <Lock className="w-4 h-4" /> Verrouiller (Relogin)
-                        </button>
                         <button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button>
                     </div>
                 </div>
