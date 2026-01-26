@@ -12,8 +12,7 @@ const RELEASE_NOTES = [
         version: "16.0.0",
         title: "Opération Sentinelle",
         desc: "L'Empire est complet.",
-        changes: [
-            { icon: Radio, text: "Ordres du Jour : 3 missions quotidiennes pour maintenir la discipline." },
+        changes: [            { icon: Radio, text: "Ordres du Jour : 3 missions quotidiennes pour maintenir la discipline." },
             { icon: BookOpen, text: "Académie : Base de savoir stratégique." },
             { icon: Shield, text: "Citadelle : Calculateur de survie actif." }
         ]
@@ -191,10 +190,10 @@ function PageTransition({ children }) {
 }
 
 // ==========================================
-// SYSTEME DE SECURITE (MODIFIÉ)
+// SYSTEME DE SECURITE (VERSION STABLE)
 // ==========================================
 
-function SecurityGate({ onAccessGranted, onAdminAccess }) {
+function SecurityGate({ onAccessGranted }) {
     const [code, setCode] = useState("");
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -206,13 +205,7 @@ function SecurityGate({ onAccessGranted, onAdminAccess }) {
 
         setTimeout(() => {
             const inputHash = btoa(code.trim().toUpperCase());
-            
-            // CODE MAITRE : IMPERATOR-X
-            if (inputHash === "SU1QRVJBVE9SLVg=") {
-                onAdminAccess(); // <-- Déclenche le mode Admin
-            } 
-            // CODES UTILISATEURS NORMAUX
-            else if (VALID_HASHES.includes(inputHash)) {
+            if (VALID_HASHES.includes(inputHash)) {
                 localStorage.setItem('imperium_license', 'GRANTED_V1');
                 onAccessGranted();
             } else {
@@ -275,6 +268,7 @@ function SecurityGate({ onAccessGranted, onAdminAccess }) {
 // ==========================================
 // COMPOSANT: ORDRES DU JOUR (MODAL)
 // ==========================================
+
 function OrdersModal({ onClose }) {
     const [missions, setMissions] = useState([]);
     const [progress, setProgress] = useState(0);
@@ -365,47 +359,43 @@ function OrdersModal({ onClose }) {
 }
 
 // ==========================================
-// APP PRINCIPALE & NAVIGATION (MODIFIÉ)
+// APP PRINCIPALE & NAVIGATION (VERSION STABLE)
 // ==========================================
+
 export default function App() {
     const [loading, setLoading] = useState(true);
     const [hasOnboarded, setHasOnboarded] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false); 
-    const [adminMode, setAdminMode] = useState(false); // <-- NOUVEAU
-
+  
     useEffect(() => { 
         const timer = setTimeout(() => { setLoading(false); }, 2500); 
-        setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
-        setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); 
+        try {
+            setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
+            setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); 
+        } catch (e) {
+            console.error("Erreur lecture", e);
+        }
         return () => clearTimeout(timer); 
     }, []);
   
     if (loading) return <SplashScreen />;
+    if (!isAuthorized) return <SecurityGate onAccessGranted={() => setIsAuthorized(true)} />;
+    if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
     
-    // Si on n'est pas autorisé ET qu'on n'est pas en mode Admin temporaire
-    if (!isAuthorized && !adminMode) {
-        return <SecurityGate 
-            onAccessGranted={() => setIsAuthorized(true)} 
-            onAdminAccess={() => { setAdminMode(true); setIsAuthorized(true); }} // <-- Activation Admin
-        />;
-    }
-
-    if (!hasOnboarded && !adminMode) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
-    
-    return <MainOS isAdmin={adminMode} />; // <-- On passe l'info à MainOS
+    return <MainOS />;
 }
   
-function MainOS({ isAdmin }) { // <-- On récupère l'info
-    const [currentView, setCurrentView] = useState(isAdmin ? 'imperator' : 'dashboard'); // <-- Si Admin, direct Console
+function MainOS() {
+    const [currentView, setCurrentView] = useState('dashboard');
     const [showPatchNotes, setShowPatchNotes] = useState(false);
     
+    // Fonction de navigation principale
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
     
     useEffect(() => { 
         const lastVersion = localStorage.getItem('imperium_version');
-        if (lastVersion !== APP_VERSION && !isAdmin) { setTimeout(() => setShowPatchNotes(true), 500); }
-    }, [isAdmin]);
-
+        if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
+    }, []);
     const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
   
     return (
@@ -413,6 +403,7 @@ function MainOS({ isAdmin }) { // <-- On récupère l'info
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
           
           {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
+          
           {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
@@ -423,9 +414,6 @@ function MainOS({ isAdmin }) { // <-- On récupère l'info
           {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'academy' && <AcademyScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
-          
-          {/* L'ECRAN CACHÉ */}
-          {currentView === 'imperator' && <ImperatorScreen onBack={() => window.location.reload()} />} 
       </>
     );
 }
@@ -1807,135 +1795,6 @@ function AcademyScreen({ onBack }) {
                     </div>
                 </div>
             )}
-        </PageTransition>
-    );
-}
-// ==========================================
-// 11. CONSOLE IMPERATOR (ADMIN ROOT)
-// ==========================================
-function ImperatorScreen({ onBack }) {
-    // États locaux pour les modifications
-    const [rawBalance, setRawBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
-    const [rawBunker, setRawBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
-    const [jsonExport, setJsonExport] = useState("");
-
-    // --- FONCTIONS DE DIEU ---
-
-    // 1. Force Majeure : Modification directe sans historique
-    const forceUpdate = () => {
-        if (confirm("⚠️ ATTENTION : Modification directe de la réalité financière. Confirmer ?")) {
-            localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(rawBalance)));
-            localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(rawBunker)));
-            alert("RÉALITÉ MODIFIÉE.");
-            window.location.reload();
-        }
-    };
-
-    // 2. Voyage Temporel : Reset des missions du jour
-    const timeTravel = () => {
-        localStorage.removeItem('imperium_missions_date');
-        alert("TEMPS RÉINITIALISÉ. De nouvelles missions seront générées au rechargement.");
-        window.location.reload();
-    };
-
-    // 3. Amnistie Partielle : Effacer l'historique (Garder le solde)
-    const clearHistory = () => {
-        if (confirm("CONFIRMER : Effacer tout l'historique des transactions ? Le solde actuel sera conservé.")) {
-            localStorage.setItem('imperium_transactions', "[]");
-            alert("HISTOIRE EFFACÉE.");
-            window.location.reload();
-        }
-    };
-
-    // 4. Reset Dettes : Effacer le registre
-    const wipeDebts = () => {
-        if (confirm("CONFIRMER : Annuler toutes les dettes et créances ?")) {
-            localStorage.setItem('imperium_debts', "[]");
-            alert("REGISTRE PURIFIÉ.");
-            window.location.reload();
-        }
-    };
-
-    // 5. Dump Mémoire (Voir tout le JSON)
-    const dumpMemory = () => {
-        const data = {};
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if(key.startsWith('imperium_')) {
-                data[key] = localStorage.getItem(key);
-            }
-        }
-        setJsonExport(JSON.stringify(data, null, 2));
-    };
-
-    return (
-        <PageTransition>
-            <div className="h-[100dvh] w-full max-w-md mx-auto bg-black text-green-500 font-mono flex flex-col overflow-hidden border-x-2 border-green-900/30">
-                {/* HEADER TYPE TERMINAL */}
-                <div className="shrink-0 px-5 py-4 border-b border-green-900/50 pt-16 z-10 bg-black">
-                    <button onClick={onBack} className="flex items-center gap-2 text-green-700 hover:text-green-400 mb-4 mt-2 uppercase text-[10px] tracking-widest">
-                        <ArrowLeft className="w-3 h-3" /> Deconnexion Root
-                    </button>
-                    <div className="flex items-center gap-3">
-                        <Terminal className="w-6 h-6 animate-pulse" />
-                        <h1 className="text-xl font-bold tracking-widest">CONSOLE IMPERATOR</h1>
-                    </div>
-                    <p className="text-[10px] text-green-800 mt-1 uppercase">v{APP_VERSION} // ROOT ACCESS GRANTED</p>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar space-y-8">
-                    
-                    {/* SECTION 1 : FORCE MAJEURE */}
-                    <div className="border border-green-900/50 p-4 rounded bg-green-900/5">
-                        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2 border-b border-green-900/50 pb-2">
-                            <Cpu className="w-4 h-4"/> Modification Réalité
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[9px] uppercase opacity-70">Cash Disponible (Override)</label>
-                                <input type="number" value={rawBalance} onChange={(e) => setRawBalance(e.target.value)} className="w-full bg-black border border-green-800 p-2 text-green-400 focus:outline-none focus:border-green-500 font-mono" />
-                            </div>
-                            <div>
-                                <label className="text-[9px] uppercase opacity-70">Bunker Wave (Override)</label>
-                                <input type="number" value={rawBunker} onChange={(e) => setRawBunker(e.target.value)} className="w-full bg-black border border-green-800 p-2 text-green-400 focus:outline-none focus:border-green-500 font-mono" />
-                            </div>
-                            <button onClick={forceUpdate} className="w-full bg-green-900/20 hover:bg-green-500 hover:text-black border border-green-500 text-green-500 py-2 text-xs uppercase transition-colors">
-                                Injecter les nouvelles valeurs
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* SECTION 2 : OUTILS DEBUG */}
-                    <div className="border border-green-900/50 p-4 rounded bg-green-900/5">
-                        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2 border-b border-green-900/50 pb-2">
-                            <AlertOctagon className="w-4 h-4"/> Outils de Crise
-                        </h3>
-                        <div className="grid grid-cols-1 gap-3">
-                            <button onClick={timeTravel} className="text-left px-3 py-2 border border-green-900 hover:bg-green-900/20 text-xs flex items-center gap-2">
-                                <Clock className="w-3 h-3"/> Reset "Ordres du Jour" (Debug)
-                            </button>
-                            <button onClick={clearHistory} className="text-left px-3 py-2 border border-green-900 hover:bg-green-900/20 text-xs flex items-center gap-2">
-                                <Trash2 className="w-3 h-3"/> Purger l'Historique (Keep $$)
-                            </button>
-                            <button onClick={wipeDebts} className="text-left px-3 py-2 border border-green-900 hover:bg-green-900/20 text-xs flex items-center gap-2">
-                                <FileText className="w-3 h-3"/> Amnistie (Effacer Dettes)
-                            </button>
-                        </div>
-                    </div>
-
-                     {/* SECTION 3 : DUMP */}
-                     <div className="border border-green-900/50 p-4 rounded bg-green-900/5">
-                        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2 border-b border-green-900/50 pb-2">
-                            <Binary className="w-4 h-4"/> Dump Mémoire
-                        </h3>
-                        <button onClick={dumpMemory} className="w-full mb-3 bg-black border border-green-800 py-1 text-[10px] uppercase hover:bg-green-900/20">Extraire Données Brutes</button>
-                        {jsonExport && (
-                            <textarea readOnly value={jsonExport} className="w-full h-32 bg-black border border-green-900/50 p-2 text-[8px] text-green-600 font-mono focus:outline-none" onClick={(e) => e.target.select()}></textarea>
-                        )}
-                    </div>
-
-                </div>
-            </div>
         </PageTransition>
     );
 }
