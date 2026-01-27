@@ -2,62 +2,53 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2 } from 'lucide-react';
 
 // ==========================================
-// MOTEUR SONORE TACTIQUE (SANS FICHIERS)
+// MOTEUR SONORE TACTIQUE (MODE SILENCE RADIO)
 // ==========================================
-const playSound = (type) => {
-    try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+let audioContext = null;
 
+const playSound = (type) => {
+    // 🛑 FILTRE ABSOLU : Si ce n'est pas la radio, on ne fait rien.
+    if (type !== 'radio') return;
+
+    try {
+        // Initialisation (seulement si c'est la radio)
+        if (!audioContext) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            audioContext = new AudioContext();
+        }
+
+        // Réveil du moteur (pour iPhone/Chrome)
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+
+        const ctx = audioContext;
         const now = ctx.currentTime;
         
-        if (type === 'click') {
-            // Petit clic mécanique
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(150, now);
-            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.1);
-            gain.gain.setValueAtTime(0.05, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-            osc.start(now);
-            osc.stop(now + 0.1);
-        } else if (type === 'success') {
-            // Bip de validation aigu
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, now);
-            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.start(now);
-            osc.stop(now + 0.3);
-        } else if (type === 'error') {
-            // Buzz grave d'erreur
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(150, now);
-            osc.frequency.linearRampToValueAtTime(100, now + 0.3);
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.start(now);
-            osc.stop(now + 0.3);
-        } else if (type === 'radio') {
-            // Bruit blanc (static) pour la radio
-            const bufferSize = ctx.sampleRate * 0.5; // 0.5 sec
+        // GÉNÉRATEUR DE BRUIT BLANC (RADIO)
+        if (type === 'radio') {
+            const bufferSize = ctx.sampleRate * 0.5; // 0.5 secondes de static
             const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
             const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+            
+            // Création du grésillement aléatoire
+            for (let i = 0; i < bufferSize; i++) { 
+                data[i] = Math.random() * 2 - 1; 
+            }
+            
             const noise = ctx.createBufferSource();
             noise.buffer = buffer;
+            
             const noiseGain = ctx.createGain();
-            noiseGain.gain.setValueAtTime(0.05, now);
-            noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            noiseGain.gain.setValueAtTime(0.1, now); // Volume modéré
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5); // Fondu de sortie
+            
             noise.connect(noiseGain);
             noiseGain.connect(ctx.destination);
             noise.start(now);
         }
+
     } catch (e) { console.error("Audio error", e); }
 };
 
@@ -718,7 +709,10 @@ function Dashboard({ onNavigate }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
-    const [showTaxModal, setShowTaxModal] = useState(false);
+    const [showDistributeModal, setShowDistributeModal] = useState(false);
+    const [distributeWave, setDistributeWave] = useState("");
+    const [distributeGoalId, setDistributeGoalId] = useState("");
+    const [distributeGoalAmount, setDistributeGoalAmount] = useState("");
     const [showOrders, setShowOrders] = useState(false);
     const [pendingTransaction, setPendingTransaction] = useState(null);
   
@@ -804,13 +798,23 @@ function Dashboard({ onNavigate }) {
       if (!amount) return;
       const value = parseFloat(amount);
       
-      if (transactionType === 'income' && (goals.length > 0 || totalBunker >= 0)) {
-          setPendingTransaction({ value, description });
-          setShowTaxModal(true);
-          setIsModalOpen(false);
-          setAmount(''); setDescription('');
-          return;
-      }
+      // DANS handleSubmit
+    if (transactionType === 'income') {
+        // On ouvre la modale de répartition tactique
+        setPendingTransaction({ value, description });
+        setShowDistributeModal(true); 
+        
+        // Reset des champs de la modale
+        setDistributeWave("");
+        setDistributeGoalId("");
+        setDistributeGoalAmount("");
+        
+        // On ferme le pavé numérique
+        setIsModalOpen(false);
+        setAmount(''); setDescription('');
+        return;
+    }
+      
       if (transactionType === 'expense') {
           if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
           setBalance(balance - value);
@@ -822,17 +826,59 @@ function Dashboard({ onNavigate }) {
       setAmount(''); setDescription(''); setIsModalOpen(false);
     };
   
-    const processIncomeWithTax = (applyTax) => {
+    const finalizeIncome = () => {
         if (!pendingTransaction) return;
+
         const totalIncome = pendingTransaction.value;
-        const taxAmount = applyTax ? Math.floor(totalIncome * 0.2) : 0;
-        const keptAmount = totalIncome - taxAmount;
-        setBalance(balance + keptAmount);
-        setBunker(bunker + taxAmount);
-        const incomeTx = { id: Date.now(), desc: pendingTransaction.description || "Revenu", amount: totalIncome, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+        const waveAlloc = parseFloat(distributeWave) || 0;
+        const goalAlloc = parseFloat(distributeGoalAmount) || 0;
+        
+        // Sécurité : On ne peut pas répartir plus que ce qu'on a gagné
+        if (waveAlloc + goalAlloc > totalIncome) {
+            alert(`Erreur : Vous essayez de répartir ${formatMoney(waveAlloc + goalAlloc)} alors que le revenu est de ${formatMoney(totalIncome)}.`);
+            return;
+        }
+
+        const remainingCash = totalIncome - waveAlloc - goalAlloc;
+
+        // 1. Mise à jour du Cash
+        setBalance(balance + remainingCash);
+
+        // 2. Mise à jour du Bunker (Wave)
+        if (waveAlloc > 0) {
+            setBunker(bunker + waveAlloc);
+        }
+
+        // 3. Mise à jour de la Cible (Si sélectionnée)
+        if (goalAlloc > 0 && distributeGoalId) {
+            const updatedGoals = goals.map(g => {
+                if (g.id === parseInt(distributeGoalId)) {
+                    return { ...g, current: g.current + goalAlloc };
+                }
+                return g;
+            });
+            setGoals(updatedGoals);
+        }
+
+        // 4. Enregistrement de la transaction
+        const incomeTx = { 
+            id: Date.now(), 
+            desc: pendingTransaction.description || "Revenu", 
+            amount: totalIncome, 
+            type: 'income', 
+            category: 'income', 
+            date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), 
+            rawDate: new Date().toISOString(),
+            // On ajoute un petit détail pour l'historique (optionnel)
+            details: `Cash: ${remainingCash} | Wave: ${waveAlloc} | Cible: ${goalAlloc}`
+        };
+
         setTransactions([incomeTx, ...transactions]);
+        
+        // Nettoyage
         setPendingTransaction(null);
-        setShowTaxModal(false);
+        setShowDistributeModal(false);
+        playSound('success'); // Si tu as gardé le son de succès
     };
   
     const handleBunkerAction = (action) => {
@@ -1068,7 +1114,83 @@ function Dashboard({ onNavigate }) {
         {isModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Nouvelle Entrée</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5"><button onClick={() => setTransactionType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button><button onClick={() => setTransactionType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button></div>{transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}{transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (<div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Alerte</p><p className="text-gray-300 text-xs mt-1">Coût: <span className="text-white font-bold">{daysLost} jours</span> de survie.</p></div></div>)}<form onSubmit={handleSubmit} className="space-y-5"><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus /><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} /><button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' ? 'bg-white text-black' : 'bg-[#EAB308] text-black'}`}>VALIDER</button></form></div></div>)}
         {isBunkerModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden"><div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div><div className="flex justify-between items-center mb-6"><div className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-400"/><h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave</h2></div><button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="text-center mb-6"><h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2></div><div className="space-y-4"><input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus /><div className="flex gap-3"><button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase">Retrait</button><button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase">Dépôt</button></div></div></div></div>)}
         {showHistory && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in"><div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">{transactions.map(tx => (<div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5"><div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div></div>))}</div></div></div>)}
-        {showTaxModal && pendingTransaction && (<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in"><div className="bg-[#111] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center"><h3 className="text-[#F4D35E] font-serif text-xl font-bold mb-4">Impôt Impérial (20%)</h3><p className="text-gray-400 text-sm mb-6">Sécuriser une partie de ce revenu dans Wave ?</p><div className="flex gap-3 w-full"><button onClick={() => processIncomeWithTax(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-500 text-xs font-bold uppercase">Non (0%)</button><button onClick={() => processIncomeWithTax(true)} className="flex-1 py-3 rounded-lg bg-[#F4D35E] text-black text-xs font-bold uppercase">Oui (20%)</button></div></div></div>)}
+        {/* MODALE DE RÉPARTITION TACTIQUE (NOUVELLE VERSION) */}
+      {showDistributeModal && pendingTransaction && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+              <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                  
+                  {/* Titre */}
+                  <div className="text-center mb-6">
+                      <h3 className="text-[#F4D35E] font-serif text-xl font-bold uppercase tracking-widest">Rapport de Butin</h3>
+                      <p className="text-white text-3xl font-bold mt-2">{formatMoney(pendingTransaction.value)} <span className="text-sm text-gray-500">{currency}</span></p>
+                      <p className="text-[10px] text-gray-500 mt-1">À répartir stratégiquement</p>
+                  </div>
+
+                  <div className="space-y-4 mb-8">
+                      {/* OPTION 1 : WAVE (BUNKER) */}
+                      <div className="bg-black/50 p-3 rounded-lg border border-blue-900/30">
+                          <div className="flex items-center gap-2 mb-2">
+                              <Smartphone className="w-4 h-4 text-blue-400"/>
+                              <span className="text-xs font-bold text-blue-100 uppercase">Sécuriser sur Wave</span>
+                          </div>
+                          <input 
+                              type="number" 
+                              value={distributeWave} 
+                              onChange={(e) => setDistributeWave(e.target.value)}
+                              placeholder="Montant (ex: 5000)"
+                              className="w-full bg-[#111] border border-blue-500/20 rounded p-2 text-white text-sm focus:border-blue-500 outline-none text-right"
+                          />
+                      </div>
+
+                      {/* OPTION 2 : CIBLE (GOAL) */}
+                      {goals.length > 0 ? (
+                          <div className="bg-black/50 p-3 rounded-lg border border-green-900/30">
+                              <div className="flex items-center gap-2 mb-2">
+                                  <Target className="w-4 h-4 text-green-400"/>
+                                  <span className="text-xs font-bold text-green-100 uppercase">Investir sur Cible</span>
+                              </div>
+                              <select 
+                                  value={distributeGoalId} 
+                                  onChange={(e) => setDistributeGoalId(e.target.value)}
+                                  className="w-full bg-[#111] border border-white/10 rounded p-2 text-xs text-white mb-2 outline-none focus:border-green-500"
+                              >
+                                  <option value="">-- Choisir une cible --</option>
+                                  {goals.map(g => (
+                                      <option key={g.id} value={g.id}>{g.title} (Reste: {formatMoney(g.target - g.current)})</option>
+                                  ))}
+                              </select>
+                              <input 
+                                  type="number" 
+                                  value={distributeGoalAmount} 
+                                  onChange={(e) => setDistributeGoalAmount(e.target.value)}
+                                  placeholder="Montant"
+                                  disabled={!distributeGoalId}
+                                  className="w-full bg-[#111] border border-green-500/20 rounded p-2 text-white text-sm focus:border-green-500 outline-none text-right disabled:opacity-50"
+                              />
+                          </div>
+                      ) : (
+                          <div className="p-3 rounded-lg border border-white/5 bg-white/5 text-center">
+                              <p className="text-[10px] text-gray-500 italic">Aucune cible active pour investir.</p>
+                          </div>
+                      )}
+                  </div>
+
+                  {/* INFO RESTANTE */}
+                  <div className="flex justify-between items-center text-xs mb-4 px-2">
+                      <span className="text-gray-500">Reste en Cash (Dispo):</span>
+                      <span className="text-white font-bold">
+                          {formatMoney(pendingTransaction.value - (parseFloat(distributeWave)||0) - (parseFloat(distributeGoalAmount)||0))} {currency}
+                      </span>
+                  </div>
+
+                  {/* BOUTON VALIDATION */}
+                  <button onClick={finalizeIncome} className="w-full bg-[#F4D35E] text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-[0_0_15px_rgba(244,211,94,0.3)]">
+                      Confirmer la Répartition
+                  </button>
+
+              </div>
+          </div>
+      )}
         {showOrders && <OrdersModal onClose={() => setShowOrders(false)} />}
         {showRadio && <RadioLink onClose={() => setShowRadio(false)} />}
       </div>
