@@ -596,7 +596,7 @@ function OnboardingScreen({ onComplete }) {
 // ==========================================
 function RadioLink({ onClose }) {
     // ⚠️ COLLE TA CLÉ API ICI ⚠️
-    const API_KEY = "AIzaSyDesElQqVJ3QaV2nVnJOVDrnuBPcKJCDrg"; 
+    const API_KEY = "AIzaSyCIwWoqHqCos5zsWkylOgbKQQP_yRq872k"; 
     
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
