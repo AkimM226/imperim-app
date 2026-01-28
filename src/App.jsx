@@ -2120,8 +2120,8 @@ function SettingsScreen({ onBack }) {
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
     const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
 
-    const handleExport = () => { 
-        // 1. On prépare les données comme d'habitude
+    const handleExport = async () => { 
+        // 1. Préparation des données
         const data = { 
             balance: localStorage.getItem('imperium_balance'), 
             transactions: localStorage.getItem('imperium_transactions'), 
@@ -2132,7 +2132,7 @@ function SettingsScreen({ onBack }) {
             zone: localStorage.getItem('imperium_zone'), 
             onboarded: localStorage.getItem('imperium_onboarded'), 
             bunker: localStorage.getItem('imperium_bunker'),
-            goals: localStorage.getItem('imperium_goals'), // N'oublie pas les Cibles !
+            goals: localStorage.getItem('imperium_goals'),
             protocols: localStorage.getItem('imperium_protocols'),
             debts: localStorage.getItem('imperium_debts'),
             version: localStorage.getItem('imperium_version'),
@@ -2140,48 +2140,33 @@ function SettingsScreen({ onBack }) {
         }; 
         
         const encoded = btoa(JSON.stringify(data)); 
-        setExportCode(encoded); 
-        
-        // 2. LA MÉTHODE BLINDÉE (Compatible Mobile & PC)
-        const copyToClipboard = (text) => {
-            // Étape A : On essaie la méthode moderne
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text)
-                    .then(() => alert("✅ CODE COPIÉ (Méthode 1)"))
-                    .catch(() => fallbackCopy(text)); // Si ça rate, on passe au plan B
-            } else {
-                fallbackCopy(text); // Si pas dispo, on passe au plan B
-            }
-        };
+        setExportCode(encoded); // On affiche le code tout de suite à l'écran au cas où
 
-        // Étape B : Le "Plan B" (Méthode forcée pour mobile)
-        const fallbackCopy = (text) => {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            
-            // On rend la zone de texte invisible mais présente
-            textArea.style.position = "fixed";
-            textArea.style.left = "-9999px";
-            textArea.style.top = "0";
-            
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
+        // 2. STRATÉGIE MOBILE : Menu de Partage Natif
+        if (navigator.share) {
             try {
-                document.execCommand('copy');
-                alert("✅ CODE COPIÉ (Mode Mobile)");
+                await navigator.share({
+                    title: 'Sauvegarde Imperium',
+                    text: encoded,
+                });
+                // Si l'utilisateur a partagé/copié via le menu, on s'arrête là.
+                return;
             } catch (err) {
-                alert("⚠️ Copie automatique bloquée par le téléphone. Veuillez copier le code manuellement ci-dessous.");
+                // Si l'utilisateur annule ou si ça échoue, on continue vers la méthode PC
+                console.log("Partage annulé ou échoué", err);
             }
-            
-            document.body.removeChild(textArea);
-        };
+        }
 
-        // 3. On lance la copie
-        copyToClipboard(encoded);
+        // 3. STRATÉGIE PC : Presse-papier classique
+        try {
+            await navigator.clipboard.writeText(encoded);
+            alert("✅ CODE COPIÉ !");
+        } catch (err) {
+            // 4. DERNIER RECOURS : Manuel
+            alert("⚠️ Copie auto bloquée. Le code est affiché ci-dessous, copiez-le manuellement.");
+        }
     };
-        
+           
     const handleImport = () => { 
         try { 
             if(!importData) return; 
