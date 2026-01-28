@@ -2120,8 +2120,8 @@ function SettingsScreen({ onBack }) {
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
     const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
 
-    const handleExport = async () => { 
-        // 1. Préparation des données
+    const handleExport = () => { 
+        // 1. Récupération des données
         const data = { 
             balance: localStorage.getItem('imperium_balance'), 
             transactions: localStorage.getItem('imperium_transactions'), 
@@ -2140,33 +2140,14 @@ function SettingsScreen({ onBack }) {
         }; 
         
         const encoded = btoa(JSON.stringify(data)); 
-        setExportCode(encoded); // On affiche le code tout de suite à l'écran au cas où
-
-        // 2. STRATÉGIE MOBILE : Menu de Partage Natif
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: 'Sauvegarde Imperium',
-                    text: encoded,
-                });
-                // Si l'utilisateur a partagé/copié via le menu, on s'arrête là.
-                return;
-            } catch (err) {
-                // Si l'utilisateur annule ou si ça échoue, on continue vers la méthode PC
-                console.log("Partage annulé ou échoué", err);
-            }
+        setExportCode(encoded); 
+        
+        // On essaie quand même la copie auto, mais sans forcer
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(encoded).catch(() => {});
         }
-
-        // 3. STRATÉGIE PC : Presse-papier classique
-        try {
-            await navigator.clipboard.writeText(encoded);
-            alert("✅ CODE COPIÉ !");
-        } catch (err) {
-            // 4. DERNIER RECOURS : Manuel
-            alert("⚠️ Copie auto bloquée. Le code est affiché ci-dessous, copiez-le manuellement.");
-        }
-    };
-           
+    }; 
+    
     const handleImport = () => { 
         try { 
             if(!importData) return; 
@@ -2181,6 +2162,9 @@ function SettingsScreen({ onBack }) {
             if(decoded.zone) localStorage.setItem('imperium_zone', decoded.zone); 
             if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); 
             if(decoded.bunker) localStorage.setItem('imperium_bunker', decoded.bunker);
+            if(decoded.goals) localStorage.setItem('imperium_goals', decoded.goals);
+            if(decoded.protocols) localStorage.setItem('imperium_protocols', decoded.protocols);
+            if(decoded.debts) localStorage.setItem('imperium_debts', decoded.debts);
             if(decoded.version) localStorage.setItem('imperium_version', decoded.version);
             if(decoded.license) localStorage.setItem('imperium_license', decoded.license); 
             alert("✅ RESTAURATION RÉUSSIE."); 
@@ -2198,6 +2182,24 @@ function SettingsScreen({ onBack }) {
     };
     
     const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; 
+
+    // Fonction spéciale pour sélectionner tout le texte sur mobile
+    const selectAllText = () => {
+        const textArea = document.getElementById("backup-code-area");
+        if(textArea) {
+            textArea.focus();
+            textArea.select();
+            textArea.setSelectionRange(0, 99999); // Pour mobile spécifiquement
+            
+            try {
+               const successful = document.execCommand('copy');
+               if(successful) alert("Copié !");
+               else alert("Texte sélectionné. Appuyez maintenant sur 'Copier'.");
+            } catch (err) {
+               alert("Texte sélectionné. Appuyez maintenant sur 'Copier'.");
+            }
+        }
+    };
 
     return (
         <PageTransition>
@@ -2234,12 +2236,21 @@ function SettingsScreen({ onBack }) {
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
                             <div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div>
                         </div>
-                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3"><Copy className="w-4 h-4" /> Générer Code</button>
+                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3"><Copy className="w-4 h-4" /> 1. Générer Code</button>
                         
                         {exportCode && (
                             <div className="animate-in fade-in slide-in-from-top-2">
-                                <p className="text-[10px] text-gray-500 mb-1">Copiez ce code manuellement si besoin :</p>
-                                <textarea readOnly value={exportCode} className="w-full h-24 bg-black border border-blue-500/30 rounded-lg p-2 text-[10px] text-blue-300 font-mono focus:outline-none" onClick={(e) => e.target.select()}></textarea>
+                                <p className="text-[10px] text-gray-500 mb-1">2. Copiez ce code (Sélectionnez tout) :</p>
+                                <textarea 
+                                    id="backup-code-area"
+                                    readOnly 
+                                    value={exportCode} 
+                                    className="w-full h-32 bg-black border border-blue-500/30 rounded-lg p-3 text-[10px] text-blue-300 font-mono focus:outline-none break-all" 
+                                    onClick={(e) => e.target.select()} 
+                                ></textarea>
+                                <button onClick={selectAllText} className="w-full mt-2 bg-blue-600 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-widest">
+                                    3. TOUT SÉLECTIONNER / COPIER
+                                </button>
                             </div>
                         )}
                     </div>
