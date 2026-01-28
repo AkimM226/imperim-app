@@ -837,23 +837,26 @@ function Dashboard({ onNavigate }) {
         const waveAlloc = parseFloat(distributeWave) || 0;
         const goalAlloc = parseFloat(distributeGoalAmount) || 0;
         
-        // Sécurité : On ne peut pas répartir plus que ce qu'on a gagné
+        // Sécurité
         if (waveAlloc + goalAlloc > totalIncome) {
-            alert(`Erreur : Vous essayez de répartir ${formatMoney(waveAlloc + goalAlloc)} alors que le revenu est de ${formatMoney(totalIncome)}.`);
+            alert(`Erreur : Répartition trop élevée.`);
             return;
         }
 
         const remainingCash = totalIncome - waveAlloc - goalAlloc;
 
-        // 1. Mise à jour du Cash
-        setBalance(balance + remainingCash);
+        // --- CORRECTION ICI ---
+        // Le Solde Balance contient TOUT l'argent physique (Dispo + Cibles).
+        // On ne soustrait QUE ce qui part vers Wave.
+        // On NE soustrait PAS ce qui part vers les Cibles (car cet argent reste chez nous).
+        setBalance(balance + totalIncome - waveAlloc); 
 
         // 2. Mise à jour du Bunker (Wave)
         if (waveAlloc > 0) {
             setBunker(bunker + waveAlloc);
         }
 
-        // 3. Mise à jour de la Cible (Si sélectionnée)
+        // 3. Mise à jour de la Cible
         if (goalAlloc > 0 && distributeGoalId) {
             const updatedGoals = goals.map(g => {
                 if (g.id === parseInt(distributeGoalId)) {
@@ -864,7 +867,7 @@ function Dashboard({ onNavigate }) {
             setGoals(updatedGoals);
         }
 
-        // 4. Enregistrement de la transaction
+        // 4. Enregistrement transaction
         const incomeTx = { 
             id: Date.now(), 
             desc: pendingTransaction.description || "Revenu", 
@@ -873,16 +876,14 @@ function Dashboard({ onNavigate }) {
             category: 'income', 
             date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), 
             rawDate: new Date().toISOString(),
-            // On ajoute un petit détail pour l'historique (optionnel)
-            details: `Cash: ${remainingCash} | Wave: ${waveAlloc} | Cible: ${goalAlloc}`
+            details: `Reçu: ${totalIncome} | Wave: -${waveAlloc} | Cible: ${goalAlloc} (Réservé) | Reste: ${remainingCash}`
         };
 
         setTransactions([incomeTx, ...transactions]);
         
-        // Nettoyage
         setPendingTransaction(null);
         setShowDistributeModal(false);
-        playSound('success'); // Si tu as gardé le son de succès
+        playSound('success');
     };
   
     const handleBunkerAction = (action) => {
