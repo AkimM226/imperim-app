@@ -2120,38 +2120,51 @@ function SettingsScreen({ onBack }) {
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
     const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
 
+    // --- CORRECTION MAJEURE ICI (EXPORT) ---
     const handleExport = () => { 
-        // 1. Récupération des données
-        const data = { 
-            balance: localStorage.getItem('imperium_balance'), 
-            transactions: localStorage.getItem('imperium_transactions'), 
-            projects: localStorage.getItem('imperium_projects'),
-            tasks: localStorage.getItem('imperium_tasks'), 
-            skills: localStorage.getItem('imperium_skills'), 
-            currency: localStorage.getItem('imperium_currency'), 
-            zone: localStorage.getItem('imperium_zone'), 
-            onboarded: localStorage.getItem('imperium_onboarded'), 
-            bunker: localStorage.getItem('imperium_bunker'),
-            goals: localStorage.getItem('imperium_goals'),
-            protocols: localStorage.getItem('imperium_protocols'),
-            debts: localStorage.getItem('imperium_debts'),
-            version: localStorage.getItem('imperium_version'),
-            license: localStorage.getItem('imperium_license') 
-        }; 
-        
-        const encoded = btoa(JSON.stringify(data)); 
-        setExportCode(encoded); 
-        
-        // On essaie quand même la copie auto, mais sans forcer
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(encoded).catch(() => {});
+        try {
+            // 1. Récupération
+            const data = { 
+                balance: localStorage.getItem('imperium_balance'), 
+                transactions: localStorage.getItem('imperium_transactions'), 
+                projects: localStorage.getItem('imperium_projects'),
+                tasks: localStorage.getItem('imperium_tasks'), 
+                skills: localStorage.getItem('imperium_skills'), 
+                currency: localStorage.getItem('imperium_currency'), 
+                zone: localStorage.getItem('imperium_zone'), 
+                onboarded: localStorage.getItem('imperium_onboarded'), 
+                bunker: localStorage.getItem('imperium_bunker'),
+                goals: localStorage.getItem('imperium_goals'),
+                protocols: localStorage.getItem('imperium_protocols'),
+                debts: localStorage.getItem('imperium_debts'),
+                version: localStorage.getItem('imperium_version'),
+                license: localStorage.getItem('imperium_license') 
+            }; 
+            
+            const jsonString = JSON.stringify(data);
+
+            // 2. ENCODAGE SPÉCIAL POUR ACCENTS & EMOJIS (La correction est ici)
+            // On utilise encodeURIComponent pour transformer les accents en code sûr avant de convertir en Base64
+            const safeEncoded = btoa(unescape(encodeURIComponent(jsonString)));
+            
+            setExportCode(safeEncoded); 
+            
+        } catch (error) {
+            alert("Erreur lors de la génération : " + error.message);
+            console.error(error);
         }
     }; 
     
+    // --- CORRECTION MAJEURE ICI (IMPORT) ---
     const handleImport = () => { 
         try { 
             if(!importData) return; 
-            const decoded = JSON.parse(atob(importData)); 
+            
+            // 1. DÉCODAGE SPÉCIAL (Inverse de l'export)
+            const jsonString = decodeURIComponent(escape(atob(importData)));
+            const decoded = JSON.parse(jsonString); 
+            
+            // 2. Restauration
             if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); 
             if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); 
             if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects);
@@ -2167,9 +2180,13 @@ function SettingsScreen({ onBack }) {
             if(decoded.debts) localStorage.setItem('imperium_debts', decoded.debts);
             if(decoded.version) localStorage.setItem('imperium_version', decoded.version);
             if(decoded.license) localStorage.setItem('imperium_license', decoded.license); 
+            
             alert("✅ RESTAURATION RÉUSSIE."); 
             window.location.reload(); 
-        } catch (e) { alert("❌ ERREUR : Code invalide."); } 
+        } catch (e) { 
+            alert("❌ ERREUR : Code invalide ou illisible (Vérifiez qu'il est complet)."); 
+            console.error(e);
+        } 
     }; 
 
     const handleRecalibrate = () => {
@@ -2183,21 +2200,15 @@ function SettingsScreen({ onBack }) {
     
     const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; 
 
-    // Fonction spéciale pour sélectionner tout le texte sur mobile
+    // Fonction de sélection manuelle
     const selectAllText = () => {
         const textArea = document.getElementById("backup-code-area");
         if(textArea) {
             textArea.focus();
             textArea.select();
-            textArea.setSelectionRange(0, 99999); // Pour mobile spécifiquement
-            
-            try {
-               const successful = document.execCommand('copy');
-               if(successful) alert("Copié !");
-               else alert("Texte sélectionné. Appuyez maintenant sur 'Copier'.");
-            } catch (err) {
-               alert("Texte sélectionné. Appuyez maintenant sur 'Copier'.");
-            }
+            // Petite astuce pour mobile
+            textArea.setSelectionRange(0, 999999); 
+            alert("Tout est sélectionné. Appuyez sur 'COPIER' dans le menu noir qui s'affiche.");
         }
     };
 
@@ -2211,6 +2222,7 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
                     
+                    {/* SECTION CALIBRAGE */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                          <div className="absolute top-0 right-0 p-4 opacity-5"><RefreshCw className="w-24 h-24 text-white" /></div>
                          <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -2231,12 +2243,13 @@ function SettingsScreen({ onBack }) {
                         </div>
                     </div>
 
+                    {/* SECTION SAUVEGARDE */}
                     <div className="bg-[#111] p-5 rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
                             <div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div>
                         </div>
-                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3"><Copy className="w-4 h-4" /> 1. Générer Code</button>
+                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3"><Copy className="w-4 h-4" /> 1. GÉNÉRER CODE</button>
                         
                         {exportCode && (
                             <div className="animate-in fade-in slide-in-from-top-2">
@@ -2249,12 +2262,13 @@ function SettingsScreen({ onBack }) {
                                     onClick={(e) => e.target.select()} 
                                 ></textarea>
                                 <button onClick={selectAllText} className="w-full mt-2 bg-blue-600 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-widest">
-                                    3. TOUT SÉLECTIONNER / COPIER
+                                    3. TOUT SÉLECTIONNER
                                 </button>
                             </div>
                         )}
                     </div>
                     
+                    {/* SECTION RESTAURATION */}
                     <div className="bg-[#111] border border-white/5 rounded-xl p-5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div>
