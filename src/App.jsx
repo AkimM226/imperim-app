@@ -785,12 +785,16 @@ function Dashboard({ onNavigate }) {
     const dailySurvivalCost = Math.max(availableCash / 30, 1);
     const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
   
-    // EFFETS DE SAUVEGARDE
-    useEffect(() => {
-      localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
-      localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
-      localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-    }, [balance, bunker, transactions]);
+    // EFFETS DE SAUVEGARDE (CORRIGÉ)
+   useEffect(() => {
+    localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
+    localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
+    localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
+    
+    // 👇 AJOUTE CETTE LIGNE 👇
+    localStorage.setItem('imperium_goals', JSON.stringify(goals)); 
+    
+  }, [balance, bunker, transactions, goals]); // 👈 N'OUBLIE PAS D'AJOUTER 'goals' ICI
   
     // FONCTIONS
     const handleSubmit = (e) => {
@@ -2117,6 +2121,7 @@ function SettingsScreen({ onBack }) {
     const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
 
     const handleExport = () => { 
+        // 1. On prépare les données comme d'habitude
         const data = { 
             balance: localStorage.getItem('imperium_balance'), 
             transactions: localStorage.getItem('imperium_transactions'), 
@@ -2127,17 +2132,56 @@ function SettingsScreen({ onBack }) {
             zone: localStorage.getItem('imperium_zone'), 
             onboarded: localStorage.getItem('imperium_onboarded'), 
             bunker: localStorage.getItem('imperium_bunker'),
+            goals: localStorage.getItem('imperium_goals'), // N'oublie pas les Cibles !
+            protocols: localStorage.getItem('imperium_protocols'),
+            debts: localStorage.getItem('imperium_debts'),
             version: localStorage.getItem('imperium_version'),
             license: localStorage.getItem('imperium_license') 
         }; 
+        
         const encoded = btoa(JSON.stringify(data)); 
         setExportCode(encoded); 
         
-        navigator.clipboard.writeText(encoded)
-            .then(() => alert("CODE D'ARCHIVE COPIÉ."))
-            .catch(() => alert("Copie automatique échouée. Veuillez copier le code affiché manuellement."));
-    }; 
-    
+        // 2. LA MÉTHODE BLINDÉE (Compatible Mobile & PC)
+        const copyToClipboard = (text) => {
+            // Étape A : On essaie la méthode moderne
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => alert("✅ CODE COPIÉ (Méthode 1)"))
+                    .catch(() => fallbackCopy(text)); // Si ça rate, on passe au plan B
+            } else {
+                fallbackCopy(text); // Si pas dispo, on passe au plan B
+            }
+        };
+
+        // Étape B : Le "Plan B" (Méthode forcée pour mobile)
+        const fallbackCopy = (text) => {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // On rend la zone de texte invisible mais présente
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert("✅ CODE COPIÉ (Mode Mobile)");
+            } catch (err) {
+                alert("⚠️ Copie automatique bloquée par le téléphone. Veuillez copier le code manuellement ci-dessous.");
+            }
+            
+            document.body.removeChild(textArea);
+        };
+
+        // 3. On lance la copie
+        copyToClipboard(encoded);
+    };
+        
     const handleImport = () => { 
         try { 
             if(!importData) return; 
