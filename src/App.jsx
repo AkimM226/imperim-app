@@ -2120,10 +2120,9 @@ function SettingsScreen({ onBack }) {
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
     const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
 
-    // --- CORRECTION MAJEURE ICI (EXPORT) ---
-    const handleExport = () => { 
+    const handleExport = async () => { 
         try {
-            // 1. Récupération
+            // 1. Récupération des données
             const data = { 
                 balance: localStorage.getItem('imperium_balance'), 
                 transactions: localStorage.getItem('imperium_transactions'), 
@@ -2143,28 +2142,38 @@ function SettingsScreen({ onBack }) {
             
             const jsonString = JSON.stringify(data);
 
-            // 2. ENCODAGE SPÉCIAL POUR ACCENTS & EMOJIS (La correction est ici)
-            // On utilise encodeURIComponent pour transformer les accents en code sûr avant de convertir en Base64
+            // 2. ENCODAGE BLINDÉ (C'est ce qui règle le bug précédent)
             const safeEncoded = btoa(unescape(encodeURIComponent(jsonString)));
-            
             setExportCode(safeEncoded); 
             
+            // 3. ACTION AUTOMATIQUE (Mobile First)
+            if (navigator.share) {
+                // Sur Mobile : Ouvre le menu de partage natif (WhatsApp, Copier, Notes...)
+                await navigator.share({
+                    title: 'Sauvegarde Imperium',
+                    text: safeEncoded,
+                });
+            } else {
+                // Sur PC : Copie directe dans le presse-papier
+                await navigator.clipboard.writeText(safeEncoded);
+                alert("✅ CODE COPIÉ DANS LE PRESSE-PAPIER !");
+            }
+
         } catch (error) {
-            alert("Erreur lors de la génération : " + error.message);
             console.error(error);
+            // Si l'automatisme échoue (rare), le code est quand même affiché en bas
+            alert("Sauvegarde générée. Si la copie a échoué, copiez le code affiché manuellement.");
         }
     }; 
     
-    // --- CORRECTION MAJEURE ICI (IMPORT) ---
     const handleImport = () => { 
         try { 
             if(!importData) return; 
             
-            // 1. DÉCODAGE SPÉCIAL (Inverse de l'export)
+            // DÉCODAGE BLINDÉ
             const jsonString = decodeURIComponent(escape(atob(importData)));
             const decoded = JSON.parse(jsonString); 
             
-            // 2. Restauration
             if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); 
             if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); 
             if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects);
@@ -2184,8 +2193,7 @@ function SettingsScreen({ onBack }) {
             alert("✅ RESTAURATION RÉUSSIE."); 
             window.location.reload(); 
         } catch (e) { 
-            alert("❌ ERREUR : Code invalide ou illisible (Vérifiez qu'il est complet)."); 
-            console.error(e);
+            alert("❌ ERREUR : Code invalide."); 
         } 
     }; 
 
@@ -2200,18 +2208,6 @@ function SettingsScreen({ onBack }) {
     
     const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; 
 
-    // Fonction de sélection manuelle
-    const selectAllText = () => {
-        const textArea = document.getElementById("backup-code-area");
-        if(textArea) {
-            textArea.focus();
-            textArea.select();
-            // Petite astuce pour mobile
-            textArea.setSelectionRange(0, 999999); 
-            alert("Tout est sélectionné. Appuyez sur 'COPIER' dans le menu noir qui s'affiche.");
-        }
-    };
-
     return (
         <PageTransition>
             <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
@@ -2222,53 +2218,41 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
                     
-                    {/* SECTION CALIBRAGE */}
+                    {/* CALIBRAGE */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                          <div className="absolute top-0 right-0 p-4 opacity-5"><RefreshCw className="w-24 h-24 text-white" /></div>
                          <div className="flex items-center gap-3 mb-4 relative z-10">
                             <div className="p-2 bg-white/10 text-white rounded-lg"><RefreshCw className="w-5 h-5"/></div>
                             <div><h3 className="text-sm font-bold text-gray-200">Calibrage du Système</h3><p className="text-[10px] text-gray-500">Correction manuelle des soldes.</p></div>
                         </div>
-                        
                         <div className="space-y-4 relative z-10">
-                            <div>
-                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Cash/OM Actuel</label>
-                                <input type="number" value={calibBalance} onChange={(e) => setCalibBalance(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-gold outline-none" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Wave (Bunker) Actuel</label>
-                                <input type="number" value={calibBunker} onChange={(e) => setCalibBunker(e.target.value)} className="w-full bg-blue-900/10 border border-blue-500/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
-                            </div>
+                            <div><label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Cash/OM Actuel</label><input type="number" value={calibBalance} onChange={(e) => setCalibBalance(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-gold outline-none" /></div>
+                            <div><label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Wave (Bunker) Actuel</label><input type="number" value={calibBunker} onChange={(e) => setCalibBunker(e.target.value)} className="w-full bg-blue-900/10 border border-blue-500/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" /></div>
                             <button onClick={handleRecalibrate} className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold py-3 rounded-lg text-xs uppercase tracking-widest transition-colors">Appliquer les Corrections</button>
                         </div>
                     </div>
 
-                    {/* SECTION SAUVEGARDE */}
+                    {/* SAUVEGARDE (AUTOMATIQUE) */}
                     <div className="bg-[#111] p-5 rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
                             <div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div>
                         </div>
-                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3"><Copy className="w-4 h-4" /> 1. GÉNÉRER CODE</button>
                         
+                        <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3">
+                            <Copy className="w-4 h-4" /> GÉNÉRER & COPIER
+                        </button>
+                        
+                        {/* Zone de secours invisible sauf si le code est généré */}
                         {exportCode && (
                             <div className="animate-in fade-in slide-in-from-top-2">
-                                <p className="text-[10px] text-gray-500 mb-1">2. Copiez ce code (Sélectionnez tout) :</p>
-                                <textarea 
-                                    id="backup-code-area"
-                                    readOnly 
-                                    value={exportCode} 
-                                    className="w-full h-32 bg-black border border-blue-500/30 rounded-lg p-3 text-[10px] text-blue-300 font-mono focus:outline-none break-all" 
-                                    onClick={(e) => e.target.select()} 
-                                ></textarea>
-                                <button onClick={selectAllText} className="w-full mt-2 bg-blue-600 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-widest">
-                                    3. TOUT SÉLECTIONNER
-                                </button>
+                                <p className="text-[10px] text-gray-500 mb-1">Code généré :</p>
+                                <textarea readOnly value={exportCode} className="w-full h-24 bg-black border border-blue-500/30 rounded-lg p-3 text-[10px] text-blue-300 font-mono focus:outline-none break-all" onClick={(e) => e.target.select()}></textarea>
                             </div>
                         )}
                     </div>
                     
-                    {/* SECTION RESTAURATION */}
+                    {/* RESTAURATION */}
                     <div className="bg-[#111] border border-white/5 rounded-xl p-5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div>
