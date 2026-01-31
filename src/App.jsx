@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2 } from 'lucide-react';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // ==========================================
 // MOTEUR SONORE TACTIQUE (MODE SILENCE RADIO)
@@ -55,17 +56,17 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "16.0.0-Ultimate"; 
+const APP_VERSION = "17.0.0-Architect"; 
 
 const RELEASE_NOTES = [
     {
-        version: "16.0.0",
-        title: "Opération Sentinelle",
-        desc: "L'Empire est complet.",
+        version: "17.0.0",
+        title: "Opération Jarvis",
+        desc: "L'intelligence artificielle prend le contrôle du QG.",
         changes: [
-            { icon: Radio, text: "Ordres du Jour : 3 missions quotidiennes pour maintenir la discipline." },
-            { icon: BookOpen, text: "Académie : Base de savoir stratégique." },
-            { icon: Shield, text: "Citadelle : Calculateur de survie actif." }
+            { icon: Zap, text: "JARVIS PRIME : Assistant tactique conversationnel activé. Posez vos questions, il structure vos plans." },
+            { icon: Shield, text: "L'INTERCEPTEUR : Jarvis bloque psychologiquement vos tentatives de dépenses futiles dangereuses." },
+            { icon: Target, text: "OMNIPRÉSENCE : L'IA analyse désormais vos Conquêtes et votre Solde en temps réel." }
         ]
     }
 ];
@@ -587,7 +588,7 @@ function OnboardingScreen({ onComplete }) {
 // ==========================================
 function RadioLink({ onClose }) {
     // ⚠️ COLLE TA CLÉ API ICI ⚠️
-    const API_KEY = "AIzaSyCIwWoqHqCos5zsWkylOgbKQQP_yRq872k"; 
+    const API_KEY = "AIzaSyCYA7EjX6lYUYe7BE6Ih8N2Y6MteAsj43w"; 
     
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
@@ -692,7 +693,172 @@ function RadioLink({ onClose }) {
     );
 }
 
- // Remplace toute la fonction Dashboard par celle-ci
+// ==========================================
+// SERVICE JARVIS PRIME - MODE CONVERSATION
+// ==========================================
+const askJarvisChat = async (history, userMessage, contextData) => {
+    // 👇 TA CLÉ API 👇
+    const API_KEY = "AIzaSyAWBq6KQXbGZwvKZNWy6gsUpzr0HkyWOFE"; 
+    const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
+
+    try {
+        // 1. On prépare le contexte global (L'état de l'Empire)
+        const systemContext = `
+            Tu es JARVIS, l'IA centrale de l'application IMPERIUM.
+            
+            DONNÉES DU COMMANDANT :
+            - Solde Cash: ${contextData.balance} ${contextData.currency}
+            - Bunker (Épargne): ${contextData.bunker} ${contextData.currency}
+            - Dépenses du mois: ${contextData.spentToday} (Aujourd'hui)
+            - Projets en cours: ${contextData.projects.map(p => p.title).join(", ")}
+            
+            TES CAPACITÉS :
+            1. Analyser les finances.
+            2. Expliquer comment utiliser l'appli (Créer un projet, ajouter une dette, régler les protocoles).
+            3. Guider sur la stratégie financière (Règle 50/30/20).
+            
+            TON STYLE :
+            - Tu es un Conseiller Stratégique (Calme, Intelligent, Proactif).
+            - Tu vouvoies le Commandant.
+            - Réponses courtes et percutantes (Max 3 phrases, sauf si on demande une explication détaillée).
+            
+            Si l'utilisateur demande "Comment faire X ?", explique-lui la procédure dans l'appli.
+        `;
+
+        // 2. On construit l'historique pour Google (Prompt + Chat)
+        const contents = [
+            { role: "user", parts: [{ text: systemContext }] }, // Instruction Système cachée
+            ...history.map(msg => ({
+                role: msg.sender === 'user' ? "user" : "model",
+                parts: [{ text: msg.text }]
+            })),
+            { role: "user", parts: [{ text: userMessage }] } // La nouvelle question
+        ];
+
+        // 3. Appel API
+        const response = await fetch(URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: contents })
+        });
+
+        const data = await response.json();
+
+        if (data.error) return "⚠️ Erreur de liaison neuronale.";
+        if (data.candidates && data.candidates[0].content) {
+            return data.candidates[0].content.parts[0].text;
+        }
+        return "Je ne reçois rien, Commandant.";
+
+    } catch (error) {
+        console.error(error);
+        return "⚠️ Connexion perdue.";
+    }
+};
+
+// ==========================================
+// INTERFACE JARVIS PRIME (CHAT)
+// ==========================================
+function JarvisModal({ onClose, contextData }) {
+    // Message d'accueil proactif
+    const [messages, setMessages] = useState([
+        { id: 1, sender: 'jarvis', text: "Commandant. Je suis connecté aux systèmes d'Imperium. Analyse terminée. Que puis-je faire pour votre stratégie aujourd'hui ?" }
+    ]);
+    const [input, setInput] = useState("");
+    const [loading, setLoading] = useState(false);
+    const scrollRef = useRef(null);
+
+    // Auto-scroll vers le bas
+    useEffect(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }, [messages]);
+
+    const handleSend = async () => {
+        if (!input.trim()) return;
+        
+        const userMsg = { id: Date.now(), sender: 'user', text: input };
+        setMessages(prev => [...prev, userMsg]);
+        setInput("");
+        setLoading(true);
+
+        // On envoie l'historique à l'IA
+        const responseText = await askJarvisChat(messages, input, contextData);
+        
+        const jarvisMsg = { id: Date.now() + 1, sender: 'jarvis', text: responseText };
+        setMessages(prev => [...prev, jarvisMsg]);
+        setLoading(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-[#0f1115] border border-gold/30 w-full max-w-md h-[85vh] sm:h-[600px] sm:rounded-2xl flex flex-col shadow-2xl relative overflow-hidden">
+                
+                {/* Header Jarvis */}
+                <div className="p-4 border-b border-gold/10 bg-[#161b22] flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <div className="w-10 h-10 bg-gold/10 rounded-full flex items-center justify-center border border-gold/50 animate-pulse">
+                                <Zap className="w-5 h-5 text-gold" />
+                            </div>
+                            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#161b22]"></div>
+                        </div>
+                        <div>
+                            <h3 className="text-gold font-bold font-serif tracking-widest text-sm">JARVIS PRIME</h3>
+                            <p className="text-[9px] text-gray-500 uppercase">En ligne • Omniprésent</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
+                </div>
+
+                {/* Zone de Chat */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-black/20" ref={scrollRef}>
+                    {messages.map(msg => (
+                        <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed ${
+                                msg.sender === 'user' 
+                                ? 'bg-gold text-black font-medium rounded-tr-none' 
+                                : 'bg-[#1e232e] text-gray-200 border border-white/5 rounded-tl-none'
+                            }`}>
+                                {msg.text}
+                            </div>
+                        </div>
+                    ))}
+                    {loading && (
+                        <div className="flex justify-start">
+                            <div className="bg-[#1e232e] p-3 rounded-2xl rounded-tl-none border border-white/5 flex gap-1 items-center">
+                                <div className="w-1.5 h-1.5 bg-gold rounded-full animate-bounce"></div>
+                                <div className="w-1.5 h-1.5 bg-gold rounded-full animate-bounce delay-100"></div>
+                                <div className="w-1.5 h-1.5 bg-gold rounded-full animate-bounce delay-200"></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Input Zone */}
+                <div className="p-4 bg-[#161b22] border-t border-white/5 shrink-0">
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={input} 
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                            placeholder="Ordonnez, Commandant..." 
+                            className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-gold focus:outline-none"
+                            autoFocus
+                        />
+                        <button onClick={handleSend} disabled={!input.trim() || loading} className="bg-gold/90 hover:bg-gold text-black p-3 rounded-xl disabled:opacity-50 transition-colors">
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+//              DASHBOARD
+// ==========================================
 function Dashboard({ onNavigate }) {
 
     // DONNÉES
@@ -715,7 +881,21 @@ function Dashboard({ onNavigate }) {
     const [distributeGoalAmount, setDistributeGoalAmount] = useState("");
     const [showOrders, setShowOrders] = useState(false);
     const [pendingTransaction, setPendingTransaction] = useState(null);
-  
+    const [showJarvis, setShowJarvis] = useState(false);
+    const [jarvisLoading, setJarvisLoading] = useState(false);
+    const [jarvisMessage, setJarvisMessage] = useState("");
+    const toggleJarvis = () => setShowJarvis(true);
+
+    // FONCTION POUR APPELER L'IA
+    const handleCallJarvis = async () => {
+        setShowJarvis(true);
+        setJarvisLoading(true);
+        // On appelle la fonction qu'on a créée plus haut
+        const advice = await askJarvis(balance, transactions, goals);
+        setJarvisMessage(advice);
+        setJarvisLoading(false);
+    };
+
     // SAISIE
     const [transactionType, setTransactionType] = useState('expense');
     const [expenseCategory, setExpenseCategory] = useState('need'); 
@@ -797,38 +977,64 @@ function Dashboard({ onNavigate }) {
   }, [balance, bunker, transactions, goals]); // 👈 N'OUBLIE PAS D'AJOUTER 'goals' ICI
   
     // FONCTIONS
+    // =======================================================
+    // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS)
+    // =======================================================
     const handleSubmit = (e) => {
-      e.preventDefault();
-      if (!amount) return;
-      const value = parseFloat(amount);
-      
-      // DANS handleSubmit
-    if (transactionType === 'income') {
-        // On ouvre la modale de répartition tactique
-        setPendingTransaction({ value, description });
-        setShowDistributeModal(true); 
+        e.preventDefault();
+        if (!amount) return;
+        const value = parseFloat(amount);
         
-        // Reset des champs de la modale
-        setDistributeWave("");
-        setDistributeGoalId("");
-        setDistributeGoalAmount("");
+        // 1. GESTION DES REVENUS (Pas d'interception ici, l'argent rentre)
+        if (transactionType === 'income') {
+            setPendingTransaction({ value, description });
+            setShowDistributeModal(true); 
+            setDistributeWave("");
+            setDistributeGoalId("");
+            setDistributeGoalAmount("");
+            setIsModalOpen(false);
+            setAmount(''); setDescription('');
+            return;
+        }
         
-        // On ferme le pavé numérique
-        setIsModalOpen(false);
-        setAmount(''); setDescription('');
-        return;
-    }
-      
-      if (transactionType === 'expense') {
-          if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
-          setBalance(balance - value);
-      } else {
-          setBalance(balance + value);
-      }
-      const newTransaction = { id: Date.now(), desc: description || (transactionType === 'expense' ? "Dépense" : "Revenu"), amount: value, type: transactionType, category: expenseCategory, date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
-      setTransactions([newTransaction, ...transactions]);
-      setAmount(''); setDescription(''); setIsModalOpen(false);
-    };
+        // 2. 🛡️ INTERCEPTEUR JARVIS (C'est ici que ça se joue)
+        // Si c'est une Dépense "Futilité" (Want) ET qu'elle dépasse 20% du cash disponible
+        if (transactionType === 'expense' && expenseCategory === 'want') {
+            const threshold = availableCash * 0.20; // Seuil de 20%
+            
+            if (value > threshold) {
+                // Jarvis déclenche une alerte bloquante
+                const confirmAction = window.confirm(
+                    `⚠️ ALERTE JARVIS\n\nCommandant, vous êtes sur le point de dépenser ${formatMoney(value)} ${currency} en futilités.\n\nCela représente plus de 20% de votre trésorerie disponible.\n\nConfirmez-vous cet ordre malgré le risque ?`
+                );
+                
+                // Si l'utilisateur clique sur "Annuler", on bloque tout.
+                if (!confirmAction) return; 
+            }
+        }
+  
+        // 3. GESTION DES DÉPENSES (Si Jarvis a laissé passer ou si c'est une nécessité)
+        if (transactionType === 'expense') {
+            if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
+            setBalance(balance - value);
+        } else {
+            setBalance(balance + value);
+        }
+  
+        // 4. ENREGISTREMENT
+        const newTransaction = { 
+            id: Date.now(), 
+            desc: description || (transactionType === 'expense' ? "Dépense" : "Revenu"), 
+            amount: value, 
+            type: transactionType, 
+            category: expenseCategory, 
+            date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), 
+            rawDate: new Date().toISOString() 
+        };
+        
+        setTransactions([newTransaction, ...transactions]);
+        setAmount(''); setDescription(''); setIsModalOpen(false);
+      };
   
     const finalizeIncome = () => {
         if (!pendingTransaction) return;
@@ -1011,6 +1217,14 @@ function Dashboard({ onNavigate }) {
                     <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
                     <h3 className="text-sm font-bold text-white relative z-10">Radio QG</h3>
                     <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Rapport Sergent</p>
+              </button>
+              
+             {/* BOUTON JARVIS (PREMIUM) */}
+              <button onClick={handleCallJarvis} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-gold/20 active:scale-[0.98] relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <Zap className="w-6 h-6 text-gold mb-3 opacity-90 relative z-10" />
+                  <h3 className="text-sm font-bold text-white relative z-10">JARVIS AI</h3>
+                  <p className="text-[9px] text-gold uppercase tracking-wide relative z-10">Analyse Tactique</p>
               </button>
 
               <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
@@ -1198,6 +1412,20 @@ function Dashboard({ onNavigate }) {
       )}
         {showOrders && <OrdersModal onClose={() => setShowOrders(false)} />}
         {showRadio && <RadioLink onClose={() => setShowRadio(false)} />}
+        {/* MODALE JARVIS PRIME */}
+        {showJarvis && (
+            <JarvisModal 
+                onClose={() => setShowJarvis(false)} 
+                contextData={{
+                    balance: availableCash,
+                    bunker: totalBunker,
+                    spentToday: formatMoney(spentToday),
+                    currency: currency,
+                    projects: projects
+                }}
+            />
+        )}
+        
       </div>
       </PageTransition>
     );
