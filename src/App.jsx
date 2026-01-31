@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2 } from 'lucide-react';
+import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2, MessageSquare, Send} from 'lucide-react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // ==========================================
@@ -2341,17 +2341,26 @@ function AcademyScreen({ onBack }) {
     );
 }
 
+// ==========================================
+// 12. ÉCRAN PARAMÈTRES (CORRIGÉ & COMPLET)
+// ==========================================
 function SettingsScreen({ onBack }) { 
+    // ÉTATS
     const [importData, setImportData] = useState("");
     const [exportCode, setExportCode] = useState(""); 
     
-    // CALIBRAGE STATES
+    // Calibrage
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
     const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
 
+    // Feedback (Le nouveau système)
+    const [showFeedback, setShowFeedback] = useState(false);
+    const [feedbackText, setFeedbackText] = useState("");
+
+    // --- FONCTIONS ---
+
     const handleExport = async () => { 
         try {
-            // 1. Récupération des données
             const data = { 
                 balance: localStorage.getItem('imperium_balance'), 
                 transactions: localStorage.getItem('imperium_transactions'), 
@@ -2370,36 +2379,24 @@ function SettingsScreen({ onBack }) {
             }; 
             
             const jsonString = JSON.stringify(data);
-
-            // 2. ENCODAGE BLINDÉ (C'est ce qui règle le bug précédent)
             const safeEncoded = btoa(unescape(encodeURIComponent(jsonString)));
             setExportCode(safeEncoded); 
             
-            // 3. ACTION AUTOMATIQUE (Mobile First)
             if (navigator.share) {
-                // Sur Mobile : Ouvre le menu de partage natif (WhatsApp, Copier, Notes...)
-                await navigator.share({
-                    title: 'Sauvegarde Imperium',
-                    text: safeEncoded,
-                });
+                await navigator.share({ title: 'Sauvegarde Imperium', text: safeEncoded });
             } else {
-                // Sur PC : Copie directe dans le presse-papier
                 await navigator.clipboard.writeText(safeEncoded);
-                alert("✅ CODE COPIÉ DANS LE PRESSE-PAPIER !");
+                alert("✅ CODE COPIÉ !");
             }
-
         } catch (error) {
             console.error(error);
-            // Si l'automatisme échoue (rare), le code est quand même affiché en bas
-            alert("Sauvegarde générée. Si la copie a échoué, copiez le code affiché manuellement.");
+            alert("Erreur de génération. Copiez le code manuellement ci-dessous.");
         }
     }; 
     
     const handleImport = () => { 
         try { 
             if(!importData) return; 
-            
-            // DÉCODAGE BLINDÉ
             const jsonString = decodeURIComponent(escape(atob(importData)));
             const decoded = JSON.parse(jsonString); 
             
@@ -2435,7 +2432,28 @@ function SettingsScreen({ onBack }) {
         }
     };
     
-    const resetEmpire = () => { if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { localStorage.clear(); window.location.reload(); } }; 
+    const resetEmpire = () => { 
+        if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { 
+            localStorage.clear(); 
+            window.location.reload(); 
+        } 
+    }; 
+
+    // FONCTION FEEDBACK WHATSAPP
+    const sendFeedbackToHQ = () => {
+        if (!feedbackText.trim()) return;
+        
+        // ⚠️ REMPLACE PAR TON NUMERO ICI (Sans le +)
+        const MY_NUMBER = "22606578106"; 
+        
+        const message = `[RAPPORT IMPERIUM v${localStorage.getItem('imperium_version')}]%0A%0ACommandant, voici mon feedback :%0A${encodeURIComponent(feedbackText)}`;
+        
+        // Ouvre WhatsApp
+        window.open(`https://wa.me/${MY_NUMBER}?text=${message}`, '_blank');
+        
+        setFeedbackText("");
+        setShowFeedback(false);
+    };
 
     return (
         <PageTransition>
@@ -2447,7 +2465,21 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
                     
-                    {/* CALIBRAGE */}
+                    {/* 1. FEEDBACK (RAPPORT AU QG) */}
+                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-gold/20 relative overflow-hidden">
+                         <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-gold/10 text-gold rounded-lg"><MessageSquare className="w-5 h-5"/></div>
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-200">Rapport au QG</h3>
+                                <p className="text-[10px] text-gray-500">Un bug ? Une idée ? Informez l'Architecte.</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowFeedback(true)} className="w-full bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                            <Send className="w-4 h-4" /> Transmettre
+                        </button>
+                    </div>
+
+                    {/* 2. CALIBRAGE */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                          <div className="absolute top-0 right-0 p-4 opacity-5"><RefreshCw className="w-24 h-24 text-white" /></div>
                          <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -2461,7 +2493,7 @@ function SettingsScreen({ onBack }) {
                         </div>
                     </div>
 
-                    {/* SAUVEGARDE (AUTOMATIQUE) */}
+                    {/* 3. SAUVEGARDE */}
                     <div className="bg-[#111] p-5 rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
@@ -2472,7 +2504,6 @@ function SettingsScreen({ onBack }) {
                             <Copy className="w-4 h-4" /> GÉNÉRER & COPIER
                         </button>
                         
-                        {/* Zone de secours invisible sauf si le code est généré */}
                         {exportCode && (
                             <div className="animate-in fade-in slide-in-from-top-2">
                                 <p className="text-[10px] text-gray-500 mb-1">Code généré :</p>
@@ -2481,7 +2512,7 @@ function SettingsScreen({ onBack }) {
                         )}
                     </div>
                     
-                    {/* RESTAURATION */}
+                    {/* 4. RESTAURATION */}
                     <div className="bg-[#111] border border-white/5 rounded-xl p-5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div>
@@ -2491,10 +2522,45 @@ function SettingsScreen({ onBack }) {
                         <button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">Restaurer</button>
                     </div>
                     
+                    {/* 5. RESET */}
                     <div className="pt-10 border-t border-white/5">
                         <button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button>
                     </div>
                 </div>
+
+                {/* --- MODALE FEEDBACK (INTÉGRÉE ET SÉCURISÉE) --- */}
+                {showFeedback && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+                        <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+                            {/* BOUTON FERMER (C'est souvent lui qui manquait) */}
+                            <button onClick={() => setShowFeedback(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
+                                <X className="w-5 h-5"/>
+                            </button>
+                            
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-3 bg-gold/10 rounded-full text-gold border border-gold/20">
+                                    <MessageSquare className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-serif font-bold text-lg">Transmission</h3>
+                                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Ligne directe vers l'Architecte</p>
+                                </div>
+                            </div>
+
+                            <textarea 
+                                value={feedbackText} 
+                                onChange={(e) => setFeedbackText(e.target.value)} 
+                                placeholder="Commandant, je suggère..." 
+                                className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-gold focus:outline-none h-32 mb-4 custom-scrollbar resize-none"
+                                autoFocus
+                            />
+
+                            <button onClick={sendFeedbackToHQ} disabled={!feedbackText.trim()} className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-lg disabled:opacity-50">
+                                Envoyer le rapport
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </PageTransition>
     ); 
