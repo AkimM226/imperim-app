@@ -467,10 +467,12 @@ export default function App() {
       <>
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
           
-          {/* Le Dashboard gère sa propre navigation interne via le menu du bas */}
-          {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
+          {/* DASHBOARD : On ne lui passe RIEN, il est autonome maintenant */}
+          {currentView === 'dashboard' && (
+              <Dashboard onNavigate={navigate} />
+          )}
           
-          {/* Les autres écrans ont un bouton retour */}
+          {/* ECRANS SECONDAIRES */}
           {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
@@ -483,8 +485,8 @@ export default function App() {
           {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
       </>
     );
-  }
-  
+}
+
 // ==========================================
 // 1. ONBOARDING (CONFIG + TUTORIEL)
 // ==========================================
@@ -495,8 +497,7 @@ function OnboardingScreen({ onComplete }) {
     const [slideIndex, setSlideIndex] = useState(0);
 
     const [initialBalance, setInitialBalance] = useState('');
-    const [mainProject, setMainProject] = useState('');
-    const [currency, setCurrency] = useState('');
+    const [mainProject, setMainProject] = useState('');    const [currency, setCurrency] = useState('');
     const [zone, setZone] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isHolding, setIsHolding] = useState(false);
@@ -694,48 +695,60 @@ function RadioLink({ onClose }) {
 }
 
 // ==========================================
-// SERVICE JARVIS PRIME - MODE CONVERSATION
+// SERVICE JARVIS PRIME - VISION TOTALE
 // ==========================================
 const askJarvisChat = async (history, userMessage, contextData) => {
-    // 👇 TA CLÉ API 👇
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
     const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
 
     try {
-        // 1. On prépare le contexte global (L'état de l'Empire)
+       // 1. Préparation des données (AVEC SÉCURITÉ || [])
+       const recentLogs = (contextData.transactions || []).slice(0, 15).map(t => 
+        `[${t.date}] ${t.type === 'expense' ? '-' : '+'}${t.amount} (${t.desc})`
+    ).join("\n");
+
+    // On ajoute "|| []" pour dire : "Si la liste n'existe pas, prends une liste vide"
+    const arsenal = (contextData.skills || []).map(s => `- ${s.name} (Niveau ${s.level})`).join("\n");
+    const citadelle = (contextData.debts || []).map(d => `- Dette: ${d.name} (${d.amount} restant)`).join("\n");
+    const protocoles = (contextData.protocols || []).map(p => `- Règle: ${p.text}`).join("\n");
+    const cibles = (contextData.projects || []).map(p => `- ${p.title} (${p.current}/${p.target})`).join("\n");
+        // 2. Le contexte global (L'état de l'Empire)
         const systemContext = `
-            Tu es JARVIS, l'IA centrale de l'application IMPERIUM.
+            Tu es JARVIS, l'IA centrale d'IMPERIUM.
             
-            DONNÉES DU COMMANDANT :
-            - Solde Cash: ${contextData.balance} ${contextData.currency}
-            - Bunker (Épargne): ${contextData.bunker} ${contextData.currency}
-            - Dépenses du mois: ${contextData.spentToday} (Aujourd'hui)
-            - Projets en cours: ${contextData.projects.map(p => p.title).join(", ")}
+            DONNÉES STRATÉGIQUES DU COMMANDANT :
+            💰 FINANCES (Cash/Wave): ${contextData.balance} / ${contextData.bunker} ${contextData.currency}
             
-            TES CAPACITÉS :
-            1. Analyser les finances.
-            2. Expliquer comment utiliser l'appli (Créer un projet, ajouter une dette, régler les protocoles).
-            3. Guider sur la stratégie financière (Règle 50/30/20).
+            📜 REGISTRE (15 derniers mouvements) :
+            ${recentLogs}
             
-            TON STYLE :
-            - Tu es un Conseiller Stratégique (Calme, Intelligent, Proactif).
-            - Tu vouvoies le Commandant.
-            - Réponses courtes et percutantes (Max 3 phrases, sauf si on demande une explication détaillée).
+            🎯 CIBLES (Projets en cours) :
+            ${contextData.projects.map(p => `- ${p.title} (${p.current}/${p.target})`).join("\n")}
             
-            Si l'utilisateur demande "Comment faire X ?", explique-lui la procédure dans l'appli.
+            ⚔️ ARSENAL (Compétences) :
+            ${arsenal || "Aucune compétence enregistrée."}
+            
+            🏰 CITADELLE (Dettes & Règles) :
+            ${citadelle || "Aucune dette active."}
+            ${protocoles}
+            
+            TES ORDRES :
+            1. Utilise ces données pour répondre. Si on parle de dettes, regarde la section CITADELLE.
+            2. Si le solde est bas, conseille sur les dépenses du REGISTRE.
+            3. Si un projet avance mal, propose d'augmenter une compétence de l'ARSENAL.
+            
+            Réponds court, style militaire/efficace.
         `;
 
-        // 2. On construit l'historique pour Google (Prompt + Chat)
         const contents = [
-            { role: "user", parts: [{ text: systemContext }] }, // Instruction Système cachée
+            { role: "user", parts: [{ text: systemContext }] },
             ...history.map(msg => ({
                 role: msg.sender === 'user' ? "user" : "model",
                 parts: [{ text: msg.text }]
             })),
-            { role: "user", parts: [{ text: userMessage }] } // La nouvelle question
+            { role: "user", parts: [{ text: userMessage }] }
         ];
 
-        // 3. Appel API
         const response = await fetch(URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -744,11 +757,11 @@ const askJarvisChat = async (history, userMessage, contextData) => {
 
         const data = await response.json();
 
-        if (data.error) return "⚠️ Erreur de liaison neuronale.";
+        if (data.error) return "⚠️ Erreur liaison QG.";
         if (data.candidates && data.candidates[0].content) {
             return data.candidates[0].content.parts[0].text;
         }
-        return "Je ne reçois rien, Commandant.";
+        return "Silence radio...";
 
     } catch (error) {
         console.error(error);
@@ -859,42 +872,43 @@ function JarvisModal({ onClose, contextData }) {
 // ==========================================
 //              DASHBOARD
 // ==========================================
+// On ajoute skills, debts, protocols, projects, transactions...
 function Dashboard({ onNavigate }) {
-
-    // DONNÉES
-    const [showRadio, setShowRadio] = useState(false);
+    
+    // 1. CHARGEMENT COMPLET DES DONNÉES (AUTONOMIE)
     const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
     const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
     const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
     const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
     const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
     const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_projects') || "[]"); } catch { return []; } });
-    const currency = localStorage.getItem('imperium_currency') || "€";
     
-    // ETATS UI
+    // Pour Jarvis
+    const [skills, setSkills] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_skills') || "[]"); } catch { return []; } });
+    const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
+    
+    const currency = localStorage.getItem('imperium_currency') || "€";
+
+    // 2. ETATS D'INTERFACE (LA RADIO EST ICI MAINTENANT !)
+    const [showRadio, setShowRadio] = useState(false);
+    const [showJarvis, setShowJarvis] = useState(false);
+    const [showOrders, setShowOrders] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+    
+    // Modales de transaction
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
-    const [showHistory, setShowHistory] = useState(false);
     const [showDistributeModal, setShowDistributeModal] = useState(false);
+    
+    // États pour la distribution tactique
+    const [pendingTransaction, setPendingTransaction] = useState(null);
     const [distributeWave, setDistributeWave] = useState("");
     const [distributeGoalId, setDistributeGoalId] = useState("");
     const [distributeGoalAmount, setDistributeGoalAmount] = useState("");
-    const [showOrders, setShowOrders] = useState(false);
-    const [pendingTransaction, setPendingTransaction] = useState(null);
-    const [showJarvis, setShowJarvis] = useState(false);
+    
+    // États pour Jarvis Chat
     const [jarvisLoading, setJarvisLoading] = useState(false);
     const [jarvisMessage, setJarvisMessage] = useState("");
-    const toggleJarvis = () => setShowJarvis(true);
-
-    // FONCTION POUR APPELER L'IA
-    const handleCallJarvis = async () => {
-        setShowJarvis(true);
-        setJarvisLoading(true);
-        // On appelle la fonction qu'on a créée plus haut
-        const advice = await askJarvis(balance, transactions, goals);
-        setJarvisMessage(advice);
-        setJarvisLoading(false);
-    };
 
     // SAISIE
     const [transactionType, setTransactionType] = useState('expense');
@@ -976,7 +990,7 @@ function Dashboard({ onNavigate }) {
     
   }, [balance, bunker, transactions, goals]); // 👈 N'OUBLIE PAS D'AJOUTER 'goals' ICI
   
-    // FONCTIONS
+    
     // =======================================================
     // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS)
     // =======================================================
@@ -1220,7 +1234,7 @@ function Dashboard({ onNavigate }) {
               </button>
               
              {/* BOUTON JARVIS (PREMIUM) */}
-              <button onClick={handleCallJarvis} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-gold/20 active:scale-[0.98] relative overflow-hidden group">
+             <button onClick={() => setShowJarvis(true)} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-gold/20 active:scale-[0.98] relative overflow-hidden group">
                   <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Zap className="w-6 h-6 text-gold mb-3 opacity-90 relative z-10" />
                   <h3 className="text-sm font-bold text-white relative z-10">JARVIS AI</h3>
@@ -1412,16 +1426,29 @@ function Dashboard({ onNavigate }) {
       )}
         {showOrders && <OrdersModal onClose={() => setShowOrders(false)} />}
         {showRadio && <RadioLink onClose={() => setShowRadio(false)} />}
-        {/* MODALE JARVIS PRIME */}
+        
+        {/* MODALE JARVIS PRIME - CONNECTÉE À TOUT */}
         {showJarvis && (
             <JarvisModal 
                 onClose={() => setShowJarvis(false)} 
                 contextData={{
+                    // Finances
                     balance: availableCash,
                     bunker: totalBunker,
-                    spentToday: formatMoney(spentToday),
                     currency: currency,
-                    projects: projects
+                    
+                    // Registre (On envoie tout, l'IA filtrera)
+                    transactions: transactions,
+                    
+                    // Cibles
+                    projects: projects,
+                    
+                    // Arsenal (Nouveau !)
+                    skills: skills,
+                    
+                    // Citadelle (Nouveau !)
+                    debts: debts,
+                    protocols: protocols
                 }}
             />
         )}
