@@ -588,7 +588,7 @@ function OnboardingScreen({ onComplete }) {
 // ==========================================
 function RadioLink({ onClose }) {
     // ⚠️ COLLE TA CLÉ API ICI ⚠️
-    const API_KEY = "AIzaSyCUgMZuPyj8dpPGuX8mVw8p02tOrM6Wv_Y"; 
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
     
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
@@ -698,7 +698,7 @@ function RadioLink({ onClose }) {
 // ==========================================
 const askJarvisChat = async (history, userMessage, contextData) => {
     // 👇 TA CLÉ API 👇
-    const API_KEY = "AIzaSyDg5XgGDr_zsU5j1iRMYDdaOEk5ld5pxgE"; 
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
     const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
 
     try {
