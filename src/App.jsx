@@ -2348,7 +2348,7 @@ function SettingsScreen({ onBack }) {
     // ÉTATS
     const [importData, setImportData] = useState("");
     const [exportCode, setExportCode] = useState(""); 
-    
+    const [sending, setSending] = useState(false);
     // Calibrage
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
     const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
@@ -2439,20 +2439,43 @@ function SettingsScreen({ onBack }) {
         } 
     }; 
 
-    // FONCTION FEEDBACK WHATSAPP
-    const sendFeedbackToHQ = () => {
+    // 2. REMPLACE L'ANCIENNE FONCTION 'sendFeedbackToHQ' PAR CELLE-CI :
+    const sendFeedbackToHQ = async () => {
         if (!feedbackText.trim()) return;
-        
-        // ⚠️ REMPLACE PAR TON NUMERO ICI (Sans le +)
-        const MY_NUMBER = "22606578106"; 
-        
-        const message = `[RAPPORT IMPERIUM v${localStorage.getItem('imperium_version')}]%0A%0ACommandant, voici mon feedback :%0A${encodeURIComponent(feedbackText)}`;
-        
-        // Ouvre WhatsApp
-        window.open(`https://wa.me/${MY_NUMBER}?text=${message}`, '_blank');
-        
-        setFeedbackText("");
-        setShowFeedback(false);
+        setSending(true); // On active le radar (chargement)
+
+        // 👇 COLLE TON LIEN FORMSPREE ICI 👇
+        const FORM_ENDPOINT = "https://formspree.io/f/xdadkygr"; 
+
+        try {
+            // On prépare le rapport tactique
+            const payload = {
+                message: feedbackText,
+                version: localStorage.getItem('imperium_version') || "Inconnue",
+                date: new Date().toLocaleString(),
+                // Tu peux ajouter d'autres infos techniques ici si tu veux
+            };
+
+            // Envoi silencieux au QG
+            const response = await fetch(FORM_ENDPOINT, {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("✅ TRANSMISSION REÇUE AU QG.\nTerminé.");
+                setFeedbackText(""); // On vide le champ
+                setShowFeedback(false); // On ferme la fenêtre
+            } else {
+                alert("⚠️ ÉCHEC TRANSMISSION. Réessayez.");
+            }
+        } catch (error) {
+            console.error("Erreur Transmission:", error);
+            alert("⚠️ ERREUR RÉSEAU. Vérifiez votre connexion.");
+        } finally {
+            setSending(false); // On coupe le radar
+        }
     };
 
     return (
@@ -2555,9 +2578,20 @@ function SettingsScreen({ onBack }) {
                                 autoFocus
                             />
 
-                            <button onClick={sendFeedbackToHQ} disabled={!feedbackText.trim()} className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-lg disabled:opacity-50">
-                                Envoyer le rapport
-                            </button>
+                               <button 
+                                 onClick={sendFeedbackToHQ} 
+                                  disabled={!feedbackText.trim() || sending} 
+                                className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+>
+                            {sending ? (
+                             <>
+                             <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                             Transmission...
+                            </>
+                           ) : (
+                             "Envoyer le rapport"
+                             )}
+                           </button>
                         </div>
                     </div>
                 )}
