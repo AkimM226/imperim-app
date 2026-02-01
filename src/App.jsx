@@ -1901,40 +1901,165 @@ function StatsScreen({ onBack }) {
 }
 
 // ==========================================
-// 4. ARSENAL (Compétences)
+// 4. ARSENAL (Compétences & Stratégie IA)
 // ==========================================
 function SkillsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
+    // On récupère la clé API pour l'analyse tactique
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
     const savedZone = localStorage.getItem('imperium_zone');
-    const userZone = savedZone ? JSON.parse(savedZone) : ZONES[1];
+    const userZone = savedZone ? JSON.parse(savedZone) : { name: "Zone Inconnue" };
+    
     const [skills, setSkills] = useState(JSON.parse(localStorage.getItem('imperium_skills') || "[]"));
     const [newSkill, setNewSkill] = useState("");
-    const [selectedGig, setSelectedGig] = useState(null);
+    
+    // États pour l'analyse IA
+    const [analyzing, setAnalyzing] = useState(null); // ID de la compétence en cours d'analyse
+    const [tacticResult, setTacticResult] = useState(null); // Résultat de l'IA
+
     useEffect(() => { localStorage.setItem('imperium_skills', JSON.stringify(skills)); }, [skills]);
-    const addSkill = (e) => { e.preventDefault(); if (!newSkill.trim()) return; setSkills([...skills, { id: Date.now(), name: newSkill, level: "Apprenti" }]); setNewSkill(""); };
-    const deleteSkill = (id) => { setSkills(skills.filter(s => s.id !== id)); };
-    const findGig = (skillName) => {
-        const key = Object.keys(BUSINESS_IDEAS).find(k => skillName.toLowerCase().includes(k));
-        const gig = key ? BUSINESS_IDEAS[key] : BUSINESS_IDEAS['default'];
-        let finalPrice = gig.price;
-        if (currency.includes('FCFA') || currency.includes('XOF') || currency.includes('XAF')) finalPrice = gig.price * 655;
-        else if (currency.includes('GNF')) finalPrice = gig.price * 9000;
-        else if (currency.includes('CDF')) finalPrice = gig.price * 2500;
-        else if (currency.includes('$') && currency !== 'CAD') finalPrice = gig.price * 1.1;
-        if (userZone && userZone.factor) finalPrice = finalPrice * userZone.factor;
-        if (finalPrice > 1000) finalPrice = Math.round(finalPrice / 500) * 500;
-        return { ...gig, displayPrice: formatMoney(finalPrice) };
+
+    const addSkill = (e) => { 
+        e.preventDefault(); 
+        if (!newSkill.trim()) return; 
+        setSkills([...skills, { id: Date.now(), name: newSkill, level: "Apprenti" }]); 
+        setNewSkill(""); 
     };
+    
+    const deleteSkill = (id) => { setSkills(skills.filter(s => s.id !== id)); };
+
+    // --- C'EST ICI QUE LA MAGIE OPÈRE ---
+    const generateWarTactic = async (skill) => {
+        setAnalyzing(skill.id);
+        setTacticResult(null);
+
+        const prompt = `
+            AGIS COMME UN GÉNÉRAL EN GUERRE ÉCONOMIQUE.
+            
+            SOLDAT : Possède la compétence "${skill.name}".
+            TERRAIN : ${userZone.name}.
+            DEVISE : ${currency}.
+
+            MISSION : Donne-moi UNE SEULE stratégie d'attaque immédiate (Guérilla Marketing) pour trouver un client AUJOURD'HUI.
+            
+            FORMAT DE RÉPONSE STRICT (JSON) :
+            {
+                "target": "Qui aller voir précisément (ex: Les coiffeurs sans site sur Maps)",
+                "action": "L'action exacte (ex: Entrer, demander le patron, montrer X)",
+                "price": "Prix psychologique à annoncer (juste le chiffre)",
+                "pitch": "Une phrase d'accroche tueuse pour vendre"
+            }
+            
+            Ne sois pas poli. Sois efficace, brutal et précis.
+        `;
+
+        try {
+            // On utilise le modèle Pro (ou celui qui marche chez toi)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates[0].content) {
+                const rawText = data.candidates[0].content.parts[0].text;
+                // Nettoyage du JSON (au cas où l'IA mettrait des ```json ...)
+                const cleanJson = rawText.replace(/```json|```/g, '').trim();
+                const tactic = JSON.parse(cleanJson);
+                setTacticResult({ ...tactic, skillName: skill.name });
+            }
+        } catch (error) {
+            console.error("Erreur Tactique:", error);
+            alert("Liaison QG brouillée. Réessayez.");
+        } finally {
+            setAnalyzing(null);
+        }
+    };
+
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
             <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
-                <h1 className="text-2xl font-serif text-white font-bold">Arsenal</h1><div className="flex items-center gap-2 mt-2"><Globe className="w-3 h-3 text-gold" /><span className="text-[10px] text-gray-400 uppercase">Marché : {userZone ? userZone.name : "Monde"}</span></div>
+                <h1 className="text-2xl font-serif text-white font-bold">Arsenal Tactique</h1>
+                <div className="flex items-center gap-2 mt-2"><Globe className="w-3 h-3 text-gold" /><span className="text-[10px] text-gray-400 uppercase">Zone d'Opération : {userZone.name}</span></div>
             </div>
-            <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar"><div className="space-y-4">{skills.map(skill => { const gig = findGig(skill.name); return (<div key={skill.id} className="bg-[#111] border border-white/5 p-4 rounded-lg group hover:border-gold/30 transition-colors"><div className="flex justify-between items-start mb-3"><div className="flex items-center gap-3"><div className="p-2 bg-gray-900 rounded-lg text-gold"><Zap className="w-4 h-4 fill-current" /></div><div><p className="text-sm font-bold text-gray-200">{skill.name}</p><p className="text-[10px] text-gray-500 uppercase">Potentiel Détecté</p></div></div><button onClick={() => deleteSkill(skill.id)} className="text-gray-700 hover:text-red-500 p-2"><Trash2 className="w-4 h-4" /></button></div><button onClick={() => setSelectedGig(gig)} className="w-full bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded px-3 py-2 flex items-center justify-between text-xs text-gold transition-colors"><span className="flex items-center gap-2"><Briefcase className="w-3 h-3"/> Monétiser cette compétence</span><span className="font-bold">~{gig.displayPrice} {currency}</span></button></div>)})}</div></div>
-            {selectedGig && (<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 animate-in fade-in"><div className="bg-[#1a1a1a] border border-gold w-full max-w-sm rounded-2xl p-6 shadow-2xl relative"><button onClick={() => setSelectedGig(null)} className="absolute top-4 right-4 text-gray-500"><X className="w-5 h-5"/></button><h3 className="text-gold font-serif text-xl mb-1">{selectedGig.title}</h3><p className="text-white font-bold text-2xl mb-4">{selectedGig.displayPrice} {currency}</p><div className="bg-black/50 p-4 rounded-lg border border-white/10 mb-4"><p className="text-xs text-gray-400 uppercase mb-2">Ordre de Mission :</p><p className="text-sm text-gray-200 leading-relaxed">{selectedGig.task}</p></div><button onClick={() => setSelectedGig(null)} className="w-full bg-gold text-black font-bold py-3 rounded text-xs uppercase tracking-widest">J'accepte le défi</button></div></div>)}
-            <div className="shrink-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full"><form onSubmit={addSkill} className="flex gap-2"><input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Compétence (Infographie, Anglais...)" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" /><button type="submit" disabled={!newSkill.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button></form></div>
+
+            <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar">
+                <div className="space-y-4">
+                    {skills.map(skill => (
+                        <div key={skill.id} className="bg-[#111] border border-white/5 p-4 rounded-lg group hover:border-gold/30 transition-colors">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-gray-900 rounded-lg text-gold"><Zap className="w-4 h-4 fill-current" /></div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-200">{skill.name}</p>
+                                        <p className="text-[10px] text-gray-500 uppercase">Arme enregistrée</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => deleteSkill(skill.id)} className="text-gray-700 hover:text-red-500 p-2"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                            
+                            <button 
+                                onClick={() => generateWarTactic(skill)} 
+                                disabled={analyzing === skill.id}
+                                className="w-full bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded px-3 py-3 flex items-center justify-center gap-2 text-xs text-gold transition-colors uppercase tracking-widest font-bold"
+                            >
+                                {analyzing === skill.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <><Sword className="w-4 h-4"/> Générer Plan d'Attaque</>
+                                )}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* MODALE DE RÉSULTAT TACTIQUE */}
+            {tacticResult && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 animate-in fade-in">
+                    <div className="bg-[#1a1a1a] border border-gold w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+                        <button onClick={() => setTacticResult(null)} className="absolute top-4 right-4 text-gray-500"><X className="w-5 h-5"/></button>
+                        
+                        <div className="mb-6 border-b border-white/10 pb-4">
+                            <p className="text-[10px] text-gold uppercase tracking-widest mb-1">Cible Identifiée</p>
+                            <h3 className="text-white font-serif text-lg font-bold leading-tight">{tacticResult.target}</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Manœuvre (Action)</p>
+                                <p className="text-sm text-gray-200 bg-black/40 p-3 rounded border-l-2 border-gold">{tacticResult.action}</p>
+                            </div>
+                            
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Arme Verbale (Pitch)</p>
+                                <p className="text-sm text-gray-300 italic">"{tacticResult.pitch}"</p>
+                            </div>
+
+                            <div className="pt-4 flex justify-between items-center">
+                                <span className="text-xs text-gray-500 uppercase">Revenu Estimé</span>
+                                <span className="text-xl font-bold text-gold font-serif">{tacticResult.price} {currency}</span>
+                            </div>
+                        </div>
+
+                        <button onClick={() => setTacticResult(null)} className="w-full mt-6 bg-gold text-black font-bold py-3 rounded text-xs uppercase tracking-widest hover:bg-yellow-400 transition-colors">
+                            À vos ordres
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <div className="shrink-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full">
+                <form onSubmit={addSkill} className="flex gap-2">
+                    <input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Nouvelle Compétence..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                    <button type="submit" disabled={!newSkill.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button>
+                </form>
+            </div>
         </div>
         </PageTransition>
     );
