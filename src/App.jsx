@@ -1,5 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sword, Castle, Plus, X, TrendingDown, History, Trash2, ArrowUpCircle, ArrowDownCircle, Fingerprint, ChevronRight, CheckSquare, Square, ArrowLeft, Star, Zap, Search, Settings, Copy, Download, Upload, Briefcase, AlertTriangle, Globe, BarChart3, Flame, Clock, Medal, Lock, Quote, Loader2, Target, PiggyBank, Unlock, Scroll, UserMinus, UserPlus, Repeat, Infinity, CalendarClock, BookOpen, Save, Edit3, Calendar, HelpCircle, Lightbulb, Hourglass, TrendingUp, LayoutGrid, Coins, Landmark, Activity, Trophy, FileText, Info, Smartphone, Wallet, RefreshCw, Undo2, Key, PieChart, Radio, CheckCircle2, MessageSquare, Send} from 'lucide-react';
+import { 
+  // Outils de base
+  ArrowLeft, Wallet, Shield, Target, Award, Zap, 
+  TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
+  AlertTriangle, Lock, Clock, History, Radio, 
+  MessageSquare, Send, ChevronRight, Calculator,
+  
+  // Outils avancés & Arsenal
+  Sword, Loader2, Globe, PiggyBank, Skull, Flame, 
+  Star, Smartphone, Settings, LogOut,
+  
+  // 👇 VOICI LES ICÔNES QUI MANQUAIENT ET FAISAIENT PLANTER 👇
+  CheckSquare, Square, CheckCircle2, BookOpen, Scroll, 
+  Trophy, BarChart3, Activity, TrendingDown, Lightbulb, 
+  PieChart, UserMinus, UserPlus, CalendarClock, Briefcase, 
+  Infinity, Unlock, Key, Fingerprint, FileText, Info, 
+  Search, RefreshCw, Download, Upload, Copy, Castle
+} from 'lucide-react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // ==========================================
@@ -1901,22 +1918,21 @@ function StatsScreen({ onBack }) {
 }
 
 // ==========================================
-// 4. ARSENAL (Compétences & Stratégie IA)
+// 4. ARSENAL (Version Stable - Sans Animation)
 // ==========================================
 function SkillsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
-    // On récupère la clé API pour l'analyse tactique
     const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
     const savedZone = localStorage.getItem('imperium_zone');
     const userZone = savedZone ? JSON.parse(savedZone) : { name: "Zone Inconnue" };
     
-    const [skills, setSkills] = useState(JSON.parse(localStorage.getItem('imperium_skills') || "[]"));
+    const [skills, setSkills] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_skills') || "[]"); } catch { return []; } });
     const [newSkill, setNewSkill] = useState("");
     
     // États pour l'analyse IA
-    const [analyzing, setAnalyzing] = useState(null); // ID de la compétence en cours d'analyse
-    const [tacticResult, setTacticResult] = useState(null); // Résultat de l'IA
+    const [analyzing, setAnalyzing] = useState(null); 
+    const [tacticResult, setTacticResult] = useState(null); 
 
     useEffect(() => { localStorage.setItem('imperium_skills', JSON.stringify(skills)); }, [skills]);
 
@@ -1929,34 +1945,28 @@ function SkillsScreen({ onBack }) {
     
     const deleteSkill = (id) => { setSkills(skills.filter(s => s.id !== id)); };
 
-    // --- C'EST ICI QUE LA MAGIE OPÈRE ---
     const generateWarTactic = async (skill) => {
         setAnalyzing(skill.id);
         setTacticResult(null);
 
         const prompt = `
             AGIS COMME UN GÉNÉRAL EN GUERRE ÉCONOMIQUE.
-            
             SOLDAT : Possède la compétence "${skill.name}".
             TERRAIN : ${userZone.name}.
             DEVISE : ${currency}.
-
             MISSION : Donne-moi UNE SEULE stratégie d'attaque immédiate (Guérilla Marketing) pour trouver un client AUJOURD'HUI.
-            
             FORMAT DE RÉPONSE STRICT (JSON) :
             {
-                "target": "Qui aller voir précisément (ex: Les coiffeurs sans site sur Maps)",
-                "action": "L'action exacte (ex: Entrer, demander le patron, montrer X)",
-                "price": "Prix psychologique à annoncer (juste le chiffre)",
-                "pitch": "Une phrase d'accroche tueuse pour vendre"
+                "target": "Qui aller voir précisément",
+                "action": "L'action exacte",
+                "price": "Prix psychologique (juste le chiffre)",
+                "pitch": "Une phrase d'accroche tueuse"
             }
-            
-            Ne sois pas poli. Sois efficace, brutal et précis.
         `;
 
         try {
-            // On utilise le modèle Pro (ou celui qui marche chez toi)
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`, {
+            // Utilisation du modèle PRO pour l'Arsenal
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -1964,23 +1974,26 @@ function SkillsScreen({ onBack }) {
             
             const data = await response.json();
             
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+
             if (data.candidates && data.candidates[0].content) {
                 const rawText = data.candidates[0].content.parts[0].text;
-                // Nettoyage du JSON (au cas où l'IA mettrait des ```json ...)
                 const cleanJson = rawText.replace(/```json|```/g, '').trim();
                 const tactic = JSON.parse(cleanJson);
                 setTacticResult({ ...tactic, skillName: skill.name });
             }
         } catch (error) {
             console.error("Erreur Tactique:", error);
-            alert("Liaison QG brouillée. Réessayez.");
+            alert("Erreur QG : " + error.message);
         } finally {
             setAnalyzing(null);
         }
     };
 
+    // 👇 J'AI RETIRÉ <PageTransition> ICI 👇
     return (
-        <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
             <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
@@ -2061,7 +2074,6 @@ function SkillsScreen({ onBack }) {
                 </form>
             </div>
         </div>
-        </PageTransition>
     );
 }
 
