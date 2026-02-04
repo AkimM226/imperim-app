@@ -74,17 +74,17 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.0.0-Architect"; 
+const APP_VERSION = "17.1.0-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
-        version: "17.0.0",
-        title: "Opération Jarvis",
-        desc: "L'intelligence artificielle prend le contrôle du QG.",
+        version: "17.1.0",
+        title: "Opération Identité",
+        desc: "L'Empire reconnaît désormais ses Commandantes et renforce ses communications.",
         changes: [
-            { icon: Zap, text: "JARVIS PRIME : Assistant tactique conversationnel activé. Posez vos questions, il structure vos plans." },
-            { icon: Shield, text: "L'INTERCEPTEUR : Jarvis bloque psychologiquement vos tentatives de dépenses futiles dangereuses." },
-            { icon: Target, text: "OMNIPRÉSENCE : L'IA analyse désormais vos Conquêtes et votre Solde en temps réel." }
+            { icon: UserCircle, text: "PROTOCOLE INCLUSION : Vous pouvez désormais définir votre titre (Commandant ou Commandante) dans les Réglages." },
+            { icon: Bell, text: "SYSTÈME D'ALERTE : Activation des Notifications Tactiques. Recevez vos ordres directement sur votre appareil." },
+            { icon: Zap, text: "STABILISATION DU NOYAU : Correction des conflits d'armement (Imports) et optimisation de la fluidité." }
         ]
     }
 ];
