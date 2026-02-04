@@ -1,22 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  // Outils de base
-  ArrowLeft, Wallet, Shield, Target, Award, Zap, 
-  TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
-  AlertTriangle, Lock, Clock, History, Radio, 
-  MessageSquare, Send, ChevronRight, Calculator,
-  
-  // Outils avancés & Arsenal
-  Sword, Loader2, Globe, PiggyBank, Skull, Flame, 
-  Star, Smartphone, Settings, LogOut,
-  
-  // 👇 VOICI LES ICÔNES QUI MANQUAIENT ET FAISAIENT PLANTER 👇
-  CheckSquare, Square, CheckCircle2, BookOpen, Scroll, 
-  Trophy, BarChart3, Activity, TrendingDown, Lightbulb, 
-  PieChart, UserMinus, UserPlus, CalendarClock, Briefcase, 
-  Infinity, Unlock, Key, Fingerprint, FileText, Info, 
-  Search, RefreshCw, Download, Upload, Copy, Castle
-} from 'lucide-react';
+    // Outils de base (Doublons supprimés)
+    ArrowLeft, Wallet, Shield, Target, Award, Zap, 
+    TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
+    AlertTriangle, Lock, Clock, History, Radio, 
+    MessageSquare, Send, ChevronRight, Calculator,
+    Bell, UserCircle,
+    
+    // Outils avancés & Arsenal
+    Sword, Loader2, Globe, PiggyBank, Skull, Flame, 
+    Star, Smartphone, Settings, LogOut,
+    
+    // Icônes additionnelles
+    CheckSquare, Square, CheckCircle2, BookOpen, Scroll, 
+    Trophy, BarChart3, Activity, TrendingDown, Lightbulb, 
+    PieChart, UserMinus, UserPlus, CalendarClock, Briefcase, 
+    Infinity, Unlock, Key, Fingerprint, FileText, Info, 
+    Search, RefreshCw, Download, Upload, Copy, Castle
+  } from 'lucide-react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // ==========================================
@@ -712,35 +713,38 @@ function RadioLink({ onClose }) {
 }
 
 // ==========================================
-// SERVICE JARVIS PRIME - VISION TOTALE
+// SERVICE JARVIS PRIME - VISION TOTALE (MISE À JOUR V17.1)
 // ==========================================
-const askJarvisChat = async (history, userMessage, contextData) => {
+const askJarvisChat = async (history, userMessage, contextData, userTitle = "Commandant") => {
     const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
     const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
 
     try {
-       // 1. Préparation des données (AVEC SÉCURITÉ || [])
+       // 1. Préparation des données
        const recentLogs = (contextData.transactions || []).slice(0, 15).map(t => 
         `[${t.date}] ${t.type === 'expense' ? '-' : '+'}${t.amount} (${t.desc})`
     ).join("\n");
 
-    // On ajoute "|| []" pour dire : "Si la liste n'existe pas, prends une liste vide"
     const arsenal = (contextData.skills || []).map(s => `- ${s.name} (Niveau ${s.level})`).join("\n");
     const citadelle = (contextData.debts || []).map(d => `- Dette: ${d.name} (${d.amount} restant)`).join("\n");
     const protocoles = (contextData.protocols || []).map(p => `- Règle: ${p.text}`).join("\n");
     const cibles = (contextData.projects || []).map(p => `- ${p.title} (${p.current}/${p.target})`).join("\n");
+        
         // 2. Le contexte global (L'état de l'Empire)
+        // MODIFICATION ICI : On injecte userTitle (Commandant ou Commandante)
         const systemContext = `
             Tu es JARVIS, l'IA centrale d'IMPERIUM.
+            Tu t'adresses à ton utilisateur en l'appelant : "${userTitle.toUpperCase()}".
+            Si c'est "COMMANDANTE", accorde tes adjectifs au féminin (ex: "Vous êtes prête", "Soyez attentive").
             
-            DONNÉES STRATÉGIQUES DU COMMANDANT :
+            DONNÉES STRATÉGIQUES DU ${userTitle.toUpperCase()} :
             💰 FINANCES (Cash/Wave): ${contextData.balance} / ${contextData.bunker} ${contextData.currency}
             
             📜 REGISTRE (15 derniers mouvements) :
             ${recentLogs}
             
             🎯 CIBLES (Projets en cours) :
-            ${contextData.projects.map(p => `- ${p.title} (${p.current}/${p.target})`).join("\n")}
+            ${cibles}
             
             ⚔️ ARSENAL (Compétences) :
             ${arsenal || "Aucune compétence enregistrée."}
@@ -750,11 +754,9 @@ const askJarvisChat = async (history, userMessage, contextData) => {
             ${protocoles}
             
             TES ORDRES :
-            1. Utilise ces données pour répondre. Si on parle de dettes, regarde la section CITADELLE.
-            2. Si le solde est bas, conseille sur les dépenses du REGISTRE.
-            3. Si un projet avance mal, propose d'augmenter une compétence de l'ARSENAL.
-            
-            Réponds court, style militaire/efficace.
+            1. Utilise ces données pour répondre. 
+            2. Sois bref, style militaire/efficace mais respectueux du grade.
+            3. Termine parfois par "Rompez !" ou "À vos ordres !".
         `;
 
         const contents = [
@@ -790,9 +792,14 @@ const askJarvisChat = async (history, userMessage, contextData) => {
 // INTERFACE JARVIS PRIME (CHAT)
 // ==========================================
 function JarvisModal({ onClose, contextData }) {
-    // Message d'accueil proactif
+    // RECUPERATION DU GENRE
+    const gender = localStorage.getItem('imperium_gender') || 'M';
+    const title = gender === 'F' ? 'Commandante' : 'Commandant';
+    const accord = gender === 'F' ? 'prête' : 'prêt';
+
+    // Message d'accueil proactif ADAPTÉ
     const [messages, setMessages] = useState([
-        { id: 1, sender: 'jarvis', text: "Commandant. Je suis connecté aux systèmes d'Imperium. Analyse terminée. Que puis-je faire pour votre stratégie aujourd'hui ?" }
+        { id: 1, sender: 'jarvis', text: `${title}. Je suis connecté aux systèmes d'Imperium. Vous êtes ${accord} ? Analyse terminée. Que puis-je faire pour votre stratégie aujourd'hui ?` }
     ]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
@@ -811,8 +818,22 @@ function JarvisModal({ onClose, contextData }) {
         setInput("");
         setLoading(true);
 
-        // On envoie l'historique à l'IA
-        const responseText = await askJarvisChat(messages, input, contextData);
+        // 🛠️ ASTUCE DÉMO : LE TRIGGER SECRET (OFFLINE)
+        if (input.toLowerCase().includes("demo") || input.toLowerCase().includes("status")) {
+            setTimeout(() => {
+                 setMessages(prev => [...prev, { 
+                    id: Date.now() + 1, 
+                    sender: 'jarvis', 
+                    text: `Rapport Tactique pour la ${title} :\n\n1. Discipline : Excellente (Flamme active).\n2. Finance : Le Bunker est sécurisé.\n3. Alerte : Attention aux dépenses futiles ce week-end.\n\nContinuez comme ça. Rompez !` 
+                }]);
+                setLoading(false);
+            }, 800);
+            return;
+        }
+
+        // --- CORRECTION ICI ---
+        // On passe 'title' (Commandant ou Commandante) en 4ème argument
+        const responseText = await askJarvisChat(messages, input, contextData, title);
         
         const jarvisMsg = { id: Date.now() + 1, sender: 'jarvis', text: responseText };
         setMessages(prev => [...prev, jarvisMsg]);
@@ -834,7 +855,7 @@ function JarvisModal({ onClose, contextData }) {
                         </div>
                         <div>
                             <h3 className="text-gold font-bold font-serif tracking-widest text-sm">JARVIS PRIME</h3>
-                            <p className="text-[9px] text-gray-500 uppercase">En ligne • Omniprésent</p>
+                            <p className="text-[9px] text-gray-500 uppercase">En ligne • {title}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
@@ -872,7 +893,7 @@ function JarvisModal({ onClose, contextData }) {
                             value={input} 
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder="Ordonnez, Commandant..." 
+                            placeholder={`Ordonnez, ${title}...`} 
                             className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-gold focus:outline-none"
                             autoFocus
                         />
@@ -2506,23 +2527,72 @@ function AcademyScreen({ onBack }) {
 }
 
 // ==========================================
-// 12. ÉCRAN PARAMÈTRES (CORRIGÉ & COMPLET)
+// 12. ÉCRAN PARAMÈTRES (INCLUSION & NOTIFICATIONS)
 // ==========================================
 function SettingsScreen({ onBack }) { 
     // ÉTATS
     const [importData, setImportData] = useState("");
     const [exportCode, setExportCode] = useState(""); 
     const [sending, setSending] = useState(false);
+    
+    // Identité (Inclusion)
+    const [gender, setGender] = useState(localStorage.getItem('imperium_gender') || 'M');
+
+    // Notifications
+    const [notifTime, setNotifTime] = useState(localStorage.getItem('imperium_notif_time') || "20:00");
+    const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('imperium_notif_enabled') === 'true');
+
     // Calibrage
     const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
     const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
 
-    // Feedback (Le nouveau système)
+    // Feedback
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedbackText, setFeedbackText] = useState("");
 
-    // --- FONCTIONS ---
+    // --- LOGIQUE IDENTITÉ ---
+    const changeGender = (newGender) => {
+        setGender(newGender);
+        localStorage.setItem('imperium_gender', newGender);
+        // Petit effet feedback visuel ou sonore ici si on veut
+    };
 
+    // --- LOGIQUE NOTIFICATIONS ---
+    const toggleNotifications = async () => {
+        if (!notifEnabled) {
+            // On demande la permission
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                setNotifEnabled(true);
+                localStorage.setItem('imperium_notif_enabled', 'true');
+                new Notification("IMPERIUM", { body: "Canal de communication sécurisé activé." });
+            } else {
+                alert("Permission refusée. Vérifiez les réglages du navigateur.");
+            }
+        } else {
+            setNotifEnabled(false);
+            localStorage.setItem('imperium_notif_enabled', 'false');
+        }
+    };
+
+    const handleNotifTimeChange = (e) => {
+        setNotifTime(e.target.value);
+        localStorage.setItem('imperium_notif_time', e.target.value);
+    };
+
+    const testNotification = () => {
+        if (Notification.permission === 'granted') {
+            const title = gender === 'F' ? 'Commandante' : 'Commandant';
+            new Notification("RAPPEL DU QG", { 
+                body: `${title}, il est temps de faire le bilan. L'ennemi ne dort jamais.`,
+                icon: '/icon.png' // Si tu as une icone
+            });
+        } else {
+            alert("Activez d'abord les notifications via le bouton ci-dessus.");
+        }
+    };
+
+    // --- LOGIQUE SAUVEGARDE (Inchangée) ---
     const handleExport = async () => { 
         try {
             const data = { 
@@ -2539,7 +2609,8 @@ function SettingsScreen({ onBack }) {
                 protocols: localStorage.getItem('imperium_protocols'),
                 debts: localStorage.getItem('imperium_debts'),
                 version: localStorage.getItem('imperium_version'),
-                license: localStorage.getItem('imperium_license') 
+                license: localStorage.getItem('imperium_license'),
+                gender: localStorage.getItem('imperium_gender') // Ajout sauvegarde genre
             }; 
             
             const jsonString = JSON.stringify(data);
@@ -2554,7 +2625,7 @@ function SettingsScreen({ onBack }) {
             }
         } catch (error) {
             console.error(error);
-            alert("Erreur de génération. Copiez le code manuellement ci-dessous.");
+            alert("Erreur de génération.");
         }
     }; 
     
@@ -2579,6 +2650,7 @@ function SettingsScreen({ onBack }) {
             if(decoded.debts) localStorage.setItem('imperium_debts', decoded.debts);
             if(decoded.version) localStorage.setItem('imperium_version', decoded.version);
             if(decoded.license) localStorage.setItem('imperium_license', decoded.license); 
+            if(decoded.gender) localStorage.setItem('imperium_gender', decoded.gender); 
             
             alert("✅ RESTAURATION RÉUSSIE."); 
             window.location.reload(); 
@@ -2603,43 +2675,24 @@ function SettingsScreen({ onBack }) {
         } 
     }; 
 
-    // 2. REMPLACE L'ANCIENNE FONCTION 'sendFeedbackToHQ' PAR CELLE-CI :
     const sendFeedbackToHQ = async () => {
         if (!feedbackText.trim()) return;
-        setSending(true); // On active le radar (chargement)
-
-        // 👇 COLLE TON LIEN FORMSPREE ICI 👇
+        setSending(true);
         const FORM_ENDPOINT = "https://formspree.io/f/xdadkygr"; 
-
         try {
-            // On prépare le rapport tactique
             const payload = {
                 message: feedbackText,
                 version: localStorage.getItem('imperium_version') || "Inconnue",
                 date: new Date().toLocaleString(),
-                // Tu peux ajouter d'autres infos techniques ici si tu veux
             };
-
-            // Envoi silencieux au QG
             const response = await fetch(FORM_ENDPOINT, {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                method: "POST", headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
-
             if (response.ok) {
-                alert("✅ TRANSMISSION REÇUE AU QG.\nTerminé.");
-                setFeedbackText(""); // On vide le champ
-                setShowFeedback(false); // On ferme la fenêtre
-            } else {
-                alert("⚠️ ÉCHEC TRANSMISSION. Réessayez.");
-            }
-        } catch (error) {
-            console.error("Erreur Transmission:", error);
-            alert("⚠️ ERREUR RÉSEAU. Vérifiez votre connexion.");
-        } finally {
-            setSending(false); // On coupe le radar
-        }
+                alert("✅ TRANSMISSION REÇUE AU QG.");
+                setFeedbackText(""); setShowFeedback(false);
+            } else { alert("⚠️ ÉCHEC TRANSMISSION."); }
+        } catch (error) { alert("⚠️ ERREUR RÉSEAU."); } finally { setSending(false); }
     };
 
     return (
@@ -2651,8 +2704,47 @@ function SettingsScreen({ onBack }) {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
+
+                    {/* 0. NOUVEAU : IDENTITÉ DU COMMANDANT */}
+                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><UserCircle className="w-5 h-5"/></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Profil du Commandant</h3><p className="text-[10px] text-gray-500">Ajustez les protocoles vocaux.</p></div>
+                        </div>
+                        <div className="flex bg-black p-1 rounded-lg border border-white/5">
+                            <button onClick={() => changeGender('M')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${gender === 'M' ? 'bg-gold text-black' : 'text-gray-600'}`}>Commandant</button>
+                            <button onClick={() => changeGender('F')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${gender === 'F' ? 'bg-gold text-black' : 'text-gray-600'}`}>Commandante</button>
+                        </div>
+                    </div>
+
+                    {/* 0. NOUVEAU : RAPPELS TACTIQUES */}
+                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
+                         <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-purple-900/20 text-purple-400 rounded-lg"><Bell className="w-5 h-5"/></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Rappels Tactiques</h3><p className="text-[10px] text-gray-500">Ne laissez pas l'ennemi gagner par oubli.</p></div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-xs text-gray-300">Activer les Notifications</span>
+                            <button onClick={toggleNotifications} className={`w-12 h-6 rounded-full p-1 transition-colors ${notifEnabled ? 'bg-green-500' : 'bg-gray-700'}`}>
+                                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${notifEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                            </button>
+                        </div>
+
+                        {notifEnabled && (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                <div className="flex items-center justify-between bg-black p-3 rounded-lg border border-white/5">
+                                    <span className="text-xs text-gray-400">Heure du Rapport</span>
+                                    <input type="time" value={notifTime} onChange={handleNotifTimeChange} className="bg-transparent text-white text-sm font-bold outline-none font-mono"/>
+                                </div>
+                                <button onClick={testNotification} className="w-full bg-purple-900/20 text-purple-400 border border-purple-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-purple-900/40 transition-colors">
+                                    Tester le Signal (Démo)
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     
-                    {/* 1. FEEDBACK (RAPPORT AU QG) */}
+                    {/* 1. FEEDBACK (Existant) */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-gold/20 relative overflow-hidden">
                          <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-gold/10 text-gold rounded-lg"><MessageSquare className="w-5 h-5"/></div>
@@ -2666,7 +2758,7 @@ function SettingsScreen({ onBack }) {
                         </button>
                     </div>
 
-                    {/* 2. CALIBRAGE */}
+                    {/* 2. CALIBRAGE (Existant) */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                          <div className="absolute top-0 right-0 p-4 opacity-5"><RefreshCw className="w-24 h-24 text-white" /></div>
                          <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -2680,7 +2772,7 @@ function SettingsScreen({ onBack }) {
                         </div>
                     </div>
 
-                    {/* 3. SAUVEGARDE */}
+                    {/* 3. SAUVEGARDE (Existant) */}
                     <div className="bg-[#111] p-5 rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
@@ -2699,7 +2791,7 @@ function SettingsScreen({ onBack }) {
                         )}
                     </div>
                     
-                    {/* 4. RESTAURATION */}
+                    {/* 4. RESTAURATION (Existant) */}
                     <div className="bg-[#111] border border-white/5 rounded-xl p-5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div>
@@ -2709,17 +2801,16 @@ function SettingsScreen({ onBack }) {
                         <button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">Restaurer</button>
                     </div>
                     
-                    {/* 5. RESET */}
+                    {/* 5. RESET (Existant) */}
                     <div className="pt-10 border-t border-white/5">
                         <button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button>
                     </div>
                 </div>
 
-                {/* --- MODALE FEEDBACK (INTÉGRÉE ET SÉCURISÉE) --- */}
+                {/* --- MODALE FEEDBACK (INTÉGRÉE) --- */}
                 {showFeedback && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
                         <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
-                            {/* BOUTON FERMER (C'est souvent lui qui manquait) */}
                             <button onClick={() => setShowFeedback(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
                                 <X className="w-5 h-5"/>
                             </button>
@@ -2742,20 +2833,20 @@ function SettingsScreen({ onBack }) {
                                 autoFocus
                             />
 
-                               <button 
-                                 onClick={sendFeedbackToHQ} 
-                                  disabled={!feedbackText.trim() || sending} 
+                            <button 
+                                onClick={sendFeedbackToHQ} 
+                                disabled={!feedbackText.trim() || sending} 
                                 className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
->
-                            {sending ? (
-                             <>
-                             <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                             Transmission...
-                            </>
-                           ) : (
-                             "Envoyer le rapport"
-                             )}
-                           </button>
+                            >
+                                {sending ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                                        Transmission...
+                                    </>
+                                ) : (
+                                    "Envoyer le rapport"
+                                )}
+                            </button>
                         </div>
                     </div>
                 )}
