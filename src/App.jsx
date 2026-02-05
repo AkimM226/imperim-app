@@ -473,26 +473,27 @@ function QuantumScreen({ onBack }) {
         setLoading(true);
         setSimulation(null);
 
+        // Prompt Recalibré : Moins de poésie, plus de stratégie financière
         const prompt = `
-            Tu es le CHRONO-VISOR, un ordinateur quantique futuriste d'IMPERIUM.
+            Tu es le système central IMPERIUM. Tu es un CONSEILLER FINANCIER FROID ET LOGIQUE.
             
-            DONNÉES ACTUELLES DU COMMANDANT :
-            - Solde Cash Disponible : ${availableCash} ${currency}
-            - Épargne Bunker : ${bunker} ${currency}
+            DONNÉES DU COMMANDANT :
+            - Argent disponible (Cash) : ${availableCash} ${currency}
+            - Épargne de secours (Bunker) : ${bunker} ${currency}
 
-            SCÉNARIO À SIMULER : "${scenario}"
-            COÛT ESTIMÉ : ${cost || 0} ${currency}
+            ACTION PROPOSÉE : "${scenario}"
+            COÛT ESTIMÉ : ${cost || "Inconnu"} ${currency}
 
             TES ORDRES :
-            Projette-toi dans le futur. Calcule les probabilités. Sois visuel, dramatique et précis.
+            Analyse cette dépense froidement. Ne sois pas poétique. Sois BRUTAL et RÉALISTE.
             
             RÉPONDS UNIQUEMENT AVEC CE JSON STRICT (SANS RIEN D'AUTRE) :
             {
-                "success_rate": 85,
+                "success_rate": (Note de 0 à 100 sur la viabilité financière de cette action),
                 "verdict": "FEU VERT / FEU ROUGE / RISQUE ÉLEVÉ",
-                "timeline_1m": "Description courte de la situation dans 1 mois (impact direct).",
-                "timeline_1y": "Description courte de la situation dans 1 an (effet papillon).",
-                "visual": "Une phrase décrivant l'état visuel de l'Empire (ex: Une citadelle en or ou des ruines fumantes)."
+                "timeline_1m": "Conséquence immédiate CONCRÈTE. (Ex: 'Tu seras à découvert', 'Tu devras manger des pâtes', 'Ton épargne va stagner').",
+                "timeline_1y": "Conséquence à long terme. (Ex: 'Retard sur tes projets', 'Endettement probable' ou 'Liberté financière accrue').",
+                "visual": "Une phrase courte décrivant l'état de mes finances (Ex: 'Un bunker vide et froid' ou 'Une forteresse imprenable')."
             }
         `;
 
