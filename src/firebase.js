@@ -3,17 +3,27 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
-// ⚠️ REMPLACEZ PAR VOS INFOS FIREBASE (Console Firebase > Project Settings)
+// 👇 COLLEZ ICI VOS NOUVELLES CLES (Celles copiées à l'Etape 2) 👇
 const firebaseConfig = {
-  apiKey: "AIzaSyAoxKR0Wf5juMXsIvS-3I_34bThx28hvkQ",
-  authDomain: "imperium-os.firebaseapp.com",
-  projectId: "imperium-os",
-  storageBucket: "imperium-os.firebasestorage.app",
-  messagingSenderId: "519531425912",
-  appId: "1:519531425912:web:8955432ac7e35c71417d8d"
+    apiKey: "AIzaSyAbbeWcWLPdwuuEmOrFDB1gfLewmdfh4f8",
+    authDomain: "imperium-reborn.firebaseapp.com",
+    projectId: "imperium-reborn",
+    storageBucket: "imperium-reborn.firebasestorage.app",
+    messagingSenderId: "707185287389",
+    appId: "1:707185287389:web:cb5be8953576b35a3ffb34"
 };
+// 👆 ----------------------------------------------------------- 👆
+// ... le début du fichier ...
 
+console.log("--- DEBUG FIREBASE ---");
+console.log("Projet ID:", firebaseConfig.projectId);
+console.log("API Key:", firebaseConfig.apiKey);
+console.log("----------------------");
+
+// Initialisation
 const app = initializeApp(firebaseConfig);
+
+// Export des outils
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
@@ -25,6 +35,8 @@ export const loginWithGoogle = async () => {
     return result.user;
   } catch (error) {
     console.error("Erreur Login:", error);
+    // Permet de voir l'erreur exacte à l'écran
+    alert("Erreur de connexion : " + error.code + " - " + error.message);
     throw error;
   }
 };
@@ -33,6 +45,7 @@ export const loginWithGoogle = async () => {
 export const logoutUser = async () => {
   try {
     await signOut(auth);
+    window.location.reload();
   } catch (error) {
     console.error("Erreur Logout:", error);
   }
@@ -42,7 +55,7 @@ export const logoutUser = async () => {
 export const saveEmpireToCloud = async (userId, data) => {
   if (!userId) return;
   try {
-    // On sauvegarde avec la date de mise à jour
+    // Merge: true permet de ne mettre à jour que ce qui change
     await setDoc(doc(db, "empires", userId), {
       ...data,
       lastUpdated: new Date().toISOString()
