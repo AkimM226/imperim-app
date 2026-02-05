@@ -19,6 +19,10 @@ import {
     Search, RefreshCw, Download, Upload, Copy, Castle
   } from 'lucide-react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+// Remplacez : import { auth, saveEmpireToCloud, loadEmpireFromCloud } from './firebase';
+// PAR CECI :
+import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser } from './firebase';
+import { onAuthStateChanged } from "firebase/auth";
 
 // ==========================================
 // MOTEUR SONORE TACTIQUE (MODE SILENCE RADIO)
@@ -647,26 +651,45 @@ export default function App() {
   function MainOS() {
     const [currentView, setCurrentView] = useState('dashboard');
     const [showPatchNotes, setShowPatchNotes] = useState(false);
-
-    // Fonction de navigation principale
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
-    
+
     useEffect(() => { 
         const lastVersion = localStorage.getItem('imperium_version');
         if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
     }, []);
+    
     const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
-  
+
+    // --- SYSTÈME CLOUD : JUSTE LE TÉLÉCHARGEMENT (LOAD) ---
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                // Au login, on vérifie s'il y a une sauvegarde
+                const cloudData = await loadEmpireFromCloud(currentUser.uid);
+                if (cloudData) {
+                    // On compare avec la date locale pour ne pas écraser bêtement
+                    // Pour simplifier ici : on demande confirmation
+                    if(confirm("☁️ Sauvegarde Cloud trouvée. Voulez-vous charger votre Empire ?")) {
+                        if(cloudData.balance) localStorage.setItem('imperium_balance', cloudData.balance);
+                        if(cloudData.bunker) localStorage.setItem('imperium_bunker', cloudData.bunker);
+                        if(cloudData.transactions) localStorage.setItem('imperium_transactions', cloudData.transactions);
+                        if(cloudData.goals) localStorage.setItem('imperium_goals', cloudData.goals);
+                        if(cloudData.debts) localStorage.setItem('imperium_debts', cloudData.debts);
+                        if(cloudData.skills) localStorage.setItem('imperium_skills', cloudData.skills);
+                        if(cloudData.quantum) localStorage.setItem('imperium_beta_quantum', cloudData.quantum);
+                        
+                        window.location.reload(); 
+                    }
+                }
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
     return (
       <>
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
-          
-          {/* DASHBOARD : On ne lui passe RIEN, il est autonome maintenant */}
-          {currentView === 'dashboard' && (
-              <Dashboard onNavigate={navigate} />
-          )}
-          
-          {/* ECRANS SECONDAIRES */}
+          {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
           {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
@@ -1134,6 +1157,37 @@ function Dashboard({ onNavigate }) {
         // Vérifie si le code a DÉJÀ été entré par le passé
         return localStorage.getItem('imperium_beta_quantum') === 'GRANTED';
     });
+       // ... après vos useState ...
+    const [user, setUser] = useState(null);
+
+    // 1. Détecter l'utilisateur connecté
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+        return () => unsubscribe();
+    }, []);
+
+    // 2. SAUVEGARDE AUTOMATIQUE (CLOUD)
+    // À chaque fois que balance, bunker, transactions ou goals changent -> On envoie au Cloud
+    useEffect(() => {
+        if (user) {
+            const dataToSave = {
+                balance: localStorage.getItem('imperium_balance'),
+                bunker: localStorage.getItem('imperium_bunker'),
+                transactions: localStorage.getItem('imperium_transactions'),
+                goals: localStorage.getItem('imperium_goals'),
+                debts: localStorage.getItem('imperium_debts'),
+                skills: localStorage.getItem('imperium_skills'),
+                quantum: localStorage.getItem('imperium_beta_quantum')
+            };
+
+            // Petit délai pour éviter de spammer Google à chaque lettre tapée
+            const timer = setTimeout(() => {
+                saveEmpireToCloud(user.uid, dataToSave);
+            }, 2000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [balance, bunker, transactions, goals, user]); // On surveille ces variables
 
     const handleQuantumAccess = () => {
         if (isQuantumUnlocked) {
@@ -2722,7 +2776,7 @@ function AcademyScreen({ onBack }) {
 }
 
 // ==========================================
-// 12. ÉCRAN PARAMÈTRES (INCLUSION & NOTIFICATIONS)
+// 12. ÉCRAN PARAMÈTRES (CORRIGÉ)
 // ==========================================
 function SettingsScreen({ onBack }) { 
     // ÉTATS
@@ -2749,13 +2803,11 @@ function SettingsScreen({ onBack }) {
     const changeGender = (newGender) => {
         setGender(newGender);
         localStorage.setItem('imperium_gender', newGender);
-        // Petit effet feedback visuel ou sonore ici si on veut
     };
 
     // --- LOGIQUE NOTIFICATIONS ---
     const toggleNotifications = async () => {
         if (!notifEnabled) {
-            // On demande la permission
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 setNotifEnabled(true);
@@ -2780,50 +2832,13 @@ function SettingsScreen({ onBack }) {
             const title = gender === 'F' ? 'Commandante' : 'Commandant';
             new Notification("RAPPEL DU QG", { 
                 body: `${title}, il est temps de faire le bilan. L'ennemi ne dort jamais.`,
-                icon: '/icon.png' // Si tu as une icone
+                icon: '/icon.png'
             });
         } else {
             alert("Activez d'abord les notifications via le bouton ci-dessus.");
         }
     };
 
-    // --- LOGIQUE SAUVEGARDE (Inchangée) ---
-    const handleExport = async () => { 
-        try {
-            const data = { 
-                balance: localStorage.getItem('imperium_balance'), 
-                transactions: localStorage.getItem('imperium_transactions'), 
-                projects: localStorage.getItem('imperium_projects'),
-                tasks: localStorage.getItem('imperium_tasks'), 
-                skills: localStorage.getItem('imperium_skills'), 
-                currency: localStorage.getItem('imperium_currency'), 
-                zone: localStorage.getItem('imperium_zone'), 
-                onboarded: localStorage.getItem('imperium_onboarded'), 
-                bunker: localStorage.getItem('imperium_bunker'),
-                goals: localStorage.getItem('imperium_goals'),
-                protocols: localStorage.getItem('imperium_protocols'),
-                debts: localStorage.getItem('imperium_debts'),
-                version: localStorage.getItem('imperium_version'),
-                license: localStorage.getItem('imperium_license'),
-                gender: localStorage.getItem('imperium_gender') // Ajout sauvegarde genre
-            }; 
-            
-            const jsonString = JSON.stringify(data);
-            const safeEncoded = btoa(unescape(encodeURIComponent(jsonString)));
-            setExportCode(safeEncoded); 
-            
-            if (navigator.share) {
-                await navigator.share({ title: 'Sauvegarde Imperium', text: safeEncoded });
-            } else {
-                await navigator.clipboard.writeText(safeEncoded);
-                alert("✅ CODE COPIÉ !");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Erreur de génération.");
-        }
-    }; 
-    
     const handleImport = () => { 
         try { 
             if(!importData) return; 
@@ -2853,6 +2868,27 @@ function SettingsScreen({ onBack }) {
             alert("❌ ERREUR : Code invalide."); 
         } 
     }; 
+
+    const handleExport = () => {
+         const data = {
+            balance: localStorage.getItem('imperium_balance'),
+            transactions: localStorage.getItem('imperium_transactions'),
+            projects: localStorage.getItem('imperium_projects'),
+            skills: localStorage.getItem('imperium_skills'),
+            currency: localStorage.getItem('imperium_currency'),
+            zone: localStorage.getItem('imperium_zone'),
+            bunker: localStorage.getItem('imperium_bunker'),
+            goals: localStorage.getItem('imperium_goals'),
+            protocols: localStorage.getItem('imperium_protocols'),
+            debts: localStorage.getItem('imperium_debts'),
+            version: APP_VERSION,
+            license: localStorage.getItem('imperium_license'),
+            gender: localStorage.getItem('imperium_gender')
+         };
+         const jsonString = JSON.stringify(data);
+         const encoded = btoa(unescape(encodeURIComponent(jsonString)));
+         setExportCode(encoded);
+    };
 
     const handleRecalibrate = () => {
         if(confirm("Confirmer le recalibrage manuel des soldes ?")) {
@@ -2900,7 +2936,7 @@ function SettingsScreen({ onBack }) {
                 
                 <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
 
-                    {/* 0. NOUVEAU : IDENTITÉ DU COMMANDANT */}
+                    {/* IDENTITÉ DU COMMANDANT */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><UserCircle className="w-5 h-5"/></div>
@@ -2912,7 +2948,7 @@ function SettingsScreen({ onBack }) {
                         </div>
                     </div>
 
-                    {/* 0. NOUVEAU : RAPPELS TACTIQUES */}
+                    {/* RAPPELS TACTIQUES */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
                          <div className="flex items-center gap-3 mb-4">
                             <div className="p-2 bg-purple-900/20 text-purple-400 rounded-lg"><Bell className="w-5 h-5"/></div>
@@ -2938,8 +2974,63 @@ function SettingsScreen({ onBack }) {
                             </div>
                         )}
                     </div>
+
+                    {/* ZONE CLOUD IMPERIUM */}
+                    <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/10 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-3 opacity-10">
+                            <Globe className="w-24 h-24 text-blue-500" />
+                        </div>
+
+                        <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 text-blue-400"/> Liaison Satellitaire
+                        </h3>
+
+                        {!auth.currentUser ? (
+                            <div>
+                                <p className="text-xs text-gray-400 mb-4">
+                                    Connectez-vous au Cloud Impérial pour sécuriser vos données et synchroniser vos appareils.
+                                </p>
+                                <button 
+                                    onClick={async () => {
+                                        try {
+                                            await loginWithGoogle();
+                                            alert("📡 Connexion établie. Synchronisation...");
+                                        } catch (e) {
+                                            alert("Échec connexion satellite.");
+                                        }
+                                    }}
+                                    className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
+                                >
+                                    Connexion Google
+                                </button>
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="flex items-center gap-3 mb-4 bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">
+                                    {auth.currentUser.photoURL && (
+                                        <img src={auth.currentUser.photoURL} alt="Avatar" className="w-10 h-10 rounded-full border border-blue-400" />
+                                    )}
+                                    <div>
+                                        <p className="text-xs text-blue-300 font-bold uppercase">Liaison Active</p>
+                                        <p className="text-[10px] text-white">{auth.currentUser.email}</p>
+                                    </div>
+                                </div>
+                                
+                                <p className="text-[10px] text-gray-500 italic mb-4">
+                                    ✅ Sauvegarde automatique activée. Vos données sont en sécurité dans le bunker Google.
+                                </p>
+
+                                <button 
+                                    onClick={logoutUser}
+                                    className="w-full border border-red-500/30 text-red-500 font-bold py-2 rounded-lg text-xs hover:bg-red-900/20 transition-colors uppercase tracking-widest"
+                                >
+                                    Couper la liaison
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     
-                    {/* 1. FEEDBACK (Existant) */}
+                    {/* FEEDBACK */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-gold/20 relative overflow-hidden">
                          <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-gold/10 text-gold rounded-lg"><MessageSquare className="w-5 h-5"/></div>
@@ -2953,7 +3044,7 @@ function SettingsScreen({ onBack }) {
                         </button>
                     </div>
 
-                    {/* 2. CALIBRAGE (Existant) */}
+                    {/* CALIBRAGE */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                          <div className="absolute top-0 right-0 p-4 opacity-5"><RefreshCw className="w-24 h-24 text-white" /></div>
                          <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -2967,11 +3058,11 @@ function SettingsScreen({ onBack }) {
                         </div>
                     </div>
 
-                    {/* 3. SAUVEGARDE (Existant) */}
+                    {/* SAUVEGARDE MANUELLE */}
                     <div className="bg-[#111] p-5 rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><Download className="w-5 h-5"/></div>
-                            <div><h3 className="text-sm font-bold text-gray-200">Sauvegarder l'Empire</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Sauvegarde Manuelle (Backup)</h3><p className="text-[10px] text-gray-500">Générez un code unique.</p></div>
                         </div>
                         
                         <button onClick={handleExport} className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-colors mb-3">
@@ -2986,7 +3077,7 @@ function SettingsScreen({ onBack }) {
                         )}
                     </div>
                     
-                    {/* 4. RESTAURATION (Existant) */}
+                    {/* RESTAURATION */}
                     <div className="bg-[#111] border border-white/5 rounded-xl p-5">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-green-900/20 text-green-400 rounded-lg"><Upload className="w-5 h-5"/></div>
@@ -2996,13 +3087,13 @@ function SettingsScreen({ onBack }) {
                         <button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">Restaurer</button>
                     </div>
                     
-                    {/* 5. RESET (Existant) */}
+                    {/* RESET */}
                     <div className="pt-10 border-t border-white/5">
                         <button onClick={resetEmpire} className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-xs uppercase tracking-widest py-4 hover:bg-red-900/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /> Détruire l'Empire (Reset)</button>
                     </div>
                 </div>
 
-                {/* --- MODALE FEEDBACK (INTÉGRÉE) --- */}
+                {/* MODALE FEEDBACK */}
                 {showFeedback && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
                         <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
