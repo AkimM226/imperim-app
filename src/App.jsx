@@ -1149,7 +1149,7 @@ function Dashboard({ onNavigate }) {
     const unlockQuantum = (e) => {
         e.preventDefault();
         if (betaCodeInput.trim() === "IMPERATOR-X") {
-            // SUCCÈS : On enregistre dans le navigateur
+            // SUCCÈS
             localStorage.setItem('imperium_beta_quantum', 'GRANTED');
             setIsQuantumUnlocked(true);
             setShowBetaLock(false);
@@ -1159,7 +1159,7 @@ function Dashboard({ onNavigate }) {
         } else {
             // ÉCHEC
             playSound('error');
-            alert("CODE REFUSÉ. Accès réservé au Haut Commandement.");
+            alert("ACCÈS REFUSÉ"); // <--- Modification ici
             setBetaCodeInput("");
             setShowBetaLock(false);
         }
@@ -1684,7 +1684,7 @@ function Dashboard({ onNavigate }) {
                 </div>
              </div>
         )}
-                
+
       </div>
       </PageTransition>
     );
