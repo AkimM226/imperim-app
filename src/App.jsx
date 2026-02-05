@@ -447,6 +447,181 @@ function OrdersModal({ onClose }) {
 }
 
 // ==========================================
+// 13. LE CHRONO-VISOR (SIMULATEUR QUANTIQUE - AUTONOME)
+// ==========================================
+function QuantumScreen({ onBack }) {
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+    
+    // 1. CHARGEMENT AUTONOME DES DONNÉES
+    const currency = localStorage.getItem('imperium_currency') || "€";
+    const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
+    const bunker = JSON.parse(localStorage.getItem('imperium_bunker') || "0");
+    const goals = JSON.parse(localStorage.getItem('imperium_goals') || "[]");
+    
+    // Calcul du cash réellement disponible (sans les Cibles)
+    const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
+    const availableCash = parseFloat(balance) - lockedCash;
+
+    const [scenario, setScenario] = useState("");
+    const [cost, setCost] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [simulation, setSimulation] = useState(null);
+
+    const runSimulation = async (e) => {
+        e.preventDefault();
+        if (!scenario) return;
+        setLoading(true);
+        setSimulation(null);
+
+        const prompt = `
+            Tu es le CHRONO-VISOR, un ordinateur quantique futuriste d'IMPERIUM.
+            
+            DONNÉES ACTUELLES DU COMMANDANT :
+            - Solde Cash Disponible : ${availableCash} ${currency}
+            - Épargne Bunker : ${bunker} ${currency}
+
+            SCÉNARIO À SIMULER : "${scenario}"
+            COÛT ESTIMÉ : ${cost || 0} ${currency}
+
+            TES ORDRES :
+            Projette-toi dans le futur. Calcule les probabilités. Sois visuel, dramatique et précis.
+            
+            RÉPONDS UNIQUEMENT AVEC CE JSON STRICT (SANS RIEN D'AUTRE) :
+            {
+                "success_rate": 85,
+                "verdict": "FEU VERT / FEU ROUGE / RISQUE ÉLEVÉ",
+                "timeline_1m": "Description courte de la situation dans 1 mois (impact direct).",
+                "timeline_1y": "Description courte de la situation dans 1 an (effet papillon).",
+                "visual": "Une phrase décrivant l'état visuel de l'Empire (ex: Une citadelle en or ou des ruines fumantes)."
+            }
+        `;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates[0].content) {
+                const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
+                setSimulation(JSON.parse(text));
+            } else {
+                throw new Error("Pas de réponse");
+            }
+        } catch (error) {
+            alert("⚠️ Erreur de distorsion temporelle. Réessayez.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="h-[100dvh] w-full max-w-md mx-auto bg-black text-cyan-400 font-mono flex flex-col overflow-hidden relative">
+            {/* EFFET DE FOND MATRIX/QUANTIQUE */}
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-cyan-900/10 via-black to-black pointer-events-none"></div>
+
+            <div className="shrink-0 px-5 py-4 border-b border-cyan-900/50 pt-16 z-10 relative">
+                <button onClick={onBack} className="flex items-center gap-2 text-cyan-600 hover:text-cyan-400 mb-4 mt-2 transition-colors">
+                    <ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Déconnexion Flux</span>
+                </button>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-cyan-500/10 border border-cyan-500 rounded animate-pulse">
+                        <Infinity className="w-6 h-6 text-cyan-400" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 uppercase tracking-widest">CHRONO-VISOR</h1>
+                        <p className="text-[10px] text-cyan-700 uppercase">Module de Prédiction v9.0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar relative z-10">
+                {!simulation && !loading && (
+                    <div className="text-center mt-10 opacity-70">
+                        <Activity className="w-16 h-16 mx-auto text-cyan-900 mb-4 animate-bounce" />
+                        <p className="text-xs text-cyan-600 uppercase tracking-widest">En attente de données temporelles...</p>
+                    </div>
+                )}
+
+                <form onSubmit={runSimulation} className="space-y-4 mb-8">
+                    <div className="bg-cyan-900/5 border border-cyan-500/30 p-4 rounded-xl">
+                        <label className="text-[10px] uppercase text-cyan-500 font-bold mb-2 block">Action à Simuler</label>
+                        <input 
+                            type="text" 
+                            value={scenario} 
+                            onChange={(e) => setScenario(e.target.value)} 
+                            placeholder="Ex: Acheter un PC Gamer, Lancer une marque..." 
+                            className="w-full bg-black border-b border-cyan-800 py-2 text-cyan-100 text-sm focus:border-cyan-400 focus:outline-none placeholder-cyan-900" 
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                         <div className="bg-cyan-900/5 border border-cyan-500/30 p-4 rounded-xl flex-1">
+                            <label className="text-[10px] uppercase text-cyan-500 font-bold mb-2 block">Coût (Optionnel)</label>
+                            <input 
+                                type="number" 
+                                value={cost} 
+                                onChange={(e) => setCost(e.target.value)} 
+                                placeholder="0" 
+                                className="w-full bg-black border-b border-cyan-800 py-2 text-cyan-100 text-sm focus:border-cyan-400 focus:outline-none placeholder-cyan-900" 
+                            />
+                        </div>
+                        <button type="submit" disabled={!scenario || loading} className="bg-cyan-600 text-black font-bold px-6 rounded-xl hover:bg-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            {loading ? <Loader2 className="w-6 h-6 animate-spin"/> : <Zap className="w-6 h-6"/>}
+                        </button>
+                    </div>
+                </form>
+
+                {simulation && (
+                    <div className="space-y-4 animate-in slide-in-from-bottom-10 duration-700">
+                        {/* VERDICT */}
+                        <div className={`p-6 rounded-xl border-2 text-center relative overflow-hidden ${simulation.success_rate > 50 ? 'border-green-500 bg-green-900/10' : 'border-red-500 bg-red-900/10'}`}>
+                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+                            <p className="text-[10px] uppercase tracking-[0.3em] mb-2 font-bold">Probabilité de Succès</p>
+                            <h2 className={`text-6xl font-bold mb-2 ${simulation.success_rate > 50 ? 'text-green-400' : 'text-red-500'}`}>{simulation.success_rate}%</h2>
+                            <p className={`text-xl font-bold uppercase tracking-widest ${simulation.success_rate > 50 ? 'text-green-400' : 'text-red-400'}`}>{simulation.verdict}</p>
+                        </div>
+
+                        {/* VISION */}
+                        <div className="bg-black border border-cyan-500/30 p-4 rounded-xl relative">
+                            <div className="absolute top-0 right-0 p-2"><Globe className="w-4 h-4 text-cyan-600"/></div>
+                            <h3 className="text-cyan-400 font-bold text-xs uppercase tracking-widest mb-2">Projection Visuelle</h3>
+                            <p className="text-sm text-cyan-100 italic">"{simulation.visual}"</p>
+                        </div>
+
+                        {/* TIMELINES */}
+                        <div className="space-y-4 pt-4 relative">
+                            <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-cyan-900"></div>
+                            
+                            <div className="flex gap-4 relative">
+                                <div className="w-10 h-10 rounded-full bg-black border-2 border-cyan-500 flex items-center justify-center shrink-0 z-10">
+                                    <span className="text-[10px] font-bold text-cyan-400">1M</span>
+                                </div>
+                                <div className="bg-cyan-900/10 border border-cyan-500/20 p-4 rounded-xl flex-1">
+                                    <h4 className="text-xs font-bold text-cyan-400 uppercase mb-1">Impact Tactique (Court Terme)</h4>
+                                    <p className="text-xs text-gray-400 leading-relaxed">{simulation.timeline_1m}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 relative">
+                                <div className="w-10 h-10 rounded-full bg-black border-2 border-purple-500 flex items-center justify-center shrink-0 z-10 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                                    <span className="text-[10px] font-bold text-purple-400">1A</span>
+                                </div>
+                                <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded-xl flex-1">
+                                    <h4 className="text-xs font-bold text-purple-400 uppercase mb-1">Impact Stratégique (Long Terme)</h4>
+                                    <p className="text-xs text-gray-400 leading-relaxed">{simulation.timeline_1y}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
 // APP PRINCIPALE & NAVIGATION
 // ==========================================
 export default function App() {
@@ -471,7 +646,7 @@ export default function App() {
   function MainOS() {
     const [currentView, setCurrentView] = useState('dashboard');
     const [showPatchNotes, setShowPatchNotes] = useState(false);
-    
+
     // Fonction de navigation principale
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
     
@@ -496,6 +671,7 @@ export default function App() {
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'quantum' && <QuantumScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
@@ -910,10 +1086,9 @@ function JarvisModal({ onClose, contextData }) {
 // ==========================================
 //              DASHBOARD
 // ==========================================
-// On ajoute skills, debts, protocols, projects, transactions...
 function Dashboard({ onNavigate }) {
     
-    // 1. CHARGEMENT COMPLET DES DONNÉES (AUTONOMIE)
+    // 1. CHARGEMENT DES DONNÉES
     const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
     const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
     const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
@@ -927,7 +1102,7 @@ function Dashboard({ onNavigate }) {
     
     const currency = localStorage.getItem('imperium_currency') || "€";
 
-    // 2. ETATS D'INTERFACE (LA RADIO EST ICI MAINTENANT !)
+    // 2. ETATS D'INTERFACE
     const [showRadio, setShowRadio] = useState(false);
     const [showJarvis, setShowJarvis] = useState(false);
     const [showOrders, setShowOrders] = useState(false);
@@ -943,10 +1118,6 @@ function Dashboard({ onNavigate }) {
     const [distributeWave, setDistributeWave] = useState("");
     const [distributeGoalId, setDistributeGoalId] = useState("");
     const [distributeGoalAmount, setDistributeGoalAmount] = useState("");
-    
-    // États pour Jarvis Chat
-    const [jarvisLoading, setJarvisLoading] = useState(false);
-    const [jarvisMessage, setJarvisMessage] = useState("");
 
     // SAISIE
     const [transactionType, setTransactionType] = useState('expense');
@@ -954,7 +1125,46 @@ function Dashboard({ onNavigate }) {
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [bunkerAmount, setBunkerAmount] = useState('');
-  
+
+    // --- SÉCURITÉ BETA (CHRONO-VISOR) ---
+    const [showBetaLock, setShowBetaLock] = useState(false); // Affiche la modale de code
+    const [betaCodeInput, setBetaCodeInput] = useState("");
+    const [isQuantumUnlocked, setIsQuantumUnlocked] = useState(() => {
+        // Vérifie si le code a DÉJÀ été entré par le passé
+        return localStorage.getItem('imperium_beta_quantum') === 'GRANTED';
+    });
+
+    const handleQuantumAccess = () => {
+        if (isQuantumUnlocked) {
+            // Si déjà débloqué, on y va direct
+            playSound('click'); 
+            onNavigate('quantum');
+        } else {
+            // Sinon, on affiche la modale de sécurité
+            playSound('error'); // Petit son de refus
+            setShowBetaLock(true);
+        }
+    };
+
+    const unlockQuantum = (e) => {
+        e.preventDefault();
+        if (betaCodeInput.trim() === "IMPERATOR-X") {
+            // SUCCÈS : On enregistre dans le navigateur
+            localStorage.setItem('imperium_beta_quantum', 'GRANTED');
+            setIsQuantumUnlocked(true);
+            setShowBetaLock(false);
+            playSound('success');
+            alert("ACCÈS AUTORISÉ : Bienvenue dans le futur, Commandant.");
+            onNavigate('quantum');
+        } else {
+            // ÉCHEC
+            playSound('error');
+            alert("CODE REFUSÉ. Accès réservé au Haut Commandement.");
+            setBetaCodeInput("");
+            setShowBetaLock(false);
+        }
+    };
+
     // === CALCULS TEMPORELS & IMPACT ===
     const today = new Date();
     const currentDay = today.getDate();
@@ -966,7 +1176,7 @@ function Dashboard({ onNavigate }) {
     
     // Soldes
     const totalBalance = balance; 
-    const totalBunker = bunker;    
+    const totalBunker = bunker;     
     const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
     const availableCash = totalBalance - lockedCash; 
     
@@ -1017,16 +1227,13 @@ function Dashboard({ onNavigate }) {
     const dailySurvivalCost = Math.max(availableCash / 30, 1);
     const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
   
-    // EFFETS DE SAUVEGARDE (CORRIGÉ)
+    // EFFETS DE SAUVEGARDE
    useEffect(() => {
     localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
     localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
     localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-    
-    // 👇 AJOUTE CETTE LIGNE 👇
     localStorage.setItem('imperium_goals', JSON.stringify(goals)); 
-    
-  }, [balance, bunker, transactions, goals]); // 👈 N'OUBLIE PAS D'AJOUTER 'goals' ICI
+  }, [balance, bunker, transactions, goals]);
   
     
     // =======================================================
@@ -1037,7 +1244,7 @@ function Dashboard({ onNavigate }) {
         if (!amount) return;
         const value = parseFloat(amount);
         
-        // 1. GESTION DES REVENUS (Pas d'interception ici, l'argent rentre)
+        // 1. GESTION DES REVENUS
         if (transactionType === 'income') {
             setPendingTransaction({ value, description });
             setShowDistributeModal(true); 
@@ -1049,23 +1256,19 @@ function Dashboard({ onNavigate }) {
             return;
         }
         
-        // 2. 🛡️ INTERCEPTEUR JARVIS (C'est ici que ça se joue)
-        // Si c'est une Dépense "Futilité" (Want) ET qu'elle dépasse 20% du cash disponible
+        // 2. 🛡️ INTERCEPTEUR JARVIS
         if (transactionType === 'expense' && expenseCategory === 'want') {
-            const threshold = availableCash * 0.20; // Seuil de 20%
+            const threshold = availableCash * 0.20;
             
             if (value > threshold) {
-                // Jarvis déclenche une alerte bloquante
                 const confirmAction = window.confirm(
                     `⚠️ ALERTE JARVIS\n\nCommandant, vous êtes sur le point de dépenser ${formatMoney(value)} ${currency} en futilités.\n\nCela représente plus de 20% de votre trésorerie disponible.\n\nConfirmez-vous cet ordre malgré le risque ?`
                 );
-                
-                // Si l'utilisateur clique sur "Annuler", on bloque tout.
                 if (!confirmAction) return; 
             }
         }
   
-        // 3. GESTION DES DÉPENSES (Si Jarvis a laissé passer ou si c'est une nécessité)
+        // 3. GESTION DES DÉPENSES
         if (transactionType === 'expense') {
             if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
             setBalance(balance - value);
@@ -1095,26 +1298,18 @@ function Dashboard({ onNavigate }) {
         const waveAlloc = parseFloat(distributeWave) || 0;
         const goalAlloc = parseFloat(distributeGoalAmount) || 0;
         
-        // Sécurité
         if (waveAlloc + goalAlloc > totalIncome) {
             alert(`Erreur : Répartition trop élevée.`);
             return;
         }
 
         const remainingCash = totalIncome - waveAlloc - goalAlloc;
-
-        // --- CORRECTION ICI ---
-        // Le Solde Balance contient TOUT l'argent physique (Dispo + Cibles).
-        // On ne soustrait QUE ce qui part vers Wave.
-        // On NE soustrait PAS ce qui part vers les Cibles (car cet argent reste chez nous).
         setBalance(balance + totalIncome - waveAlloc); 
 
-        // 2. Mise à jour du Bunker (Wave)
         if (waveAlloc > 0) {
             setBunker(bunker + waveAlloc);
         }
 
-        // 3. Mise à jour de la Cible
         if (goalAlloc > 0 && distributeGoalId) {
             const updatedGoals = goals.map(g => {
                 if (g.id === parseInt(distributeGoalId)) {
@@ -1125,7 +1320,6 @@ function Dashboard({ onNavigate }) {
             setGoals(updatedGoals);
         }
 
-        // 4. Enregistrement transaction
         const incomeTx = { 
             id: Date.now(), 
             desc: pendingTransaction.description || "Revenu", 
@@ -1149,7 +1343,7 @@ function Dashboard({ onNavigate }) {
         const val = parseFloat(bunkerAmount);
         if (action === 'deposit') {
             if (val > availableCash) return alert(`Fonds insuffisants.`);
-            setBalance(balance - val); setBunker(bunker + val);    
+            setBalance(balance - val); setBunker(bunker + val);     
         } else if (action === 'withdraw') {
             if (val > bunker) return alert(`Fonds insuffisants sur Wave.`);
             setBunker(bunker - val); setBalance(balance + val); 
@@ -1231,7 +1425,7 @@ function Dashboard({ onNavigate }) {
                </div>
           </div>
   
-          {/* ALERTE DETTE PRIORITAIRE (CORRECTION TYPO 'a') */}
+          {/* ALERTE DETTE PRIORITAIRE */}
           {priorityDebt && (
               <div onClick={() => onNavigate('debts')} className="bg-red-600/10 border border-red-500/50 p-3 rounded-xl flex items-center justify-between animate-pulse cursor-pointer">
                   <div className="flex items-center gap-3">
@@ -1277,7 +1471,7 @@ function Dashboard({ onNavigate }) {
                   <Zap className="w-6 h-6 text-gold mb-3 opacity-90 relative z-10" />
                   <h3 className="text-sm font-bold text-white relative z-10">JARVIS AI</h3>
                   <p className="text-[9px] text-gold uppercase tracking-wide relative z-10">Analyse Tactique</p>
-              </button>
+             </button>
 
               <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
                   <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Arsenal</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Compétences</p>
@@ -1286,6 +1480,26 @@ function Dashboard({ onNavigate }) {
                   <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Protocole</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
               </button>
           </div>
+          
+          {/* BOUTON CHRONO-VISOR (AVEC VERROU SEC) */}
+          <button onClick={handleQuantumAccess} className="w-full bg-[#111] rounded-xl p-0.5 flex items-center justify-between active:scale-[0.98] mt-2 group relative overflow-hidden mb-3">
+             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 opacity-20 animate-pulse"></div>
+             <div className="bg-[#0a0a0a] w-full h-full rounded-[10px] p-4 flex items-center gap-4 relative z-10">
+                 <div className="p-2 bg-cyan-900/20 rounded-full text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+                     <Infinity className="w-6 h-6 animate-spin-slow" />
+                 </div>
+                 <div className="text-left">
+                     <h3 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">CHRONO-VISOR</h3>
+                     <p className="text-[9px] text-cyan-600 uppercase tracking-widest">Simuler le Futur</p>
+                 </div>
+                 {isQuantumUnlocked ? (
+                    <ChevronRight className="w-5 h-5 text-cyan-400 ml-auto" />
+                 ) : (
+                    <Lock className="w-4 h-4 text-gray-500 ml-auto" />
+                 )}
+             </div>
+             <style>{`@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .animate-spin-slow { animation: spin-slow 10s linear infinite; }`}</style>
+          </button>
           
           {/* BOUTON CIBLES */}
            <button onClick={() => { playSound('click'); onNavigate('goals'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mb-2 group hover:bg-[#222] transition-colors">
@@ -1301,7 +1515,7 @@ function Dashboard({ onNavigate }) {
               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />
           </button>
           
-           {/* --- BOUTON CITADELLE CORRIGÉ --- */}
+           {/* --- BOUTON CITADELLE --- */}
           <button onClick={() => { playSound('citadel'); onNavigate('citadel'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors relative overflow-hidden">
                <div className="absolute inset-0 bg-[#F4D35E]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                <div className="flex items-center gap-4 relative z-10">
@@ -1316,7 +1530,7 @@ function Dashboard({ onNavigate }) {
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
           </button>
 
-            {/* --- BOUTON ACADÉMIE --- */}
+           {/* --- BOUTON ACADÉMIE --- */}
           <button onClick={() => { playSound('click'); onNavigate('academy'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-purple-900/20 rounded-full text-purple-400 border border-purple-500/20">
@@ -1330,7 +1544,7 @@ function Dashboard({ onNavigate }) {
               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-purple-400 transition-colors" />
           </button>
 
-          {/* BOUTON REGISTRE CORRIGÉ */}
+          {/* BOUTON REGISTRE */}
           <button onClick={() => { playSound('debts'); onNavigate('debts'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-red-900/20 rounded-full text-red-500 border border-red-500/20">
@@ -1347,7 +1561,7 @@ function Dashboard({ onNavigate }) {
               </div>
           </button>
   
-          {/* BOUTON TROPHÉES CORRIGÉ */}
+          {/* BOUTON TROPHÉES */}
           <button onClick={() => { playSound('trophies'); onNavigate('trophies'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-[#F4D35E]/10 rounded-full text-[#F4D35E] border border-[#F4D35E]/20">
@@ -1385,112 +1599,92 @@ function Dashboard({ onNavigate }) {
         {isModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Nouvelle Entrée</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5"><button onClick={() => setTransactionType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button><button onClick={() => setTransactionType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button></div>{transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}{transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (<div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Alerte</p><p className="text-gray-300 text-xs mt-1">Coût: <span className="text-white font-bold">{daysLost} jours</span> de survie.</p></div></div>)}<form onSubmit={handleSubmit} className="space-y-5"><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus /><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} /><button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' ? 'bg-white text-black' : 'bg-[#EAB308] text-black'}`}>VALIDER</button></form></div></div>)}
         {isBunkerModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden"><div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div><div className="flex justify-between items-center mb-6"><div className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-400"/><h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave</h2></div><button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="text-center mb-6"><h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2></div><div className="space-y-4"><input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus /><div className="flex gap-3"><button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase">Retrait</button><button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase">Dépôt</button></div></div></div></div>)}
         {showHistory && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in"><div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">{transactions.map(tx => (<div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5"><div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div></div>))}</div></div></div>)}
-        {/* MODALE DE RÉPARTITION TACTIQUE (NOUVELLE VERSION) */}
+        
+        {/* MODALE DE RÉPARTITION TACTIQUE */}
       {showDistributeModal && pendingTransaction && (
           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
               <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-                  
-                  {/* Titre */}
                   <div className="text-center mb-6">
                       <h3 className="text-[#F4D35E] font-serif text-xl font-bold uppercase tracking-widest">Rapport de Butin</h3>
                       <p className="text-white text-3xl font-bold mt-2">{formatMoney(pendingTransaction.value)} <span className="text-sm text-gray-500">{currency}</span></p>
                       <p className="text-[10px] text-gray-500 mt-1">À répartir stratégiquement</p>
                   </div>
-
                   <div className="space-y-4 mb-8">
-                      {/* OPTION 1 : WAVE (BUNKER) */}
                       <div className="bg-black/50 p-3 rounded-lg border border-blue-900/30">
                           <div className="flex items-center gap-2 mb-2">
                               <Smartphone className="w-4 h-4 text-blue-400"/>
                               <span className="text-xs font-bold text-blue-100 uppercase">Sécuriser sur Wave</span>
                           </div>
-                          <input 
-                              type="number" 
-                              value={distributeWave} 
-                              onChange={(e) => setDistributeWave(e.target.value)}
-                              placeholder="Montant (ex: 5000)"
-                              className="w-full bg-[#111] border border-blue-500/20 rounded p-2 text-white text-sm focus:border-blue-500 outline-none text-right"
-                          />
+                          <input type="number" value={distributeWave} onChange={(e) => setDistributeWave(e.target.value)} placeholder="Montant (ex: 5000)" className="w-full bg-[#111] border border-blue-500/20 rounded p-2 text-white text-sm focus:border-blue-500 outline-none text-right"/>
                       </div>
-
-                      {/* OPTION 2 : CIBLE (GOAL) */}
                       {goals.length > 0 ? (
                           <div className="bg-black/50 p-3 rounded-lg border border-green-900/30">
-                              <div className="flex items-center gap-2 mb-2">
-                                  <Target className="w-4 h-4 text-green-400"/>
-                                  <span className="text-xs font-bold text-green-100 uppercase">Investir sur Cible</span>
-                              </div>
-                              <select 
-                                  value={distributeGoalId} 
-                                  onChange={(e) => setDistributeGoalId(e.target.value)}
-                                  className="w-full bg-[#111] border border-white/10 rounded p-2 text-xs text-white mb-2 outline-none focus:border-green-500"
-                              >
+                              <div className="flex items-center gap-2 mb-2"><Target className="w-4 h-4 text-green-400"/><span className="text-xs font-bold text-green-100 uppercase">Investir sur Cible</span></div>
+                              <select value={distributeGoalId} onChange={(e) => setDistributeGoalId(e.target.value)} className="w-full bg-[#111] border border-white/10 rounded p-2 text-xs text-white mb-2 outline-none focus:border-green-500">
                                   <option value="">-- Choisir une cible --</option>
-                                  {goals.map(g => (
-                                      <option key={g.id} value={g.id}>{g.title} (Reste: {formatMoney(g.target - g.current)})</option>
-                                  ))}
+                                  {goals.map(g => (<option key={g.id} value={g.id}>{g.title} (Reste: {formatMoney(g.target - g.current)})</option>))}
                               </select>
-                              <input 
-                                  type="number" 
-                                  value={distributeGoalAmount} 
-                                  onChange={(e) => setDistributeGoalAmount(e.target.value)}
-                                  placeholder="Montant"
-                                  disabled={!distributeGoalId}
-                                  className="w-full bg-[#111] border border-green-500/20 rounded p-2 text-white text-sm focus:border-green-500 outline-none text-right disabled:opacity-50"
-                              />
+                              <input type="number" value={distributeGoalAmount} onChange={(e) => setDistributeGoalAmount(e.target.value)} placeholder="Montant" disabled={!distributeGoalId} className="w-full bg-[#111] border border-green-500/20 rounded p-2 text-white text-sm focus:border-green-500 outline-none text-right disabled:opacity-50"/>
                           </div>
                       ) : (
-                          <div className="p-3 rounded-lg border border-white/5 bg-white/5 text-center">
-                              <p className="text-[10px] text-gray-500 italic">Aucune cible active pour investir.</p>
-                          </div>
+                          <div className="p-3 rounded-lg border border-white/5 bg-white/5 text-center"><p className="text-[10px] text-gray-500 italic">Aucune cible active pour investir.</p></div>
                       )}
                   </div>
-
-                  {/* INFO RESTANTE */}
                   <div className="flex justify-between items-center text-xs mb-4 px-2">
                       <span className="text-gray-500">Reste en Cash (Dispo):</span>
-                      <span className="text-white font-bold">
-                          {formatMoney(pendingTransaction.value - (parseFloat(distributeWave)||0) - (parseFloat(distributeGoalAmount)||0))} {currency}
-                      </span>
+                      <span className="text-white font-bold">{formatMoney(pendingTransaction.value - (parseFloat(distributeWave)||0) - (parseFloat(distributeGoalAmount)||0))} {currency}</span>
                   </div>
-
-                  {/* BOUTON VALIDATION */}
-                  <button onClick={finalizeIncome} className="w-full bg-[#F4D35E] text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-[0_0_15px_rgba(244,211,94,0.3)]">
-                      Confirmer la Répartition
-                  </button>
-
+                  <button onClick={finalizeIncome} className="w-full bg-[#F4D35E] text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-[0_0_15px_rgba(244,211,94,0.3)]">Confirmer la Répartition</button>
               </div>
           </div>
       )}
+      
         {showOrders && <OrdersModal onClose={() => setShowOrders(false)} />}
         {showRadio && <RadioLink onClose={() => setShowRadio(false)} />}
         
-        {/* MODALE JARVIS PRIME - CONNECTÉE À TOUT */}
+        {/* MODALE JARVIS PRIME */}
         {showJarvis && (
             <JarvisModal 
                 onClose={() => setShowJarvis(false)} 
-                contextData={{
-                    // Finances
-                    balance: availableCash,
-                    bunker: totalBunker,
-                    currency: currency,
-                    
-                    // Registre (On envoie tout, l'IA filtrera)
-                    transactions: transactions,
-                    
-                    // Cibles
-                    projects: projects,
-                    
-                    // Arsenal (Nouveau !)
-                    skills: skills,
-                    
-                    // Citadelle (Nouveau !)
-                    debts: debts,
-                    protocols: protocols
-                }}
+                contextData={{ balance: availableCash, bunker: totalBunker, currency: currency, transactions: transactions, projects: projects, skills: skills, debts: debts, protocols: protocols }}
             />
         )}
-        
+
+        {/* MODALE DE SÉCURITÉ BETA (TEXTE MODIFIÉ) */}
+        {showBetaLock && (
+             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+                <div className="bg-[#1a1a1a] border border-red-500/30 w-full max-w-sm rounded-2xl p-6 shadow-[0_0_50px_rgba(220,38,38,0.2)] text-center relative overflow-hidden">
+                    
+                    {/* Message de développement (MODIFIÉ) */}
+                    <div className="mb-6">
+                        <Lock className="w-12 h-12 text-red-500 mx-auto mb-4 animate-pulse" />
+                        <h2 className="text-red-500 font-bold text-xl uppercase tracking-widest mb-2">ZONE CLASSIFIÉE</h2>
+                        <p className="text-gray-400 text-xs leading-relaxed">
+                            Ce module est indisponible car toujours en cours de développement.
+                        </p>
+                    </div>
+
+                    {/* Zone de saisie secrète (Invisible pour l'utilisateur lambda qui pense que c'est juste une info, mais active pour vous) */}
+                    <form onSubmit={unlockQuantum} className="relative">
+                        <div className="relative">
+                             <Key className="absolute left-3 top-3 w-4 h-4 text-gray-600" />
+                             <input 
+                                type="text" 
+                                value={betaCodeInput} 
+                                onChange={(e) => setBetaCodeInput(e.target.value)} 
+                                placeholder="Code d'Accès..." 
+                                className="w-full bg-black border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white text-xs focus:border-red-500 focus:outline-none uppercase tracking-widest"
+                             />
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                            <button type="button" onClick={() => setShowBetaLock(false)} className="flex-1 bg-white/5 hover:bg-white/10 text-gray-400 py-3 rounded-lg text-xs uppercase font-bold transition-colors">Retour</button>
+                            <button type="submit" className="flex-1 bg-red-900/30 hover:bg-red-900/50 border border-red-500/30 text-red-500 py-3 rounded-lg text-xs uppercase font-bold transition-colors">Déverrouiller</button>
+                        </div>
+                    </form>
+                </div>
+             </div>
+        )}
+                
       </div>
       </PageTransition>
     );
