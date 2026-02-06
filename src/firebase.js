@@ -1,42 +1,44 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { initializeFirestore, doc, setDoc, getDoc, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
-// 👇 COLLEZ ICI VOS NOUVELLES CLES (Celles copiées à l'Etape 2) 👇
+// 👇 COLLEZ VOTRE CONFIGURATION IMPERIUM-V2 ICI 👇
 const firebaseConfig = {
-    apiKey: "AIzaSyAbbeWcWLPdwuuEmOrFDB1gfLewmdfh4f8",
-    authDomain: "imperium-reborn.firebaseapp.com",
-    projectId: "imperium-reborn",
-    storageBucket: "imperium-reborn.firebasestorage.app",
-    messagingSenderId: "707185287389",
-    appId: "1:707185287389:web:cb5be8953576b35a3ffb34"
+  apiKey: "AIzaSyC_gXxWHFBnIl6z2U26cNp0gzgY5DkiRcs",
+  authDomain: "imperium-v2-a2ba1.firebaseapp.com",
+  projectId: "imperium-v2-a2ba1",
+  storageBucket: "imperium-v2-a2ba1.firebasestorage.app",
+  messagingSenderId: "688896103671",
+  appId: "1:688896103671:web:7a80ae9168765891d56ff2"
 };
-// 👆 ----------------------------------------------------------- 👆
-// ... le début du fichier ...
 
-console.log("--- DEBUG FIREBASE ---");
-console.log("Projet ID:", firebaseConfig.projectId);
-console.log("API Key:", firebaseConfig.apiKey);
-console.log("----------------------");
-
-// Initialisation
+// 1. Initialisation de l'App
 const app = initializeApp(firebaseConfig);
 
-// Export des outils
+// 2. Initialisation de l'Auth
 export const auth = getAuth(app);
-export const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
+
+// 3. Initialisation de la Database (Avec correctif WebContainer)
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  }),
+  experimentalForceLongPolling: true, // Vital pour StackBlitz/Replit
+});
+
+// --- LES FONCTIONS MANQUANTES (Celles que App.jsx réclame) ---
 
 // Connexion Google
 export const loginWithGoogle = async () => {
   try {
+    auth.languageCode = 'fr';
     const result = await signInWithPopup(auth, provider);
     return result.user;
   } catch (error) {
     console.error("Erreur Login:", error);
-    // Permet de voir l'erreur exacte à l'écran
-    alert("Erreur de connexion : " + error.code + " - " + error.message);
+    alert("Erreur: " + error.message);
     throw error;
   }
 };
@@ -55,7 +57,6 @@ export const logoutUser = async () => {
 export const saveEmpireToCloud = async (userId, data) => {
   if (!userId) return;
   try {
-    // Merge: true permet de ne mettre à jour que ce qui change
     await setDoc(doc(db, "empires", userId), {
       ...data,
       lastUpdated: new Date().toISOString()
@@ -75,7 +76,7 @@ export const loadEmpireFromCloud = async (userId) => {
     if (docSnap.exists()) {
       return docSnap.data();
     }
-    return null;
+    return null; // Retourne null si pas de sauvegarde (nouvel utilisateur)
   } catch (e) {
     console.error("Erreur Load:", e);
     return null;

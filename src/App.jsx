@@ -1108,23 +1108,38 @@ function JarvisModal({ onClose, contextData }) {
 }
 
 // ==========================================
-//              DASHBOARD
+//             DASHBOARD
 // ==========================================
 function Dashboard({ onNavigate }) {
     
-    // 1. CHARGEMENT DES DONNÉES
-    const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
-    const [bunker, setBunker] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_bunker') || "0"); } catch { return 0; } });
-    const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_transactions') || "[]"); } catch { return []; } });
-    const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
-    const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
-    const [projects, setProjects] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_projects') || "[]"); } catch { return []; } });
+    // 🛡️ FONCTION DE SÉCURITÉ : Empêche le crash si les données sont bizarres
+    const safeParse = (data, fallback) => {
+        try {
+            if (!data) return fallback;
+            // Si c'est déjà un objet/nombre, on le retourne direct
+            if (typeof data === 'object' || typeof data === 'number') return data;
+            return JSON.parse(data);
+        } catch (e) {
+            console.warn("Erreur de lecture de données (corrigée automatiquement):", e);
+            return fallback;
+        }
+    };
+
+    // 1. ÉTATS (STATES) - Avec lecture sécurisée locale
+    const [balance, setBalance] = useState(() => safeParse(localStorage.getItem('imperium_balance'), 0));
+    const [bunker, setBunker] = useState(() => safeParse(localStorage.getItem('imperium_bunker'), 0));
+    const [transactions, setTransactions] = useState(() => safeParse(localStorage.getItem('imperium_transactions'), []));
+    const [goals, setGoals] = useState(() => safeParse(localStorage.getItem('imperium_goals'), []));
+    const [debts, setDebts] = useState(() => safeParse(localStorage.getItem('imperium_debts'), []));
+    const [projects, setProjects] = useState(() => safeParse(localStorage.getItem('imperium_projects'), []));
     
     // Pour Jarvis
-    const [skills, setSkills] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_skills') || "[]"); } catch { return []; } });
-    const [protocols, setProtocols] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_protocols') || "[]"); } catch { return []; } });
+    const [skills, setSkills] = useState(() => safeParse(localStorage.getItem('imperium_skills'), []));
+    const [protocols, setProtocols] = useState(() => safeParse(localStorage.getItem('imperium_protocols'), []));
     
     const currency = localStorage.getItem('imperium_currency') || "€";
+    const [user, setUser] = useState(null);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     // 2. ETATS D'INTERFACE
     const [showRadio, setShowRadio] = useState(false);
@@ -1132,62 +1147,86 @@ function Dashboard({ onNavigate }) {
     const [showOrders, setShowOrders] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     
-    // Modales de transaction
+    // Modales
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBunkerModalOpen, setIsBunkerModalOpen] = useState(false);
     const [showDistributeModal, setShowDistributeModal] = useState(false);
     
-    // États pour la distribution tactique
+    // États distribution
     const [pendingTransaction, setPendingTransaction] = useState(null);
     const [distributeWave, setDistributeWave] = useState("");
     const [distributeGoalId, setDistributeGoalId] = useState("");
     const [distributeGoalAmount, setDistributeGoalAmount] = useState("");
 
-    // SAISIE
+    // Saisie
     const [transactionType, setTransactionType] = useState('expense');
     const [expenseCategory, setExpenseCategory] = useState('need'); 
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [bunkerAmount, setBunkerAmount] = useState('');
 
-    // --- SÉCURITÉ BETA (CHRONO-VISOR) ---
-    const [showBetaLock, setShowBetaLock] = useState(false); // Affiche la modale de code
+    // Sécurité Beta
+    const [showBetaLock, setShowBetaLock] = useState(false); 
     const [betaCodeInput, setBetaCodeInput] = useState("");
-    const [isQuantumUnlocked, setIsQuantumUnlocked] = useState(() => {
-        // Vérifie si le code a DÉJÀ été entré par le passé
-        return localStorage.getItem('imperium_beta_quantum') === 'GRANTED';
-    });
-       // ... après vos useState ...
-    const [user, setUser] = useState(null);
+    const [isQuantumUnlocked, setIsQuantumUnlocked] = useState(() => localStorage.getItem('imperium_beta_quantum') === 'GRANTED');
 
-    // 1. Détecter l'utilisateur connecté
+    // 3. CHARGEMENT INTELLIGENT (LOAD)
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            setUser(currentUser);
+            if (currentUser && !isDataLoaded) {
+                console.log("📥 Dashboard : Récupération Cloud...");
+                try {
+                    const cloudData = await loadEmpireFromCloud(currentUser.uid);
+                    if (cloudData) {
+                        // Mise à jour sécurisée des variables
+                        if (cloudData.balance !== undefined) setBalance(Number(cloudData.balance));
+                        if (cloudData.bunker !== undefined) setBunker(Number(cloudData.bunker));
+                        if (cloudData.transactions) setTransactions(safeParse(cloudData.transactions, []));
+                        if (cloudData.goals) setGoals(safeParse(cloudData.goals, []));
+                        if (cloudData.debts) setDebts(safeParse(cloudData.debts, []));
+                        if (cloudData.projects) setProjects(safeParse(cloudData.projects, []));
+                        if (cloudData.skills) setSkills(safeParse(cloudData.skills, []));
+                        if (cloudData.protocols) setProtocols(safeParse(cloudData.protocols, []));
+                        console.log("✅ Données chargées.");
+                    }
+                } catch (err) {
+                    console.error("Erreur chargement cloud:", err);
+                }
+                setIsDataLoaded(true);
+            }
+        });
         return () => unsubscribe();
     }, []);
 
-    // 2. SAUVEGARDE AUTOMATIQUE (CLOUD)
-    // À chaque fois que balance, bunker, transactions ou goals changent -> On envoie au Cloud
+    // 4. SAUVEGARDE AUTOMATIQUE (SAVE)
     useEffect(() => {
-        if (user) {
-            const dataToSave = {
-                balance: localStorage.getItem('imperium_balance'),
-                bunker: localStorage.getItem('imperium_bunker'),
-                transactions: localStorage.getItem('imperium_transactions'),
-                goals: localStorage.getItem('imperium_goals'),
-                debts: localStorage.getItem('imperium_debts'),
-                skills: localStorage.getItem('imperium_skills'),
-                quantum: localStorage.getItem('imperium_beta_quantum')
-            };
-
-            // Petit délai pour éviter de spammer Google à chaque lettre tapée
+        if (user && isDataLoaded) {
             const timer = setTimeout(() => {
+                const dataToSave = {
+                    balance: balance, // On sauvegarde la valeur brute
+                    bunker: bunker,
+                    transactions: JSON.stringify(transactions),
+                    goals: JSON.stringify(goals),
+                    debts: JSON.stringify(debts),
+                    projects: JSON.stringify(projects),
+                    skills: JSON.stringify(skills),
+                    protocols: JSON.stringify(protocols),
+                    quantum: localStorage.getItem('imperium_beta_quantum')
+                };
+                
+                // Sauvegarde locale
+                localStorage.setItem('imperium_balance', JSON.stringify(balance));
+                localStorage.setItem('imperium_bunker', JSON.stringify(bunker));
+                localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
+                // ... les autres updates locales se font via les useEffects spécifiques que vous avez plus bas
+                
+                // Sauvegarde Cloud
                 saveEmpireToCloud(user.uid, dataToSave);
             }, 2000);
-
             return () => clearTimeout(timer);
         }
-    }, [balance, bunker, transactions, goals, user]); // On surveille ces variables
+    }, [balance, bunker, transactions, goals, debts, projects, skills, protocols, user, isDataLoaded]);
 
     const handleQuantumAccess = () => {
         if (isQuantumUnlocked) {
