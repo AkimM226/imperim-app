@@ -660,26 +660,45 @@ export default function App() {
     
     const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
 
-    // --- SYSTÈME CLOUD : JUSTE LE TÉLÉCHARGEMENT (LOAD) ---
+    // --- SYSTÈME CLOUD : CORRECTION ANTI-BOUCLE ---
     useEffect(() => {
+        // 1. Si on a déjà vérifié pendant cette session, on arrête tout de suite.
+        if (sessionStorage.getItem('imperium_cloud_checked') === 'true') {
+            return;
+        }
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
-                // Au login, on vérifie s'il y a une sauvegarde
+                console.log("🔍 Vérification Cloud...");
                 const cloudData = await loadEmpireFromCloud(currentUser.uid);
+                
                 if (cloudData) {
-                    // On compare avec la date locale pour ne pas écraser bêtement
-                    // Pour simplifier ici : on demande confirmation
-                    if(confirm("☁️ Sauvegarde Cloud trouvée. Voulez-vous charger votre Empire ?")) {
+                    // On compare avec la balance locale pour ne pas demander pour rien
+                    const localBalance = localStorage.getItem('imperium_balance');
+                    
+                    // Si on a des données locales et qu'elles semblent différentes, on demande
+                    if(confirm("☁️ Sauvegarde Cloud trouvée. Voulez-vous écraser votre partie locale par celle du Cloud ?")) {
+                        
                         if(cloudData.balance) localStorage.setItem('imperium_balance', cloudData.balance);
                         if(cloudData.bunker) localStorage.setItem('imperium_bunker', cloudData.bunker);
                         if(cloudData.transactions) localStorage.setItem('imperium_transactions', cloudData.transactions);
                         if(cloudData.goals) localStorage.setItem('imperium_goals', cloudData.goals);
                         if(cloudData.debts) localStorage.setItem('imperium_debts', cloudData.debts);
                         if(cloudData.skills) localStorage.setItem('imperium_skills', cloudData.skills);
+                        if(cloudData.protocols) localStorage.setItem('imperium_protocols', cloudData.protocols); // J'ai ajouté ça car il manquait
                         if(cloudData.quantum) localStorage.setItem('imperium_beta_quantum', cloudData.quantum);
                         
+                        // ✅ MARQUEUR DE SUCCÈS : On note qu'on a fait le job pour ne pas recommencer au reload
+                        sessionStorage.setItem('imperium_cloud_checked', 'true');
+                        
                         window.location.reload(); 
+                    } else {
+                        // ❌ REFUS : Si l'utilisateur dit Non, on note aussi qu'on a vérifié pour ne pas le harceler
+                        sessionStorage.setItem('imperium_cloud_checked', 'true');
                     }
+                } else {
+                    // Pas de données cloud, on marque comme vérifié
+                    sessionStorage.setItem('imperium_cloud_checked', 'true');
                 }
             }
         });
