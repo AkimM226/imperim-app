@@ -653,10 +653,28 @@ export default function App() {
     const [showPatchNotes, setShowPatchNotes] = useState(false);
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
-    useEffect(() => { 
-        const lastVersion = localStorage.getItem('imperium_version');
-        if (lastVersion !== APP_VERSION) { setTimeout(() => setShowPatchNotes(true), 500); }
-    }, []);
+    // Dans MainOS (remplace le useEffect du système cloud)
+
+// --- SYSTÈME CLOUD : GESTION DES NOUVEAUX ---
+useEffect(() => {
+    // On ne fait plus de chargement automatique ici, car c'est géré à l'Onboarding.
+    // PAR CONTRE, on vérifie si l'utilisateur est un "Nouveau Joueur" non connecté.
+    
+    // Si l'utilisateur n'est PAS connecté ET qu'on n'a pas encore demandé
+    if (!auth.currentUser && !sessionStorage.getItem('imperium_login_asked')) {
+        // Petit délai pour ne pas agresser l'utilisateur dès l'ouverture
+        const timer = setTimeout(() => {
+            if(confirm("🔒 SÉCURITÉ :\n\nVoulez-vous lier votre Empire à un compte Google maintenant pour activer la sauvegarde automatique Cloud ?")) {
+                loginWithGoogle().then((user) => {
+                    if(user) alert("✅ Empire Sécurisé et Lié.");
+                }).catch(e => console.error(e));
+            }
+            // On marque qu'on a demandé pour ne pas redemander à chaque rechargement de page dans la même session
+            sessionStorage.setItem('imperium_login_asked', 'true');
+        }, 3000); // 3 secondes après l'arrivée sur le Dashboard
+        return () => clearTimeout(timer);
+    }
+}, []);
     
     const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
 
@@ -724,22 +742,27 @@ export default function App() {
     );
 }
 
-// ==========================================
-// 1. ONBOARDING (CONFIG + TUTORIEL)
+ // ==========================================
+// 1. ONBOARDING (CORRIGÉ & NETTOYÉ)
 // ==========================================
 function OnboardingScreen({ onComplete }) {
-    const [step, setStep] = useState(1);
-    // Mode Tuto : false = Config, true = Slides
+    // On commence à l'étape 0 (Choix)
+    const [step, setStep] = useState(0); 
     const [showTutorial, setShowTutorial] = useState(false);
     const [slideIndex, setSlideIndex] = useState(0);
 
+    // Formulaire
     const [initialBalance, setInitialBalance] = useState('');
-    const [mainProject, setMainProject] = useState('');    const [currency, setCurrency] = useState('');
+    const [mainProject, setMainProject] = useState('');     
+    const [currency, setCurrency] = useState('');
     const [zone, setZone] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // Animation Hold
     const [isHolding, setIsHolding] = useState(false);
     const holdTimer = useRef(null);
     const [progress, setProgress] = useState(0);
+    const [isLoading, setIsLoading] = useState(false); // Pour le chargement Cloud
 
     const filteredCurrencies = CURRENCIES.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -749,25 +772,66 @@ function OnboardingScreen({ onComplete }) {
     const startHold = () => { setIsHolding(true); let p = 0; holdTimer.current = setInterval(() => { p += 2; setProgress(p); if (p >= 100) { clearInterval(holdTimer.current); setStep(3); } }, 30); };
     const stopHold = () => { setIsHolding(false); clearInterval(holdTimer.current); setProgress(0); };
     
+    // --- NOUVEAU : LOGIQUE DE RESTAURATION ---
+    const handleRestore = async () => {
+        setIsLoading(true);
+        try {
+            // 1. On lance la connexion Google
+            const user = await loginWithGoogle();
+            
+            if (user) {
+                // 2. On cherche les données
+                const cloudData = await loadEmpireFromCloud(user.uid);
+                
+                if (cloudData) {
+                    // 3. SUCCÈS : On restaure tout dans le localStorage
+                    if(cloudData.balance) localStorage.setItem('imperium_balance', cloudData.balance);
+                    if(cloudData.bunker) localStorage.setItem('imperium_bunker', cloudData.bunker);
+                    if(cloudData.transactions) localStorage.setItem('imperium_transactions', cloudData.transactions);
+                    if(cloudData.goals) localStorage.setItem('imperium_goals', cloudData.goals);
+                    if(cloudData.debts) localStorage.setItem('imperium_debts', cloudData.debts);
+                    if(cloudData.skills) localStorage.setItem('imperium_skills', cloudData.skills);
+                    if(cloudData.protocols) localStorage.setItem('imperium_protocols', cloudData.protocols);
+                    if(cloudData.projects) localStorage.setItem('imperium_projects', cloudData.projects);
+                    if(cloudData.quantum) localStorage.setItem('imperium_beta_quantum', cloudData.quantum);
+                    
+                    // On marque l'onboarding comme fait + Gender
+                    localStorage.setItem('imperium_onboarded', 'true');
+                    if(cloudData.gender) localStorage.setItem('imperium_gender', cloudData.gender);
+
+                    alert(`👋 Bon retour, Commandant. Empire restauré.`);
+                    window.location.reload(); // On reload pour aller direct au Dashboard
+                } else {
+                    // 4. PAS DE DONNÉES : C'est un nouveau compte Google
+                    alert("⚠️ Aucune sauvegarde trouvée sur ce compte.\n\nNous allons créer un nouvel Empire lié à ce compte.");
+                    setStep(1); // On l'envoie vers la config (Step 1)
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Erreur de connexion. Réessayez.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Transition Config -> Tuto
     const startTutorial = () => {
-        // On sauvegarde les données mais on ne reload pas encore
         localStorage.setItem('imperium_balance', initialBalance || 0);
         const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
         localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
         localStorage.setItem('imperium_currency', currency || "€");
         localStorage.setItem('imperium_zone', JSON.stringify(zone || ZONES[0]));
         
-        setShowTutorial(true); // Lancement des slides
+        setShowTutorial(true); 
     };
 
-    // Fin du Tuto -> Dashboard
     const finishComplete = () => {
         localStorage.setItem('imperium_onboarded', 'true');
-        window.location.reload();
+        // IMPORTANT : On recharge la page pour que App.jsx détecte le changement
+        window.location.reload(); 
     };
 
-    // Navigation Slides
     const nextSlide = () => {
         if (slideIndex < TUTORIAL_STEPS.length - 1) {
             setSlideIndex(slideIndex + 1);
@@ -776,7 +840,7 @@ function OnboardingScreen({ onComplete }) {
         }
     };
 
-    // --- AFFICHAGE DU TUTORIEL ---
+    // --- RENDU TUTORIEL (SLIDES) ---
     if (showTutorial) {
         const currentSlide = TUTORIAL_STEPS[slideIndex];
         const Icon = currentSlide.icon;
@@ -807,19 +871,50 @@ function OnboardingScreen({ onComplete }) {
         );
     }
 
-    // --- AFFICHAGE DE LA CONFIGURATION (Classique) ---
+    // --- RENDU CONFIGURATION ---
     return (
       <PageTransition><div className="fixed inset-0 bg-black text-gold flex flex-col items-center justify-center p-6 text-center z-50 overflow-hidden w-full h-full">
-        {step === 1 && (<div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs"><h1 className="text-4xl font-serif font-bold tracking-widest mb-6">IMPERIUM</h1><p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p><button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button></div>)}
+        
+        {/* ÉTAPE 0 : LE PORTAIL (NOUVEAU) */}
+        {step === 0 && (
+            <div className="animate-in fade-in duration-1000 flex flex-col items-center w-full max-w-xs">
+                <div className="mb-8 relative">
+                    <div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div>
+                    <Fingerprint className="w-20 h-20 text-gold relative z-10" />
+                </div>
+                <h1 className="text-4xl font-serif font-bold tracking-widest mb-2 text-white">IMPERIUM</h1>
+                <p className="text-[10px] text-gold uppercase tracking-[0.5em] mb-12">System OS v17.1</p>
+                
+                <div className="w-full space-y-4">
+                    <button onClick={() => setStep(1)} className="w-full bg-white text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs hover:bg-gray-200 transition-colors">
+                        Nouvelle Partie
+                    </button>
+                    
+                    <button onClick={handleRestore} disabled={isLoading} className="w-full bg-black border border-gold/30 text-gold font-bold py-4 rounded-lg uppercase tracking-widest text-xs hover:bg-gold/10 transition-colors flex items-center justify-center gap-2">
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Download className="w-4 h-4"/>}
+                        {isLoading ? "Recherche..." : "Restaurer Sauvegarde"}
+                    </button>
+                </div>
+                <p className="mt-8 text-[9px] text-gray-600">Sécurisé par Google Firebase</p>
+            </div>
+        )}
+
+        {step === 1 && (<div className="animate-in fade-in duration-500 flex flex-col items-center w-full max-w-xs"><h2 className="text-xl font-serif mb-6">Initialisation</h2><p className="text-gray-400 text-sm leading-relaxed mb-10">"Le chaos règne à l'extérieur.<br/>Ici, seule la discipline construit des Empires."</p><button onClick={() => setStep(2)} className="border border-gold text-gold px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-gold hover:text-black transition-colors">Prendre le contrôle</button></div>)}
+        
         {step === 2 && (<div className="animate-in zoom-in duration-500 flex flex-col items-center w-full max-w-xs"><h2 className="text-xl font-serif mb-2">Le Pacte</h2><p className="text-gray-500 text-xs mb-12">Jurez-vous de ne rien cacher ?</p><div className="relative w-24 h-24 rounded-full border-2 border-white/10 flex items-center justify-center select-none cursor-pointer active:scale-95 transition-transform" onMouseDown={startHold} onMouseUp={stopHold} onTouchStart={startHold} onTouchEnd={stopHold}><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="48" cy="48" r="46" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-gold" strokeDasharray="289" strokeDashoffset={289 - (289 * progress) / 100} style={{ transition: 'stroke-dashoffset 0.1s linear' }} /></svg><Fingerprint className={`w-10 h-10 ${isHolding ? 'text-gold animate-pulse' : 'text-gray-600'}`} /></div><p className="mt-6 text-[10px] uppercase tracking-widest text-gray-600">Maintenir pour sceller</p></div>)}
+        
         {step === 3 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2><div className="relative mb-4"><Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" /><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none" placeholder="Rechercher (ex: Euro, FCFA...)" autoFocus /></div><div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">{filteredCurrencies.map((c) => (<button key={c.code} onClick={() => selectCurrency(c)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"><div className="flex items-center gap-3"><span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">{c.symbol.substring(0, 2)}</span><div className="text-left"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p><p className="text-[10px] text-gray-500">{c.code}</p></div></div><ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" /></button>))}</div></div>)}
+        
         {step === 3.5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs flex flex-col items-center"><div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/30"><Smartphone className="w-10 h-10 text-blue-500" /></div><h2 className="text-xl font-serif text-white mb-4">La Stratégie Wave</h2><p className="text-gray-400 text-sm leading-relaxed mb-8">Dans ce système, <span className="text-blue-400 font-bold">Wave est votre Coffre-Fort</span>.<br/><br/>L'argent liquide et OM sont pour la guerre (dépenses). Wave est pour la sécurité (épargne).<br/><br/><span className="text-xs italic text-gray-500">Si vous n'avez pas de compte Wave, ouvrez-en un maintenant.</span></p><button onClick={() => setStep(4)} className="w-full bg-blue-600 text-white font-bold py-3 rounded uppercase tracking-widest text-xs hover:bg-blue-500 transition-colors">C'est compris, continuons</button></div>)}
+        
         {step === 4 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-2">Votre Terrain</h2><p className="text-xs text-gray-500 mb-6">Ajuste l'intelligence artificielle à votre marché.</p><div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">{ZONES.map((z) => (<button key={z.id} onClick={() => selectZone(z)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg text-left group transition-all active:scale-[0.98]"><div className="flex justify-between items-center mb-1"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{z.name}</p><Globe className="w-4 h-4 text-gray-600 group-hover:text-gold" /></div><p className="text-[10px] text-gray-500">{z.desc}</p></button>))}</div></div>)}
+        
         {step === 5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle (Cash + OM)</label><input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus /><p className="text-[10px] text-gray-500 mb-4 text-left">*Ne comptez pas ce qu'il y a déjà sur Wave.</p><button onClick={() => setStep(6)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button></div>)}
+        
         {step === 6 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Nom du Projet Principal</label><input type="text" value={mainProject} onChange={(e) => setMainProject(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="Ex: Agence IA" autoFocus /><button onClick={startTutorial} disabled={!mainProject} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">LANCER L'EMPIRE</button></div>)}
       </div></PageTransition>
     );
-} 
+}
 
 // ==========================================
 // 11. RADIO LINK (VERSION STABLE - FLASH LATEST)
