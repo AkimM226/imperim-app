@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { initializeFirestore, doc, setDoc, getDoc, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
-
+import { getMessaging } from "firebase/messaging";
 // 👇 COLLEZ VOTRE CONFIGURATION IMPERIUM-V2 ICI 👇
 const firebaseConfig = {
   apiKey: "AIzaSyC_gXxWHFBnIl6z2U26cNp0gzgY5DkiRcs",
@@ -15,6 +15,8 @@ const firebaseConfig = {
 
 // 1. Initialisation de l'App
 const app = initializeApp(firebaseConfig);
+
+export const messaging = getMessaging(app);
 
 // 2. Initialisation de l'Auth
 export const auth = getAuth(app);

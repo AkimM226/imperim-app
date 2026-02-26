@@ -23,6 +23,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // PAR CECI :
 import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser } from './firebase';
 import { onAuthStateChanged } from "firebase/auth";
+import { getToken } from 'firebase/messaging';
 
 // ==========================================
 // MOTEUR SONORE TACTIQUE (MODE SILENCE RADIO)
@@ -3207,6 +3208,36 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
             alert("Activez d'abord les notifications via le bouton ci-dessus.");
         }
     };
+    // --- NOUVEAU : CONNEXION FIREBASE ARRIÈRE-PLAN ---
+    const activerRadioQG = async () => {
+        try {
+            console.log("Demande d'autorisation de communication...");
+            const permission = await Notification.requestPermission();
+            
+            if (permission === 'granted') {
+                console.log("Autorisation accordée. Génération du jeton...");
+                
+                // ⚠️ REMPLACEZ LA VAPID KEY PAR CELLE COPIÉE SUR FIREBASE
+                const token = await getToken(messaging, {
+                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A" 
+                });
+                
+                if (token) {
+                    console.log("📡 JETON DE COMMUNICATION REÇU :", token);
+                    localStorage.setItem('imperium_fcm_token', token);
+                    alert("✅ Radio Arrière-plan connectée. Le QG peut désormais vous joindre application fermée.");
+                } else {
+                    console.warn("Aucun jeton généré.");
+                    alert("⚠️ Impossible de générer le jeton. Vérifiez votre VAPID Key.");
+                }
+            } else {
+                alert("❌ Permission refusée.");
+            }
+        } catch (error) {
+            console.error("Erreur d'activation radio :", error);
+            alert("Erreur de connexion au serveur Firebase.");
+        }
+    };
 
     const handleImport = () => { 
         try { 
@@ -3398,6 +3429,10 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                                 </div>
                                 <button onClick={testNotification} className="w-full bg-purple-900/20 text-purple-400 border border-purple-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-purple-900/40 transition-colors">
                                     Tester le Signal (Démo)
+                                </button>
+                        {/* NOUVEAU BOUTON FIREBASE */}
+                                <button onClick={activerRadioQG} className="w-full bg-blue-900/20 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
+                                    <Radio className="w-4 h-4" /> Connecter Radio Arrière-plan
                                 </button>
                             </div>
                         )}
