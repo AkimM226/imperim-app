@@ -660,20 +660,25 @@ useEffect(() => {
         const timer = setTimeout(() => {
             if(confirm("🔒 SÉCURITÉ :\n\nVoulez-vous lier votre Empire à un compte Google maintenant pour activer la sauvegarde automatique Cloud ?")) {
                 
-                // --- MODIFICATION ICI : REDIRECTION ---
-                // Remplacez cette ligne par votre propre fonction pour ouvrir les Paramètres.
-                // Ex: setVueCourante('parametres') OU navigate('/parametres#liaison')
-                ouvrirMenuParametres(); 
+                // --- CORRECTION ICI : On utilise VOTRE fonction de navigation ---
+                navigate('settings'); 
                 
-                // Petit bonus : faire défiler la page jusqu'au bouton de liaison
+                // On fait défiler la page jusqu'au bouton de liaison
                 setTimeout(() => {
                     const sectionLiaison = document.getElementById('zone-liaison-compte');
                     if (sectionLiaison) {
                         sectionLiaison.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        // Optionnel : ajouter une petite animation ou surbrillance
-                        sectionLiaison.style.animation = "clignotement 1s 2";
+                        
+                        // Effet visuel : Une lueur bleue temporaire pour attirer l'œil
+                        sectionLiaison.style.transition = "box-shadow 0.5s ease-in-out";
+                        sectionLiaison.style.boxShadow = "0 0 25px rgba(59, 130, 246, 0.8)";
+                        
+                        // On retire la lueur après 2 secondes
+                        setTimeout(() => {
+                            sectionLiaison.style.boxShadow = "none";
+                        }, 2000);
                     }
-                }, 300); // On attend 300ms que le menu des paramètres soit bien affiché
+                }, 300); // On attend 300ms que la page 'settings' soit bien chargée
             }
             
             // MARQUEUR PERMANENT
@@ -682,7 +687,6 @@ useEffect(() => {
         return () => clearTimeout(timer);
     }
 }, []);
-
     return (
       <>
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
@@ -2904,10 +2908,16 @@ function SettingsScreen({ onBack }) {
     const [notifTime, setNotifTime] = useState(localStorage.getItem('imperium_notif_time') || "20:00");
     const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('imperium_notif_enabled') === 'true');
 
-    // Calibrage
-    const [calibBalance, setCalibBalance] = useState(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
-    const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
+   // Calibrage
+// On récupère les cibles pour calculer l'argent verrouillé
+const goals = JSON.parse(localStorage.getItem('imperium_goals') || "[]");
+const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
 
+// Le solde affiché dans les paramètres est maintenant identique au Dashboard (Solde brut - Argent verrouillé)
+const initialTotal = JSON.parse(localStorage.getItem('imperium_balance') || "0");
+const [calibBalance, setCalibBalance] = useState(initialTotal - lockedCash);
+
+const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
     // Feedback
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedbackText, setFeedbackText] = useState("");
@@ -3014,8 +3024,12 @@ function SettingsScreen({ onBack }) {
 
     const handleRecalibrate = () => {
         if(confirm("Confirmer le recalibrage manuel des soldes ?")) {
-            localStorage.setItem('imperium_balance', JSON.stringify(parseFloat(calibBalance) || 0));
+            // Lors de la sauvegarde, on RAJOUTE l'argent verrouillé en arrière-plan pour ne pas fausser le système
+            const newTotalBalance = (parseFloat(calibBalance) || 0) + lockedCash;
+            
+            localStorage.setItem('imperium_balance', JSON.stringify(newTotalBalance));
             localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(calibBunker) || 0));
+            
             alert("SYSTÈME RECALIBRÉ.");
             window.location.reload();
         }
@@ -3153,35 +3167,37 @@ function SettingsScreen({ onBack }) {
                     </div>
 
                     {/* ZONE CLOUD IMPERIUM */}
-                    <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-3 opacity-10">
-                            <Globe className="w-24 h-24 text-blue-500" />
-                        </div>
+{/* On ajoute l'ID directement sur cette ligne (la div principale du bloc) : */}
+<div id="zone-liaison-compte" className="bg-[#1a1a1a] rounded-xl p-5 border border-white/10 relative overflow-hidden">
+    
+    <div className="absolute top-0 right-0 p-3 opacity-10">
+        <Globe className="w-24 h-24 text-blue-500" />
+    </div>
 
-                        <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 text-blue-400"/> Liaison Satellitaire
-                        </h3>
+    <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+        <Loader2 className="w-4 h-4 text-blue-400"/> Liaison Satellitaire
+    </h3>
 
-                        {!auth.currentUser ? (
-                            <div>
-                                <p className="text-xs text-gray-400 mb-4">
-                                    Connectez-vous au Cloud Impérial pour sécuriser vos données et synchroniser vos appareils.
-                                </p>
-                                <button 
-                                    onClick={async () => {
-                                        try {
-                                            await loginWithGoogle();
-                                            alert("📡 Connexion établie. Synchronisation...");
-                                        } catch (e) {
-                                            alert("Échec connexion satellite.");
-                                        }
-                                    }}
-                                    className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
-                                >
-                                    Connexion Google
-                                </button>
-                            </div>
-                        ) : (
+    {!auth.currentUser ? (
+        <div>
+            <p className="text-xs text-gray-400 mb-4">
+                Connectez-vous au Cloud Impérial pour sécuriser vos données et synchroniser vos appareils.
+            </p>
+            <button 
+                onClick={async () => {
+                    try {
+                        await loginWithGoogle();
+                        alert("📡 Connexion établie. Synchronisation...");
+                    } catch (e) {
+                        alert("Échec connexion satellite.");
+                    }
+                }}
+                className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
+            >
+                Connexion Google
+            </button>
+        </div>
+    ) : (
                             <div>
                                 <div className="flex items-center gap-3 mb-4 bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">
                                     {auth.currentUser.photoURL && (
