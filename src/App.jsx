@@ -653,70 +653,35 @@ export default function App() {
     const [showPatchNotes, setShowPatchNotes] = useState(false);
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
-    // Dans MainOS (remplace le useEffect du système cloud)
-
-// --- SYSTÈME CLOUD : GESTION DES NOUVEAUX ---
+    // --- SYSTÈME CLOUD : GESTION DES NOUVEAUX ---
 useEffect(() => {
-    // On utilise localStorage pour que le choix soit mémorisé À VIE
+    // On vérifie toujours le localStorage
     if (!auth.currentUser && !localStorage.getItem('imperium_login_asked')) {
         const timer = setTimeout(() => {
             if(confirm("🔒 SÉCURITÉ :\n\nVoulez-vous lier votre Empire à un compte Google maintenant pour activer la sauvegarde automatique Cloud ?")) {
-                loginWithGoogle().then((user) => {
-                    if(user) alert("✅ Empire Sécurisé et Lié.");
-                }).catch(e => console.error(e));
+                
+                // --- MODIFICATION ICI : REDIRECTION ---
+                // Remplacez cette ligne par votre propre fonction pour ouvrir les Paramètres.
+                // Ex: setVueCourante('parametres') OU navigate('/parametres#liaison')
+                ouvrirMenuParametres(); 
+                
+                // Petit bonus : faire défiler la page jusqu'au bouton de liaison
+                setTimeout(() => {
+                    const sectionLiaison = document.getElementById('zone-liaison-compte');
+                    if (sectionLiaison) {
+                        sectionLiaison.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Optionnel : ajouter une petite animation ou surbrillance
+                        sectionLiaison.style.animation = "clignotement 1s 2";
+                    }
+                }, 300); // On attend 300ms que le menu des paramètres soit bien affiché
             }
-            // MARQUEUR PERMANENT : Qu'il dise oui ou non, on ne l'embêtera plus jamais
+            
+            // MARQUEUR PERMANENT
             localStorage.setItem('imperium_login_asked', 'true');
         }, 3000);
         return () => clearTimeout(timer);
     }
-}, []);    
-    const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
-
-    // --- SYSTÈME CLOUD : CORRECTION ANTI-BOUCLE ---
-    useEffect(() => {
-        // 1. Si on a déjà vérifié pendant cette session, on arrête tout de suite.
-        if (sessionStorage.getItem('imperium_cloud_checked') === 'true') {
-            return;
-        }
-
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                console.log("🔍 Vérification Cloud...");
-                const cloudData = await loadEmpireFromCloud(currentUser.uid);
-                
-                if (cloudData) {
-                    // On compare avec la balance locale pour ne pas demander pour rien
-                    const localBalance = localStorage.getItem('imperium_balance');
-                    
-                    // Si on a des données locales et qu'elles semblent différentes, on demande
-                    if(confirm("☁️ Sauvegarde Cloud trouvée. Voulez-vous écraser votre partie locale par celle du Cloud ?")) {
-                        
-                        if(cloudData.balance) localStorage.setItem('imperium_balance', cloudData.balance);
-                        if(cloudData.bunker) localStorage.setItem('imperium_bunker', cloudData.bunker);
-                        if(cloudData.transactions) localStorage.setItem('imperium_transactions', cloudData.transactions);
-                        if(cloudData.goals) localStorage.setItem('imperium_goals', cloudData.goals);
-                        if(cloudData.debts) localStorage.setItem('imperium_debts', cloudData.debts);
-                        if(cloudData.skills) localStorage.setItem('imperium_skills', cloudData.skills);
-                        if(cloudData.protocols) localStorage.setItem('imperium_protocols', cloudData.protocols); // J'ai ajouté ça car il manquait
-                        if(cloudData.quantum) localStorage.setItem('imperium_beta_quantum', cloudData.quantum);
-                        
-                        // ✅ MARQUEUR DE SUCCÈS : On note qu'on a fait le job pour ne pas recommencer au reload
-                        sessionStorage.setItem('imperium_cloud_checked', 'true');
-                        
-                        window.location.reload(); 
-                    } else {
-                        // ❌ REFUS : Si l'utilisateur dit Non, on note aussi qu'on a vérifié pour ne pas le harceler
-                        sessionStorage.setItem('imperium_cloud_checked', 'true');
-                    }
-                } else {
-                    // Pas de données cloud, on marque comme vérifié
-                    sessionStorage.setItem('imperium_cloud_checked', 'true');
-                }
-            }
-        });
-        return () => unsubscribe();
-    }, []);
+}, []);
 
     return (
       <>
