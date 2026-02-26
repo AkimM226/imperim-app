@@ -5,7 +5,7 @@ import {
     TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
     AlertTriangle, Lock, Clock, History, Radio, 
     MessageSquare, Send, ChevronRight, Calculator,
-    Bell, UserCircle,
+    Bell, UserCircle, 
     
     // Outils avancés & Arsenal
     Sword, Loader2, Globe, PiggyBank, Skull, Flame, 
@@ -2515,17 +2515,19 @@ function TrophiesScreen({ onBack }) {
 }
 
 // ==========================================
-// 6. PROJET & STRATÉGIE (MULTI-PROJETS)
+// 6. PROJET & STRATÉGIE (MULTI-PROJETS & ROI AVANCÉ)
 // ==========================================
 function ProjectScreen({ onBack }) { 
-    // GESTION DES PROJETS MULTIPLES
+    const currency = localStorage.getItem('imperium_currency') || "€";
+
+    // ÉTATS
     const [projects, setProjects] = useState(() => {
         const saved = localStorage.getItem('imperium_projects');
         if (saved) return JSON.parse(saved);
         const oldName = localStorage.getItem('imperium_project_name');
         const oldTasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
         if (oldName) {
-            return [{ id: Date.now(), title: oldName, deadline: "", tasks: oldTasks, answers: {} }];
+            return [{ id: Date.now(), title: oldName, deadline: "", roi: 0, roiType: "once", tasks: oldTasks, answers: {} }];
         }
         return [];
     });
@@ -2533,6 +2535,8 @@ function ProjectScreen({ onBack }) {
     const [activeProject, setActiveProject] = useState(null); 
     const [newProjectName, setNewProjectName] = useState("");
     const [newProjectDeadline, setNewProjectDeadline] = useState("");
+    const [newProjectRoi, setNewProjectRoi] = useState(""); 
+    const [newProjectRoiType, setNewProjectRoiType] = useState("once"); // NOUVEAU : Type de gain
     const [newTask, setNewTask] = useState("");
 
     useEffect(() => { localStorage.setItem('imperium_projects', JSON.stringify(projects)); }, [projects]);
@@ -2540,8 +2544,19 @@ function ProjectScreen({ onBack }) {
     const addProject = (e) => {
         e.preventDefault();
         if (!newProjectName.trim()) return;
-        setProjects([...projects, { id: Date.now(), title: newProjectName, deadline: newProjectDeadline, tasks: [], answers: {} }]);
-        setNewProjectName(""); setNewProjectDeadline("");
+        setProjects([...projects, { 
+            id: Date.now(), 
+            title: newProjectName, 
+            deadline: newProjectDeadline, 
+            roi: parseFloat(newProjectRoi) || 0, 
+            roiType: newProjectRoiType, // On sauvegarde si c'est unique ou récurrent
+            tasks: [], 
+            answers: {} 
+        }]);
+        setNewProjectName(""); 
+        setNewProjectDeadline("");
+        setNewProjectRoi("");
+        setNewProjectRoiType("once");
     };
 
     const deleteProject = (id, e) => {
@@ -2550,6 +2565,61 @@ function ProjectScreen({ onBack }) {
              setProjects(projects.filter(p => p.id !== id));
              if(activeProject && activeProject.id === id) setActiveProject(null);
         }
+    };
+
+    // --- LA MAGIE OPÈRE ICI ---
+    const deployProtocol = (project) => {
+        if (project.roi > 0) {
+            const isRecurring = project.roiType === 'recurring';
+            
+            // MESSAGE ADAPTÉ AU TYPE DE GAIN
+            const msg = isRecurring 
+                ? `DÉPLOIEMENT TACTIQUE\n\nVoulez-vous transformer "${project.title}" en un nouveau Protocole générant ${project.roi} ${currency} par mois ?`
+                : `BUTIN SÉCURISÉ\n\nVoulez-vous encaisser le gain unique de ${project.roi} ${currency} pour la conquête "${project.title}" ?`;
+                
+            if (!confirm(msg)) return;
+            
+            if (isRecurring) {
+                // 1. GAIN MENSUEL -> Ajout aux Protocoles
+                const existingProtocols = JSON.parse(localStorage.getItem('imperium_protocols') || "[]");
+                const newProtocol = {
+                    id: Date.now(),
+                    name: project.title,
+                    amount: project.roi,
+                    type: 'income',
+                    date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+                };
+                localStorage.setItem('imperium_protocols', JSON.stringify([...existingProtocols, newProtocol]));
+                alert("✅ PROTOCOLE DÉPLOYÉ : Nouvelle source de revenus activée !");
+                
+            } else {
+                // 2. GAIN UNIQUE -> Ajout direct au solde et création d'une transaction
+                const currentBalance = parseFloat(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+                const existingTransactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
+                
+                const newTransaction = {
+                    id: Date.now(),
+                    desc: `🏆 Conquête accomplie : ${project.title}`,
+                    amount: project.roi,
+                    type: 'income',
+                    category: 'income',
+                    date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+                    rawDate: new Date().toISOString()
+                };
+                
+                localStorage.setItem('imperium_balance', JSON.stringify(currentBalance + project.roi));
+                localStorage.setItem('imperium_transactions', JSON.stringify([newTransaction, ...existingTransactions]));
+                alert(`💰 BUTIN ENCAISSÉ : +${project.roi} ${currency} ont été ajoutés à vos fonds (Cash/OM).`);
+            }
+        } else {
+            // PROJET SANS GAIN (Personnel)
+            if (!confirm(`ARCHIVAGE\n\nMarquer la conquête "${project.title}" comme achevée avec succès ?`)) return;
+            alert("🏆 Conquête achevée. Félicitations Commandant.");
+        }
+
+        // Suppression du projet de la liste active
+        setProjects(projects.filter(p => p.id !== project.id));
+        setActiveProject(null);
     };
 
     const addTask = (e) => { 
@@ -2608,40 +2678,62 @@ function ProjectScreen({ onBack }) {
                     <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
                         <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                         <h1 className="text-2xl font-serif text-white font-bold">Conquêtes</h1>
-                        <p className="text-[10px] text-gray-500 mt-1">Gérez vos fronts actifs.</p>
+                        <p className="text-[10px] text-gray-500 mt-1">Transformez vos efforts en butins ou en rentes.</p>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-5 pb-20 space-y-4 custom-scrollbar">
-                        {projects.length === 0 && <div className="text-center p-10 opacity-50"><Castle className="w-12 h-12 mx-auto mb-4 text-gray-600"/><p className="text-sm">Aucune conquête en cours.</p></div>}
+                    <div className="flex-1 overflow-y-auto p-5 pb-32 space-y-4 custom-scrollbar">
+                        {projects.length === 0 && (
+                            <div className="text-center p-10 opacity-50">
+                                <Castle className="w-12 h-12 mx-auto mb-4 text-gray-600"/>
+                                <p className="text-sm">Aucune conquête en cours.</p>
+                            </div>
+                        )}
                         
                         {projects.map(p => {
                             const pTasks = p.tasks || [];
                             const progress = pTasks.length === 0 ? 0 : Math.round((pTasks.filter(t => t.done).length / pTasks.length) * 100);
-                            const daysLeft = getDaysLeft(p.deadline);
+                            const daysLeft = p.deadline ? Math.ceil((new Date(p.deadline) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                            const isRecurring = p.roiType === 'recurring';
+                            
                             return (
                                 <div key={p.id} onClick={() => setActiveProject(p)} className="bg-[#111] border border-white/5 p-5 rounded-xl active:scale-[0.98] transition-all cursor-pointer group hover:border-gold/30">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <h3 className="text-white font-bold font-serif text-lg">{p.title}</h3>
-                                            {daysLeft !== null && (<p className={`text-[10px] font-bold ${daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-gray-500'}`}>{daysLeft > 0 ? `${daysLeft} Jours restants` : "Date dépassée"}</p>)}
+                                            <h3 className="text-white font-bold font-serif text-lg flex flex-wrap items-center gap-2">
+                                                {p.title}
+                                                {p.roi > 0 && (
+                                                    <span className={`text-[9px] px-2 py-0.5 rounded border font-sans tracking-widest uppercase ${isRecurring ? 'bg-green-900/30 text-green-400 border-green-500/30' : 'bg-blue-900/30 text-blue-400 border-blue-500/30'}`}>
+                                                        +{p.roi}{currency}{isRecurring ? '/m' : ' (Unique)'}
+                                                    </span>
+                                                )}
+                                            </h3>
+                                            {daysLeft !== null && (<p className={`text-[10px] font-bold mt-1 ${daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-gray-500'}`}>{daysLeft > 0 ? `${daysLeft} Jours restants` : "Date dépassée"}</p>)}
                                         </div>
                                         <button onClick={(e) => deleteProject(p.id, e)} className="text-gray-600 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
                                     </div>
-                                    <div className="w-full bg-gray-900 rounded-full h-1.5 mb-3"><div className="h-full bg-gold rounded-full" style={{ width: `${progress}%` }}></div></div>
-                                    <div className="flex justify-between items-center text-[10px] text-gray-500">
+                                    <div className="w-full bg-gray-900 rounded-full h-1.5 mb-3"><div className="h-full bg-gold rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div></div>
+                                    <div className="flex justify-between items-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                                         <span>{pTasks.length} Missions</span>
-                                        <span>{progress}%</span>
+                                        <span className={progress === 100 ? "text-gold" : ""}>{progress}%</span>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
 
-                    <div className="shrink-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full">
-                        <form onSubmit={addProject} className="flex gap-2">
-                            <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Nouveau Front..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                            <input type="date" value={newProjectDeadline} onChange={(e) => setNewProjectDeadline(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-2 text-white text-xs focus:border-gold outline-none" />
-                            <button type="submit" disabled={!newProjectName.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button>
+                    <div className="shrink-0 p-4 bg-[#151515] border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full z-20">
+                        <form onSubmit={addProject} className="flex flex-col gap-2">
+                            <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Nom de la nouvelle Conquête..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                            <div className="flex gap-2">
+                                <input type="number" value={newProjectRoi} onChange={(e) => setNewProjectRoi(e.target.value)} placeholder={`Gain (${currency})`} className="w-1/4 bg-[#0a0a0a] border border-white/10 rounded-lg px-2 text-white text-xs focus:border-gold outline-none" />
+                                {/* NOUVEAU : SÉLECTEUR DE TYPE DE GAIN */}
+                                <select value={newProjectRoiType} onChange={(e) => setNewProjectRoiType(e.target.value)} className="w-1/3 bg-[#0a0a0a] border border-white/10 rounded-lg px-2 text-white text-[10px] focus:border-gold outline-none">
+                                    <option value="once">Unique</option>
+                                    <option value="recurring">Rente/mois</option>
+                                </select>
+                                <input type="date" value={newProjectDeadline} onChange={(e) => setNewProjectDeadline(e.target.value)} className="flex-1 bg-[#0a0a0a] border border-white/10 rounded-lg px-2 text-white text-xs focus:border-gold outline-none" />
+                                <button type="submit" disabled={!newProjectName.trim()} className="bg-gold text-black font-bold px-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-4 h-4" /></button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -2652,21 +2744,56 @@ function ProjectScreen({ onBack }) {
     // VUE 2 : DÉTAIL DU PROJET ACTIF
     const pTasks = activeProject.tasks || [];
     const progress = pTasks.length === 0 ? 0 : Math.round((pTasks.filter(t => t.done).length / pTasks.length) * 100);
+    const isRecurring = activeProject.roiType === 'recurring';
 
     return (
         <PageTransition>
             <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
                 <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
                     <button onClick={() => setActiveProject(null)} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour aux Conquêtes</span></button>
-                    <h1 className="text-2xl font-serif text-white font-bold">{activeProject.title}</h1>
+                    
+                    <div className="flex justify-between items-start">
+                        <h1 className="text-2xl font-serif text-white font-bold leading-tight">{activeProject.title}</h1>
+                        {activeProject.roi > 0 && (
+                             <div className="text-right shrink-0 ml-4">
+                                 <p className={`text-[8px] uppercase tracking-widest font-bold ${isRecurring ? 'text-green-500' : 'text-blue-500'}`}>Objectif R.O.I.</p>
+                                 <p className={`text-sm font-bold px-2 py-1 rounded border mt-1 ${isRecurring ? 'text-green-400 bg-green-900/20 border-green-500/30' : 'text-blue-400 bg-blue-900/20 border-blue-500/30'}`}>
+                                     +{activeProject.roi} {currency}{isRecurring ? '/m' : ' (Unique)'}
+                                 </p>
+                             </div>
+                        )}
+                    </div>
+
                     <div className="flex items-center gap-4 mt-4"><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{ width: `${progress}%` }}></div></div><span className="text-gold font-bold text-sm">{progress}%</span></div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 pb-32 custom-scrollbar">
                     
+                    {progress === 100 && (
+                        <div className="mb-8 animate-in zoom-in duration-300">
+                            {activeProject.roi > 0 ? (
+                                isRecurring ? (
+                                    <button onClick={() => deployProtocol(activeProject)} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(22,163,74,0.3)] transition-all flex flex-col items-center justify-center gap-1 border border-green-400/50 active:scale-95">
+                                        <span className="uppercase tracking-widest text-sm flex items-center gap-2"><Zap className="w-5 h-5"/> DÉPLOYER LE PROTOCOLE</span>
+                                        <span className="text-[10px] text-green-200 opacity-90">Générer +{activeProject.roi} {currency} / mois dans le Registre</span>
+                                    </button>
+                                ) : (
+                                    <button onClick={() => deployProtocol(activeProject)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all flex flex-col items-center justify-center gap-1 border border-blue-400/50 active:scale-95">
+                                        <span className="uppercase tracking-widest text-sm flex items-center gap-2"><PiggyBank className="w-5 h-5"/> ENCAISSER LE BUTIN</span>
+                                        <span className="text-[10px] text-blue-200 opacity-90">Ajouter +{activeProject.roi} {currency} directement au solde Cash/OM</span>
+                                    </button>
+                                )
+                            ) : (
+                                <button onClick={() => deployProtocol(activeProject)} className="w-full bg-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(244,211,94,0.3)] transition-all uppercase tracking-widest text-sm flex items-center justify-center gap-2 active:scale-95">
+                                    <Trophy className="w-5 h-5"/> ARCHIVER LA CONQUÊTE
+                                </button>
+                            )}
+                        </div>
+                    )}
+
                     <div className="mb-8 space-y-4">
                         <div className="flex items-center gap-2 mb-2 opacity-80"><Lightbulb className="w-4 h-4 text-gold" /><h3 className="text-xs font-bold uppercase tracking-widest text-gold">Interrogatoire Tactique</h3></div>
-                        {STRATEGIC_QUESTIONS.map(q => (
+                        {typeof STRATEGIC_QUESTIONS !== 'undefined' && STRATEGIC_QUESTIONS.map(q => (
                             <div key={q.id} className="bg-[#111] border border-white/5 p-4 rounded-lg">
                                 <p className="text-xs text-gray-400 mb-2 italic">{q.q}</p>
                                 <input 
@@ -2693,10 +2820,10 @@ function ProjectScreen({ onBack }) {
                     </div>
                 </div>
 
-                <div className="shrink-0 p-4 bg-dark border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full">
+                <div className="shrink-0 p-4 bg-[#151515] border-t border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full z-20">
                     <form onSubmit={addTask} className="flex gap-2">
-                        <input type="text" value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Nouvelle mission..." className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
-                        <button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold p-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button>
+                        <input type="text" value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Nouvelle mission pour ce front..." className="flex-1 bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
+                        <button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold px-4 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button>
                     </form>
                 </div>
             </div>
