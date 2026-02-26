@@ -2929,7 +2929,7 @@ function AcademyScreen({ onBack }) {
 }
 
 // ==========================================
-// 12. ÉCRAN PARAMÈTRES (CORRIGÉ)
+// 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC DEVISE/ZONE)
 // ==========================================
 function SettingsScreen({ onBack }) { 
     // ÉTATS
@@ -2951,6 +2951,15 @@ function SettingsScreen({ onBack }) {
     // Feedback
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedbackText, setFeedbackText] = useState("");
+
+    // --- NOUVEAU : ÉTATS DEVISE & ZONE ---
+    const [empireCurrency, setEmpireCurrency] = useState(localStorage.getItem('imperium_currency') || "€");
+    const [empireZone, setEmpireZone] = useState(() => {
+        try {
+            const z = JSON.parse(localStorage.getItem('imperium_zone'));
+            return z ? z.id : 'europe';
+        } catch { return 'europe'; }
+    });
 
     // --- LOGIQUE IDENTITÉ ---
     const changeGender = (newGender) => {
@@ -3052,6 +3061,17 @@ function SettingsScreen({ onBack }) {
         }
     };
     
+    // --- NOUVEAU : SAUVEGARDE RÉGION ---
+    const handleSaveRegion = () => {
+        localStorage.setItem('imperium_currency', empireCurrency);
+        const selectedZoneInfo = ZONES.find(z => z.id === empireZone);
+        if (selectedZoneInfo) {
+            localStorage.setItem('imperium_zone', JSON.stringify(selectedZoneInfo));
+        }
+        alert("✅ Localisation et Devise mises à jour. Redémarrage du système...");
+        window.location.reload();
+    };
+
     const resetEmpire = () => { 
         if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { 
             localStorage.clear(); 
@@ -3098,6 +3118,50 @@ function SettingsScreen({ onBack }) {
                         <div className="flex bg-black p-1 rounded-lg border border-white/5">
                             <button onClick={() => changeGender('M')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${gender === 'M' ? 'bg-gold text-black' : 'text-gray-600'}`}>Commandant</button>
                             <button onClick={() => changeGender('F')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${gender === 'F' ? 'bg-gold text-black' : 'text-gray-600'}`}>Commandante</button>
+                        </div>
+                    </div>
+
+                    {/* --- NOUVEAU BLOC : LOCALISATION & DEVISE --- */}
+                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-5"><Globe className="w-24 h-24 text-white" /></div>
+                        <div className="flex items-center gap-3 mb-4 relative z-10">
+                            <div className="p-2 bg-orange-900/20 text-orange-500 rounded-lg"><Wallet className="w-5 h-5"/></div>
+                            <div><h3 className="text-sm font-bold text-gray-200">Localisation & Devise</h3><p className="text-[10px] text-gray-500">Adaptez l'économie de votre Empire.</p></div>
+                        </div>
+                        
+                        <div className="space-y-4 relative z-10">
+                            <div>
+                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Devise Actuelle</label>
+                                <select 
+                                    value={empireCurrency} 
+                                    onChange={(e) => setEmpireCurrency(e.target.value)}
+                                    className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none text-sm"
+                                >
+                                    {CURRENCIES.map(c => (
+                                        <option key={c.code} value={c.symbol}>{c.name} ({c.symbol})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Zone Économique (IA)</label>
+                                <select 
+                                    value={empireZone} 
+                                    onChange={(e) => setEmpireZone(e.target.value)}
+                                    className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none text-sm"
+                                >
+                                    {ZONES.map(z => (
+                                        <option key={z.id} value={z.id}>{z.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <button 
+                                onClick={handleSaveRegion} 
+                                className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold py-3 rounded-lg text-xs uppercase tracking-widest transition-colors"
+                            >
+                                Appliquer les changements
+                            </button>
                         </div>
                     </div>
 
