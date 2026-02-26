@@ -5,7 +5,7 @@ import {
     TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
     AlertTriangle, Lock, Clock, History, Radio, 
     MessageSquare, Send, ChevronRight, Calculator,
-    Bell, UserCircle, 
+    Bell, UserCircle, Cpu, Sparkles,
     
     // Outils avancés & Arsenal
     Sword, Loader2, Globe, PiggyBank, Skull, Flame, 
@@ -2515,12 +2515,12 @@ function TrophiesScreen({ onBack }) {
 }
 
 // ==========================================
-// 6. PROJET & STRATÉGIE (MULTI-PROJETS & ROI AVANCÉ)
+// 6. PROJET & STRATÉGIE (AVEC JARVIS AI)
 // ==========================================
 function ProjectScreen({ onBack }) { 
     const currency = localStorage.getItem('imperium_currency') || "€";
 
-    // ÉTATS
+    // --- TOUS LES ÉTATS (En haut pour éviter les crashs) ---
     const [projects, setProjects] = useState(() => {
         const saved = localStorage.getItem('imperium_projects');
         if (saved) return JSON.parse(saved);
@@ -2536,27 +2536,25 @@ function ProjectScreen({ onBack }) {
     const [newProjectName, setNewProjectName] = useState("");
     const [newProjectDeadline, setNewProjectDeadline] = useState("");
     const [newProjectRoi, setNewProjectRoi] = useState(""); 
-    const [newProjectRoiType, setNewProjectRoiType] = useState("once"); // NOUVEAU : Type de gain
+    const [newProjectRoiType, setNewProjectRoiType] = useState("once"); 
     const [newTask, setNewTask] = useState("");
+
+    // --- ÉTATS POUR L'IA JARVIS ---
+    const [showJarvisModal, setShowJarvisModal] = useState(false);
+    const [jarvisPrompt, setJarvisPrompt] = useState("");
+    const [isThinking, setIsThinking] = useState(false);
 
     useEffect(() => { localStorage.setItem('imperium_projects', JSON.stringify(projects)); }, [projects]);
 
+    // --- FONCTIONS DE BASE ---
     const addProject = (e) => {
         e.preventDefault();
         if (!newProjectName.trim()) return;
         setProjects([...projects, { 
-            id: Date.now(), 
-            title: newProjectName, 
-            deadline: newProjectDeadline, 
-            roi: parseFloat(newProjectRoi) || 0, 
-            roiType: newProjectRoiType, // On sauvegarde si c'est unique ou récurrent
-            tasks: [], 
-            answers: {} 
+            id: Date.now(), title: newProjectName, deadline: newProjectDeadline, 
+            roi: parseFloat(newProjectRoi) || 0, roiType: newProjectRoiType, tasks: [], answers: {} 
         }]);
-        setNewProjectName(""); 
-        setNewProjectDeadline("");
-        setNewProjectRoi("");
-        setNewProjectRoiType("once");
+        setNewProjectName(""); setNewProjectDeadline(""); setNewProjectRoi(""); setNewProjectRoiType("once");
     };
 
     const deleteProject = (id, e) => {
@@ -2567,12 +2565,9 @@ function ProjectScreen({ onBack }) {
         }
     };
 
-    // --- LA MAGIE OPÈRE ICI ---
     const deployProtocol = (project) => {
         if (project.roi > 0) {
             const isRecurring = project.roiType === 'recurring';
-            
-            // MESSAGE ADAPTÉ AU TYPE DE GAIN
             const msg = isRecurring 
                 ? `DÉPLOIEMENT TACTIQUE\n\nVoulez-vous transformer "${project.title}" en un nouveau Protocole générant ${project.roi} ${currency} par mois ?`
                 : `BUTIN SÉCURISÉ\n\nVoulez-vous encaisser le gain unique de ${project.roi} ${currency} pour la conquête "${project.title}" ?`;
@@ -2580,44 +2575,22 @@ function ProjectScreen({ onBack }) {
             if (!confirm(msg)) return;
             
             if (isRecurring) {
-                // 1. GAIN MENSUEL -> Ajout aux Protocoles
                 const existingProtocols = JSON.parse(localStorage.getItem('imperium_protocols') || "[]");
-                const newProtocol = {
-                    id: Date.now(),
-                    name: project.title,
-                    amount: project.roi,
-                    type: 'income',
-                    date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-                };
+                const newProtocol = { id: Date.now(), name: project.title, amount: project.roi, type: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) };
                 localStorage.setItem('imperium_protocols', JSON.stringify([...existingProtocols, newProtocol]));
-                alert("✅ PROTOCOLE DÉPLOYÉ : Nouvelle source de revenus activée !");
-                
+                alert("✅ PROTOCOLE DÉPLOYÉ !");
             } else {
-                // 2. GAIN UNIQUE -> Ajout direct au solde et création d'une transaction
                 const currentBalance = parseFloat(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
                 const existingTransactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
-                
-                const newTransaction = {
-                    id: Date.now(),
-                    desc: `🏆 Conquête accomplie : ${project.title}`,
-                    amount: project.roi,
-                    type: 'income',
-                    category: 'income',
-                    date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
-                    rawDate: new Date().toISOString()
-                };
-                
+                const newTransaction = { id: Date.now(), desc: `🏆 Conquête accomplie : ${project.title}`, amount: project.roi, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
                 localStorage.setItem('imperium_balance', JSON.stringify(currentBalance + project.roi));
                 localStorage.setItem('imperium_transactions', JSON.stringify([newTransaction, ...existingTransactions]));
-                alert(`💰 BUTIN ENCAISSÉ : +${project.roi} ${currency} ont été ajoutés à vos fonds (Cash/OM).`);
+                alert(`💰 BUTIN ENCAISSÉ : +${project.roi} ${currency}`);
             }
         } else {
-            // PROJET SANS GAIN (Personnel)
             if (!confirm(`ARCHIVAGE\n\nMarquer la conquête "${project.title}" comme achevée avec succès ?`)) return;
-            alert("🏆 Conquête achevée. Félicitations Commandant.");
+            alert("🏆 Conquête achevée.");
         }
-
-        // Suppression du projet de la liste active
         setProjects(projects.filter(p => p.id !== project.id));
         setActiveProject(null);
     };
@@ -2625,56 +2598,109 @@ function ProjectScreen({ onBack }) {
     const addTask = (e) => { 
         e.preventDefault(); 
         if (!newTask.trim() || !activeProject) return; 
-        const updatedProjects = projects.map(p => {
-            if (p.id === activeProject.id) {
-                return { ...p, tasks: [...(p.tasks || []), { id: Date.now(), text: newTask, done: false }] };
-            }
-            return p;
-        });
-        setProjects(updatedProjects);
-        setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
+        updateProjectTasks([...(activeProject.tasks || []), { id: Date.now(), text: newTask, done: false }]);
         setNewTask(""); 
     }; 
     
     const toggleTask = (taskId) => { 
-        const updatedProjects = projects.map(p => {
-            if (p.id === activeProject.id) {
-                const newTasks = p.tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t);
-                return { ...p, tasks: newTasks };
-            }
-            return p;
-        });
-        setProjects(updatedProjects);
-        setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
+        const newTasks = activeProject.tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t);
+        updateProjectTasks(newTasks);
     }; 
     
     const deleteTask = (taskId) => { 
-          const updatedProjects = projects.map(p => {
-            if (p.id === activeProject.id) {
-                return { ...p, tasks: p.tasks.filter(t => t.id !== taskId) };
-            }
-            return p;
-        });
+        const newTasks = activeProject.tasks.filter(t => t.id !== taskId);
+        updateProjectTasks(newTasks);
+    };
+
+    const updateProjectTasks = (newTasks) => {
+        const updatedProjects = projects.map(p => p.id === activeProject.id ? { ...p, tasks: newTasks } : p);
         setProjects(updatedProjects);
         setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
     };
 
     const updateAnswer = (qId, value) => {
-          const updatedProjects = projects.map(p => {
-            if (p.id === activeProject.id) {
-                return { ...p, answers: { ...(p.answers || {}), [qId]: value } };
-            }
-            return p;
-        });
+          const updatedProjects = projects.map(p => p.id === activeProject.id ? { ...p, answers: { ...(p.answers || {}), [qId]: value } } : p);
         setProjects(updatedProjects);
         setActiveProject(updatedProjects.find(p => p.id === activeProject.id));
     };
 
+    // ==========================================
+    // 🧠 MOTEUR JARVIS AI (STRATÉGIE)
+    // ==========================================
+    const generateJarvisStrategy = async () => {
+        if (!jarvisPrompt.trim()) return;
+        setIsThinking(true);
+
+        try {
+            // 🛑 ICI : C'est ici que vous pourrez brancher votre API OpenAI ou autre plus tard.
+            // const response = await fetch("VOTRE_API_JARVIS", { ... });
+            // const aiTasks = await response.json();
+
+            // En attendant, on simule le temps de réflexion de l'IA (2.5 secondes)
+            await new Promise(resolve => setTimeout(resolve, 2500));
+
+            const timestamp = Date.now();
+            
+            // Simulation d'une analyse intelligente basée sur des mots clés
+            const isTech = jarvisPrompt.toLowerCase().includes("site") || jarvisPrompt.toLowerCase().includes("app");
+            const isFormation = jarvisPrompt.toLowerCase().includes("formation") || jarvisPrompt.toLowerCase().includes("cours");
+            
+            let generatedTasks = [];
+
+            if (isFormation) {
+                generatedTasks = [
+                    { id: timestamp + 1, text: "[Phase 1 : Reconnaissance] Définir le plan et les chapitres de la formation", done: false },
+                    { id: timestamp + 2, text: "[Phase 1 : Reconnaissance] Identifier le public cible et le prix de vente", done: false },
+                    { id: timestamp + 3, text: "[Phase 2 : Logistique] Rédiger le contenu textuel ou les slides", done: false },
+                    { id: timestamp + 4, text: "[Phase 2 : Logistique] Enregistrer et monter les vidéos/audios", done: false },
+                    { id: timestamp + 5, text: "[Phase 2 : Logistique] Configurer la plateforme de paiement (Stripe/Paypal)", done: false },
+                    { id: timestamp + 6, text: "[Phase 3 : Assaut] Teaser la formation sur les réseaux sociaux", done: false },
+                    { id: timestamp + 7, text: "[Phase 3 : Assaut] Lancement officiel et ouverture des ventes", done: false },
+                ];
+            } else if (isTech) {
+                generatedTasks = [
+                    { id: timestamp + 1, text: "[Phase 1 : Reconnaissance] Faire une maquette (Wireframe) du projet", done: false },
+                    { id: timestamp + 2, text: "[Phase 1 : Reconnaissance] Choisir les technologies et l'hébergement", done: false },
+                    { id: timestamp + 3, text: "[Phase 2 : Logistique] Développer la structure de base (Front-end)", done: false },
+                    { id: timestamp + 4, text: "[Phase 2 : Logistique] Connecter la base de données (Back-end)", done: false },
+                    { id: timestamp + 5, text: "[Phase 3 : Assaut] Phase de tests et corrections de bugs (QA)", done: false },
+                    { id: timestamp + 6, text: "[Phase 3 : Assaut] Mise en ligne sur les serveurs de production", done: false },
+                ];
+            } else {
+                // Stratégie générique par défaut
+                generatedTasks = [
+                    { id: timestamp + 1, text: "[Phase 1 : Reconnaissance] Étude de marché et analyse de la faisabilité", done: false },
+                    { id: timestamp + 2, text: "[Phase 1 : Reconnaissance] Définition du budget et du plan d'action", done: false },
+                    { id: timestamp + 3, text: "[Phase 2 : Logistique] Acquisition des ressources nécessaires", done: false },
+                    { id: timestamp + 4, text: "[Phase 2 : Logistique] Mise en place des structures de base", done: false },
+                    { id: timestamp + 5, text: "[Phase 3 : Assaut] Campagne de communication et marketing", done: false },
+                    { id: timestamp + 6, text: "[Phase 3 : Assaut] Déploiement complet des opérations", done: false },
+                ];
+            }
+
+            // On ajoute les tâches générées au projet
+            updateProjectTasks([...(activeProject.tasks || []), ...generatedTasks]);
+            
+            // Nettoyage et fermeture
+            setJarvisPrompt("");
+            setShowJarvisModal(false);
+
+        } catch (error) {
+            console.error(error);
+            alert("Erreur de communication avec Jarvis.");
+        } finally {
+            setIsThinking(false);
+        }
+    };
+
+    // ==========================================
     // VUE 1 : LISTE DES PROJETS
+    // ==========================================
     if (!activeProject) {
         return (
             <PageTransition>
                 <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
+                    {/* ... (Le code de la Vue 1 reste exactement le même qu'avant) ... */}
                     <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
                         <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                         <h1 className="text-2xl font-serif text-white font-bold">Conquêtes</h1>
@@ -2726,7 +2752,6 @@ function ProjectScreen({ onBack }) {
                             <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Nom de la nouvelle Conquête..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
                             <div className="flex gap-2">
                                 <input type="number" value={newProjectRoi} onChange={(e) => setNewProjectRoi(e.target.value)} placeholder={`Gain (${currency})`} className="w-1/4 bg-[#0a0a0a] border border-white/10 rounded-lg px-2 text-white text-xs focus:border-gold outline-none" />
-                                {/* NOUVEAU : SÉLECTEUR DE TYPE DE GAIN */}
                                 <select value={newProjectRoiType} onChange={(e) => setNewProjectRoiType(e.target.value)} className="w-1/3 bg-[#0a0a0a] border border-white/10 rounded-lg px-2 text-white text-[10px] focus:border-gold outline-none">
                                     <option value="once">Unique</option>
                                     <option value="recurring">Rente/mois</option>
@@ -2741,14 +2766,16 @@ function ProjectScreen({ onBack }) {
         );
     }
 
+    // ==========================================
     // VUE 2 : DÉTAIL DU PROJET ACTIF
+    // ==========================================
     const pTasks = activeProject.tasks || [];
     const progress = pTasks.length === 0 ? 0 : Math.round((pTasks.filter(t => t.done).length / pTasks.length) * 100);
     const isRecurring = activeProject.roiType === 'recurring';
 
     return (
         <PageTransition>
-            <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
+            <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden relative">
                 <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
                     <button onClick={() => setActiveProject(null)} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour aux Conquêtes</span></button>
                     
@@ -2807,16 +2834,43 @@ function ProjectScreen({ onBack }) {
                         ))}
                     </div>
 
-                    <div className="flex items-center gap-2 mb-4 opacity-80"><CheckSquare className="w-4 h-4 text-white" /><h3 className="text-xs font-bold uppercase tracking-widest text-white">Plan de Bataille</h3></div>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 opacity-80">
+                            <CheckSquare className="w-4 h-4 text-white" />
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-white">Plan de Bataille</h3>
+                        </div>
+                    </div>
+
                     <div className="space-y-3">
-                        {pTasks.map(task => (
-                            <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : 'bg-[#111] border-white/5'}`}>
-                                <button onClick={() => toggleTask(task.id)} className="mt-0.5 text-gold hover:scale-110 transition-transform">{task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</button>
-                                <p className={`flex-1 text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>{task.text}</p>
-                                <button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4" /></button>
+                        {/* BOUTON JARVIS APPARAIT SI AUCUNE TÂCHE */}
+                        {pTasks.length === 0 && (
+                            <div className="mb-6">
+                                <button 
+                                    onClick={() => setShowJarvisModal(true)}
+                                    className="w-full bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border border-cyan-500/30 hover:border-cyan-400/60 p-5 rounded-xl flex flex-col items-center justify-center gap-3 transition-all active:scale-95 group relative overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-cyan-500/5 group-hover:bg-cyan-500/10 transition-colors"></div>
+                                    <Sparkles className="w-8 h-8 text-cyan-400 group-hover:animate-pulse relative z-10" />
+                                    <div className="text-center relative z-10">
+                                        <p className="text-cyan-400 font-bold uppercase tracking-widest text-sm">Générer le plan avec Jarvis</p>
+                                        <p className="text-[10px] text-cyan-600/80 mt-1">L'IA va diviser votre conquête en phases tactiques.</p>
+                                    </div>
+                                </button>
+                                <p className="text-center text-gray-600 text-[10px] uppercase tracking-widest mt-4">OU AJOUTER MANUELLEMENT CI-DESSOUS</p>
                             </div>
-                        ))}
-                        {pTasks.length === 0 && <p className="text-gray-600 text-xs italic">Aucune mission définie. L'ennemi avance.</p>}
+                        )}
+
+                        {pTasks.map(task => {
+                            // Petit design sympa pour mettre en valeur les "Phases" de Jarvis
+                            const isPhase = task.text.startsWith('[');
+                            return (
+                                <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${task.done ? 'bg-dark border-transparent opacity-50' : (isPhase ? 'bg-cyan-900/10 border-cyan-500/20' : 'bg-[#111] border-white/5')}`}>
+                                    <button onClick={() => toggleTask(task.id)} className={`mt-0.5 hover:scale-110 transition-transform ${isPhase ? 'text-cyan-500' : 'text-gold'}`}>{task.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</button>
+                                    <p className={`flex-1 text-sm ${task.done ? 'line-through text-gray-600' : (isPhase ? 'text-cyan-100 font-medium' : 'text-gray-200')}`}>{task.text}</p>
+                                    <button onClick={() => deleteTask(task.id)} className="text-gray-700 hover:text-red-500"><X className="w-4 h-4" /></button>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -2826,6 +2880,62 @@ function ProjectScreen({ onBack }) {
                         <button type="submit" disabled={!newTask.trim()} className="bg-gold text-black font-bold px-4 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors"><Plus className="w-5 h-5" /></button>
                     </form>
                 </div>
+
+                {/* ========================================== */}
+                {/* MODALE JARVIS (GÉNÉRATEUR DE STRATÉGIE) */}
+                {/* ========================================== */}
+                {showJarvisModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
+                        <div className="bg-[#0a0f18] border border-cyan-500/30 w-full max-w-sm rounded-2xl p-6 shadow-[0_0_30px_rgba(34,211,238,0.1)] relative overflow-hidden">
+                            
+                            <button onClick={() => setShowJarvisModal(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white z-20">
+                                <X className="w-5 h-5"/>
+                            </button>
+                            
+                            <div className="flex items-center gap-3 mb-6 relative z-10">
+                                <div className="p-3 bg-cyan-900/20 rounded-full text-cyan-400 border border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+                                    <Cpu className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-serif font-bold text-lg">Jarvis AI</h3>
+                                    <p className="text-[10px] text-cyan-500 uppercase tracking-widest">Générateur Tactique</p>
+                                </div>
+                            </div>
+
+                            <div className="relative z-10">
+                                <p className="text-xs text-gray-400 mb-3">
+                                    Décrivez l'objectif global de cette conquête. Plus vous serez précis, plus le plan de bataille sera efficace.
+                                </p>
+                                <textarea 
+                                    value={jarvisPrompt} 
+                                    onChange={(e) => setJarvisPrompt(e.target.value)} 
+                                    placeholder="Ex: Je veux lancer une formation en ligne sur le montage vidéo. Je n'ai pas encore de site ni de vidéos enregistrées..." 
+                                    className="w-full bg-black border border-cyan-900 rounded-xl p-4 text-sm text-gray-200 focus:border-cyan-500 focus:outline-none h-32 mb-4 custom-scrollbar resize-none"
+                                    autoFocus
+                                    disabled={isThinking}
+                                />
+
+                                <button 
+                                    onClick={generateJarvisStrategy} 
+                                    disabled={!jarvisPrompt.trim() || isThinking} 
+                                    className="w-full bg-cyan-600 text-white font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-cyan-500 transition-all shadow-[0_0_15px_rgba(34,211,238,0.3)] disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isThinking ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Analyse en cours...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-4 h-4" />
+                                            Générer le Plan
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </PageTransition>
     ); 
