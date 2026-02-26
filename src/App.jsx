@@ -657,25 +657,20 @@ export default function App() {
 
 // --- SYSTÈME CLOUD : GESTION DES NOUVEAUX ---
 useEffect(() => {
-    // On ne fait plus de chargement automatique ici, car c'est géré à l'Onboarding.
-    // PAR CONTRE, on vérifie si l'utilisateur est un "Nouveau Joueur" non connecté.
-    
-    // Si l'utilisateur n'est PAS connecté ET qu'on n'a pas encore demandé
-    if (!auth.currentUser && !sessionStorage.getItem('imperium_login_asked')) {
-        // Petit délai pour ne pas agresser l'utilisateur dès l'ouverture
+    // On utilise localStorage pour que le choix soit mémorisé À VIE
+    if (!auth.currentUser && !localStorage.getItem('imperium_login_asked')) {
         const timer = setTimeout(() => {
             if(confirm("🔒 SÉCURITÉ :\n\nVoulez-vous lier votre Empire à un compte Google maintenant pour activer la sauvegarde automatique Cloud ?")) {
                 loginWithGoogle().then((user) => {
                     if(user) alert("✅ Empire Sécurisé et Lié.");
                 }).catch(e => console.error(e));
             }
-            // On marque qu'on a demandé pour ne pas redemander à chaque rechargement de page dans la même session
-            sessionStorage.setItem('imperium_login_asked', 'true');
-        }, 3000); // 3 secondes après l'arrivée sur le Dashboard
+            // MARQUEUR PERMANENT : Qu'il dise oui ou non, on ne l'embêtera plus jamais
+            localStorage.setItem('imperium_login_asked', 'true');
+        }, 3000);
         return () => clearTimeout(timer);
     }
-}, []);
-    
+}, []);    
     const ackPatchNotes = () => { localStorage.setItem('imperium_version', APP_VERSION); setShowPatchNotes(false); };
 
     // --- SYSTÈME CLOUD : CORRECTION ANTI-BOUCLE ---
