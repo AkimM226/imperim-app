@@ -84,3 +84,24 @@ export const loadEmpireFromCloud = async (userId) => {
     return null;
   }
 };
+
+// --- NOUVEAU : ENREGISTREMENT AU RADAR CONTINU ---
+export const updateRadarConfig = async (userId, token, time) => {
+  if (!userId) return; // Sécurité : il faut être connecté
+  try {
+    // On capture le fuseau horaire du soldat (ex: "Africa/Ouagadougou" ou "Europe/Paris")
+    // C'est VITAL car 20h00 chez vous n'est pas 20h00 ailleurs !
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    await setDoc(doc(db, "radar", userId), {
+      token: token,
+      time: time,
+      timeZone: userTimeZone,
+      lastUpdated: new Date().toISOString()
+    }, { merge: true });
+    
+    console.log("☁️ Cible enregistrée dans le Radar Central.");
+  } catch (e) {
+    console.error("Erreur mise à jour Radar:", e);
+  }
+};

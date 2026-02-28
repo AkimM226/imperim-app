@@ -21,7 +21,7 @@ import {
 import { GoogleGenerativeAI } from "@google/generative-ai";
 // Remplacez : import { auth, saveEmpireToCloud, loadEmpireFromCloud } from './firebase';
 // PAR CECI :
-import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser, messaging } from './firebase';
+import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser, messaging, updateRadarConfig } from './firebase';
 import { onAuthStateChanged } from "firebase/auth";
 // On importe l'outil pour générer le jeton depuis la bibliothèque Firebase
 import { getToken } from 'firebase/messaging';
@@ -81,7 +81,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.3-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.1.4-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -3197,8 +3197,14 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
     };
 
     const handleNotifTimeChange = (e) => {
-        setNotifTime(e.target.value);
-        localStorage.setItem('imperium_notif_time', e.target.value);
+        const newTime = e.target.value;
+        setNotifTime(newTime);
+        localStorage.setItem('imperium_notif_time', newTime);
+        
+        // On met à jour le serveur si l'utilisateur est connecté et qu'il a déjà un jeton
+        if (auth.currentUser && fcmToken) {
+            updateRadarConfig(auth.currentUser.uid, fcmToken, newTime);
+        }
     };
 
     const testNotification = () => {
@@ -3237,6 +3243,11 @@ const activerRadioQG = async () => {
                 console.log("📡 JETON DE COMMUNICATION REÇU :", token);
                 localStorage.setItem('imperium_fcm_token', token);
                 setFcmToken(token); // <-- AJOUTEZ CETTE LIGNE ICI
+                
+                // 👇 NOUVELLE LIGNE : On envoie le jeton et l'heure actuelle au serveur
+                if (auth.currentUser) {
+                    updateRadarConfig(auth.currentUser.uid, token, notifTime);
+                }
                 alert("✅ Radio Arrière-plan connectée. Le QG peut désormais vous joindre application fermée.");
             } else {
                 console.warn("Aucun jeton généré.");
