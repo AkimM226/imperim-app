@@ -21,9 +21,11 @@ import {
 import { GoogleGenerativeAI } from "@google/generative-ai";
 // Remplacez : import { auth, saveEmpireToCloud, loadEmpireFromCloud } from './firebase';
 // PAR CECI :
-import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser } from './firebase';
+import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser, messaging } from './firebase';
 import { onAuthStateChanged } from "firebase/auth";
+// On importe l'outil pour générer le jeton depuis la bibliothèque Firebase
 import { getToken } from 'firebase/messaging';
+
 
 // ==========================================
 // MOTEUR SONORE TACTIQUE (MODE SILENCE RADIO)
@@ -3208,36 +3210,43 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
             alert("Activez d'abord les notifications via le bouton ci-dessus.");
         }
     };
-    // --- NOUVEAU : CONNEXION FIREBASE ARRIÈRE-PLAN ---
-    const activerRadioQG = async () => {
-        try {
-            console.log("Demande d'autorisation de communication...");
-            const permission = await Notification.requestPermission();
+    
+    // --- CONNEXION FIREBASE ARRIÈRE-PLAN (VERSION FORCÉE) ---
+const activerRadioQG = async () => {
+    try {
+        console.log("Demande d'autorisation de communication...");
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted') {
+            console.log("Autorisation accordée. Déploiement manuel du soldat...");
             
-            if (permission === 'granted') {
-                console.log("Autorisation accordée. Génération du jeton...");
-                
-                // ⚠️ REMPLACEZ LA VAPID KEY PAR CELLE COPIÉE SUR FIREBASE
-                const token = await getToken(messaging, {
-                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A" 
-                });
-                
-                if (token) {
-                    console.log("📡 JETON DE COMMUNICATION REÇU :", token);
-                    localStorage.setItem('imperium_fcm_token', token);
-                    alert("✅ Radio Arrière-plan connectée. Le QG peut désormais vous joindre application fermée.");
-                } else {
-                    console.warn("Aucun jeton généré.");
-                    alert("⚠️ Impossible de générer le jeton. Vérifiez votre VAPID Key.");
-                }
+            // 1. ON FORCE L'ENREGISTREMENT DU SERVICE WORKER ICI
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log("Soldat déployé avec succès :", registration.scope);
+            
+            // 2. ON DEMANDE LE JETON EN LUI MONTRANT LE SOLDAT
+            // ⚠️ N'oubliez pas de remettre votre vraie clé VAPID ici !
+            const token = await getToken(messaging, {
+                vapidKey: "VOTRE_CLE_VAPID_LONGUE_ICI",
+                serviceWorkerRegistration: registration // <-- C'EST LA CLÉ DU SUCCÈS
+            });
+            
+            if (token) {
+                console.log("📡 JETON DE COMMUNICATION REÇU :", token);
+                localStorage.setItem('imperium_fcm_token', token);
+                alert("✅ Radio Arrière-plan connectée. Le QG peut désormais vous joindre application fermée.");
             } else {
-                alert("❌ Permission refusée.");
+                console.warn("Aucun jeton généré.");
+                alert("⚠️ Impossible de générer le jeton. Vérifiez votre VAPID Key.");
             }
-        } catch (error) {
-            console.error("Erreur d'activation radio :", error);
-            alert("Erreur de connexion au serveur Firebase.");
+        } else {
+            alert("❌ Permission refusée.");
         }
-    };
+    } catch (error) {
+        console.error("Erreur d'activation radio :", error);
+        alert("Erreur de connexion au serveur Firebase.");
+    }
+};
 
     const handleImport = () => { 
         try { 
