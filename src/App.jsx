@@ -3179,22 +3179,57 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         localStorage.setItem('imperium_gender', newGender);
     };
 
-    // --- LOGIQUE NOTIFICATIONS ---
-    const toggleNotifications = async () => {
-        if (!notifEnabled) {
+   // --- LOGIQUE NOTIFICATIONS (FUSIONNÉE ET INVISIBLE) ---
+   const toggleNotifications = async () => {
+    if (!notifEnabled) {
+        try {
+            // 1. On demande la permission (Apple/Android affichera sa popup native)
             const permission = await Notification.requestPermission();
+            
             if (permission === 'granted') {
+                // 2. On active visuellement le bouton
                 setNotifEnabled(true);
                 localStorage.setItem('imperium_notif_enabled', 'true');
-                new Notification("IMPERIUM", { body: "Canal de communication sécurisé activé." });
+                
+                // 3. MANŒUVRE FURTIVE : On génère le jeton en arrière-plan sans rien dire
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                const token = await getToken(messaging, {
+                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A", // ⚠️ REMETTEZ BIEN VOTRE CLÉ ICI
+                    serviceWorkerRegistration: registration
+                });
+
+                if (token) {
+                    // On sauvegarde en local
+                    localStorage.setItem('imperium_fcm_token', token);
+                    setFcmToken(token); // (Optionnel si vous gardez l'état)
+                    
+                    // On envoie discrètement les coordonnées au Sniper (Firestore)
+                    if (auth.currentUser) {
+                        updateRadarConfig(auth.currentUser.uid, token, notifTime);
+                    }
+                    
+                    // Petite notification de confirmation pour l'utilisateur
+                    new Notification("QG IMPERIUM", { body: "Rappels tactiques activés avec succès." });
+                }
             } else {
-                alert("Permission refusée. Vérifiez les réglages du navigateur.");
+                alert("Permission refusée. Veuillez autoriser les notifications dans les réglages de votre téléphone.");
             }
-        } else {
-            setNotifEnabled(false);
-            localStorage.setItem('imperium_notif_enabled', 'false');
+        } catch (error) {
+            console.error("Erreur lors de l'activation furtive :", error);
+            alert("Erreur de connexion au système de rappel.");
         }
-    };
+    } else {
+        // DÉSACTIVATION
+        setNotifEnabled(false);
+        localStorage.setItem('imperium_notif_enabled', 'false');
+        
+        // 🛑 TRÈS IMPORTANT : On brouille le radar pour que le Sniper arrête de tirer
+        if (auth.currentUser) {
+            // On envoie des coordonnées vides au serveur
+            updateRadarConfig(auth.currentUser.uid, "", ""); 
+        }
+    }
+};
 
     const handleNotifTimeChange = (e) => {
         const newTime = e.target.value;
@@ -3220,48 +3255,7 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
     };
     
     // --- CONNEXION FIREBASE ARRIÈRE-PLAN (VERSION FORCÉE) ---
-const activerRadioQG = async () => {
-    try {
-        console.log("Demande d'autorisation de communication...");
-        const permission = await Notification.requestPermission();
-        
-        if (permission === 'granted') {
-            console.log("Autorisation accordée. Déploiement manuel du soldat...");
-            
-            // 1. ON FORCE L'ENREGISTREMENT DU SERVICE WORKER ICI
-            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            console.log("Soldat déployé avec succès :", registration.scope);
-            
-            // 2. ON DEMANDE LE JETON EN LUI MONTRANT LE SOLDAT
-            // ⚠️ N'oubliez pas de remettre votre vraie clé VAPID ici !
-            const token = await getToken(messaging, {
-                vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A",
-                serviceWorkerRegistration: registration // <-- C'EST LA CLÉ DU SUCCÈS
-            });
-            
-            if (token) {
-                console.log("📡 JETON DE COMMUNICATION REÇU :", token);
-                localStorage.setItem('imperium_fcm_token', token);
-                setFcmToken(token); // <-- AJOUTEZ CETTE LIGNE ICI
-                
-                // 👇 NOUVELLE LIGNE : On envoie le jeton et l'heure actuelle au serveur
-                if (auth.currentUser) {
-                    updateRadarConfig(auth.currentUser.uid, token, notifTime);
-                }
-                alert("✅ Radio Arrière-plan connectée. Le QG peut désormais vous joindre application fermée.");
-            } else {
-                console.warn("Aucun jeton généré.");
-                alert("⚠️ Impossible de générer le jeton. Vérifiez votre VAPID Key.");
-            }
-        } else {
-            alert("❌ Permission refusée.");
-        }
-    } catch (error) {
-        console.error("Erreur d'activation radio :", error);
-        // ON FORCE L'AFFICHAGE DE L'ERREUR TECHNIQUE SUR LE TÉLÉPHONE
-        alert(`❌ ALERTE TECHNIQUE : ${error.message || error}`);
-    }
-};
+
 
     const handleImport = () => { 
         try { 
@@ -3454,18 +3448,7 @@ const activerRadioQG = async () => {
                                 <button onClick={testNotification} className="w-full bg-purple-900/20 text-purple-400 border border-purple-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-purple-900/40 transition-colors">
                                     Tester le Signal (Démo)
                                 </button>
-                        {/* NOUVEAU BOUTON FIREBASE */}
-                                <button onClick={activerRadioQG} className="w-full bg-blue-900/20 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
-                                    <Radio className="w-4 h-4" /> Connecter Radio Arrière-plan
-                                </button>
-                                {/* AFFICHAGE DU JETON POUR COPIE */}
-                                {fcmToken && (
-                                    <div className="mt-4 p-3 bg-black border border-blue-500/30 rounded-lg animate-in fade-in">
-                                        <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-widest">Jeton de l'appareil (Cible Push) :</p>
-                                        <textarea readOnly value={fcmToken} className="w-full h-20 bg-transparent text-[10px] text-blue-300 font-mono focus:outline-none break-all" onClick={(e) => e.target.select()}></textarea>
-                                    </div>
-                                )}
-                            </div>
+                           </div>
                         )}
                     </div>
 
