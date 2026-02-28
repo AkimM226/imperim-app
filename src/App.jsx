@@ -81,7 +81,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.0-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.1.1-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -3244,7 +3244,8 @@ const activerRadioQG = async () => {
         }
     } catch (error) {
         console.error("Erreur d'activation radio :", error);
-        alert("Erreur de connexion au serveur Firebase.");
+        // ON FORCE L'AFFICHAGE DE L'ERREUR TECHNIQUE SUR LE TÉLÉPHONE
+        alert(`❌ ALERTE TECHNIQUE : ${error.message || error}`);
     }
 };
 
