@@ -81,7 +81,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.2-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.1.3-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -3140,7 +3140,9 @@ function SettingsScreen({ onBack }) {
     const [importData, setImportData] = useState("");
     const [exportCode, setExportCode] = useState(""); 
     const [sending, setSending] = useState(false);
-    
+    // NOUVEAU : On récupère le jeton sauvegardé
+    const [fcmToken, setFcmToken] = useState(localStorage.getItem('imperium_fcm_token') || "");
+
     // Identité (Inclusion)
     const [gender, setGender] = useState(localStorage.getItem('imperium_gender') || 'M');
 
@@ -3234,6 +3236,7 @@ const activerRadioQG = async () => {
             if (token) {
                 console.log("📡 JETON DE COMMUNICATION REÇU :", token);
                 localStorage.setItem('imperium_fcm_token', token);
+                setFcmToken(token); // <-- AJOUTEZ CETTE LIGNE ICI
                 alert("✅ Radio Arrière-plan connectée. Le QG peut désormais vous joindre application fermée.");
             } else {
                 console.warn("Aucun jeton généré.");
@@ -3444,6 +3447,13 @@ const activerRadioQG = async () => {
                                 <button onClick={activerRadioQG} className="w-full bg-blue-900/20 text-blue-400 border border-blue-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
                                     <Radio className="w-4 h-4" /> Connecter Radio Arrière-plan
                                 </button>
+                                {/* AFFICHAGE DU JETON POUR COPIE */}
+                                {fcmToken && (
+                                    <div className="mt-4 p-3 bg-black border border-blue-500/30 rounded-lg animate-in fade-in">
+                                        <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-widest">Jeton de l'appareil (Cible Push) :</p>
+                                        <textarea readOnly value={fcmToken} className="w-full h-20 bg-transparent text-[10px] text-blue-300 font-mono focus:outline-none break-all" onClick={(e) => e.target.select()}></textarea>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
