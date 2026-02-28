@@ -81,7 +81,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.4-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.1.5-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
