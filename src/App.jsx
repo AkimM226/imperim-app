@@ -81,7 +81,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.1-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.1.2-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -3227,7 +3227,7 @@ const activerRadioQG = async () => {
             // 2. ON DEMANDE LE JETON EN LUI MONTRANT LE SOLDAT
             // ⚠️ N'oubliez pas de remettre votre vraie clé VAPID ici !
             const token = await getToken(messaging, {
-                vapidKey: "VOTRE_CLE_VAPID_LONGUE_ICI",
+                vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A",
                 serviceWorkerRegistration: registration // <-- C'EST LA CLÉ DU SUCCÈS
             });
             
