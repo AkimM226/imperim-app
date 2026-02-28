@@ -3179,53 +3179,63 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         localStorage.setItem('imperium_gender', newGender);
     };
 
-   // --- LOGIQUE NOTIFICATIONS (FUSIONNÉE ET INVISIBLE) ---
+   // --- LOGIQUE NOTIFICATIONS (AVEC SÉCURITÉ CLOUD) ---
    const toggleNotifications = async () => {
     if (!notifEnabled) {
+        
+        // 🛑 1. VÉRIFICATION DE SÉCURITÉ : Le soldat est-il connecté ?
+        if (!auth.currentUser) {
+            alert("⚠️ ACCÈS REFUSÉ : Vous devez d'abord établir la Liaison Satellitaire (Connexion Google) plus bas dans les paramètres pour que le QG puisse vous identifier.");
+            
+            // Manœuvre UX : On fait défiler l'écran automatiquement vers la zone de connexion
+            const liaisonZone = document.getElementById('zone-liaison-compte');
+            if (liaisonZone) {
+                liaisonZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Petit effet visuel pour attirer l'œil
+                liaisonZone.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'ring-offset-black');
+                setTimeout(() => liaisonZone.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2', 'ring-offset-black'), 2000);
+            }
+            return; // On annule l'activation de la radio
+        }
+
         try {
-            // 1. On demande la permission (Apple/Android affichera sa popup native)
+            // 2. On demande la permission
             const permission = await Notification.requestPermission();
             
             if (permission === 'granted') {
-                // 2. On active visuellement le bouton
                 setNotifEnabled(true);
                 localStorage.setItem('imperium_notif_enabled', 'true');
                 
-                // 3. MANŒUVRE FURTIVE : On génère le jeton en arrière-plan sans rien dire
+                // 3. Manœuvre furtive : génération du jeton
                 const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
                 const token = await getToken(messaging, {
-                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A", // ⚠️ REMETTEZ BIEN VOTRE CLÉ ICI
+                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A", // ⚠️ Laissez votre vraie clé ici
                     serviceWorkerRegistration: registration
                 });
 
                 if (token) {
-                    // On sauvegarde en local
                     localStorage.setItem('imperium_fcm_token', token);
-                    setFcmToken(token); // (Optionnel si vous gardez l'état)
+                    setFcmToken(token); 
                     
-                    // On envoie discrètement les coordonnées au Sniper (Firestore)
-                    if (auth.currentUser) {
-                        updateRadarConfig(auth.currentUser.uid, token, notifTime);
-                    }
+                    // On envoie les coordonnées au Sniper (On sait que currentUser existe grâce à l'étape 1)
+                    updateRadarConfig(auth.currentUser.uid, token, notifTime);
                     
-                    // Petite notification de confirmation pour l'utilisateur
-                    new Notification("QG IMPERIUM", { body: "Rappels tactiques activés avec succès." });
+                    new Notification("QG IMPERIUM", { body: "Liaison établie. Rappels tactiques activés." });
                 }
             } else {
-                alert("Permission refusée. Veuillez autoriser les notifications dans les réglages de votre téléphone.");
+                alert("❌ Permission refusée. Veuillez autoriser les notifications dans les réglages de votre téléphone.");
             }
         } catch (error) {
-            console.error("Erreur lors de l'activation furtive :", error);
-            alert("Erreur de connexion au système de rappel.");
+            console.error("Erreur d'activation furtive :", error);
+            alert("Erreur réseau. Impossible d'établir le contact avec le QG.");
         }
     } else {
-        // DÉSACTIVATION
+        // --- DÉSACTIVATION ---
         setNotifEnabled(false);
         localStorage.setItem('imperium_notif_enabled', 'false');
         
-        // 🛑 TRÈS IMPORTANT : On brouille le radar pour que le Sniper arrête de tirer
         if (auth.currentUser) {
-            // On envoie des coordonnées vides au serveur
+            // On efface la cible du radar
             updateRadarConfig(auth.currentUser.uid, "", ""); 
         }
     }
