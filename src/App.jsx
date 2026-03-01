@@ -26,6 +26,36 @@ import { onAuthStateChanged } from "firebase/auth";
 // On importe l'outil pour générer le jeton depuis la bibliothèque Firebase
 import { getToken } from 'firebase/messaging';
 
+// ==========================================
+// MOTEUR HAPTIQUE (VIBRATIONS)
+// ==========================================
+ const triggerVibration = (type = 'light') => {
+    // 1. On vérifie si le téléphone du soldat supporte les vibrations
+    if (!navigator.vibrate) return;
+
+    // 2. On choisit le calibre selon la situation
+    switch(type) {
+        case 'light':
+            // Petit clic rapide (pour la navigation ou l'ouverture de menus)
+            navigator.vibrate(50); 
+            break;
+        case 'success':
+            // Double frappe rapide et satisfaisante (Mission accomplie, Revenu)
+            navigator.vibrate([50, 50, 50]); 
+            break;
+        case 'warning':
+        case 'error':
+            // Grosse secousse lourde (Alerte Jarvis, Fonds insuffisants, Erreur)
+            navigator.vibrate([200, 100, 200]); 
+            break;
+        case 'heavy':
+            // Un seul choc lourd (Grosse dépense)
+            navigator.vibrate(100); 
+            break;
+        default:
+            navigator.vibrate(50);
+    }
+};
 
 // ==========================================
 // MOTEUR SONORE TACTIQUE (MODE SILENCE RADIO)
@@ -1325,6 +1355,7 @@ function Dashboard({ onNavigate }) {
         e.preventDefault();
         if (betaCodeInput.trim() === "IMPERATOR-X") {
             // SUCCÈS
+            triggerVibration('success'); // ⚡
             localStorage.setItem('imperium_beta_quantum', 'GRANTED');
             setIsQuantumUnlocked(true);
             setShowBetaLock(false);
@@ -1333,6 +1364,7 @@ function Dashboard({ onNavigate }) {
             onNavigate('quantum');
         } else {
             // ÉCHEC
+            triggerVibration('error'); // ⚡
             playSound('error');
             alert("ACCÈS REFUSÉ"); // <--- Modification ici
             setBetaCodeInput("");
@@ -1436,6 +1468,7 @@ function Dashboard({ onNavigate }) {
             const threshold = availableCash * 0.20;
             
             if (value > threshold) {
+                triggerVibration('warning'); // ⚡ LA SECOUSSE JARVIS EST LÀ
                 const confirmAction = window.confirm(
                     `⚠️ ALERTE JARVIS\n\nCommandant, vous êtes sur le point de dépenser ${formatMoney(value)} ${currency} en futilités.\n\nCela représente plus de 20% de votre trésorerie disponible.\n\nConfirmez-vous cet ordre malgré le risque ?`
                 );
@@ -1445,9 +1478,14 @@ function Dashboard({ onNavigate }) {
   
         // 3. GESTION DES DÉPENSES
         if (transactionType === 'expense') {
-            if (value > balance) return alert("Fonds insuffisants (Cash/OM).");
+            if (value > balance) {
+                triggerVibration('error'); // ⚡ LA SECOUSSE D'ERREUR
+                return alert("Fonds insuffisants (Cash/OM).");
+            }
+            triggerVibration('heavy'); // ⚡ LE CHOC DE LA DÉPENSE
             setBalance(balance - value);
         } else {
+            triggerVibration('success'); // ⚡ LA DOUBLE FRAPPE DU REVENU
             setBalance(balance + value);
         }
   
@@ -2178,6 +2216,7 @@ function GoalsScreen({ onBack }) {
             }
 
             // 3. Redémarrage propre
+            triggerVibration('success'); // ⚡ LE DOUBLE CHOC DE LA VICTOIRE
             alert(`✅ Achat validé. Fonds déployés et cible éliminée.`);
            
         }
