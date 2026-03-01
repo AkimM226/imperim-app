@@ -2151,34 +2151,32 @@ function GoalsScreen({ onBack }) {
         setAllocAmount(""); setSelectedGoal(null);
     };
 
-    // --- FONCTION DE VALIDATION DE LA CIBLE (CORRIGÉE) ---
+    // --- FONCTION DE VALIDATION DE LA CIBLE (L'ARME ABSOLUE) ---
     const completeGoal = async (goalToComplete) => {
         if (window.confirm(`🎯 MISSION ACCOMPLIE : Confirmez-vous l'achat pour "${goalToComplete.title}" ?\n\nLes ${formatMoney(goalToComplete.current)} ${currency} verrouillés seront définitivement déduits de votre Trésor Total.`)) {
             
-            // 1. Mise à jour de la mémoire locale (Trésor)
+            // 1. Frappe Locale (Mise à jour du téléphone)
             const currentTotal = parseFloat(localStorage.getItem('imperium_balance') || "0");
             const newTotal = currentTotal - goalToComplete.current;
             localStorage.setItem('imperium_balance', newTotal.toString());
 
-            // 2. Mise à jour de la mémoire locale (Cibles)
             const updatedGoals = goals.filter(g => g.id !== goalToComplete.id);
-            setGoals(updatedGoals); // L'écran se met à jour instantanément
             localStorage.setItem('imperium_goals', JSON.stringify(updatedGoals));
+            setGoals(updatedGoals); 
 
-            // 3. SYNCHRONISATION FORCÉE AVEC LE QG (FIREBASE)
-            // On s'assure que Firebase efface la cible avant de faire quoi que ce soit d'autre
+            // 2. Frappe Cloud (Mise à jour de Firebase)
             try {
                 if (auth?.currentUser) {
-                    // Si votre fonction saveEmpireToCloud prend l'ID de l'utilisateur en paramètre
                     await saveEmpireToCloud(auth.currentUser.uid); 
-                    console.log("☁️ Cible éliminée du serveur Firebase.");
+                    console.log("☁️ Synchronisation Firebase terminée.");
                 }
             } catch (error) {
-                console.error("Erreur de synchronisation avec Firebase :", error);
+                console.error("Erreur de synchronisation :", error);
             }
 
-            // 4. Rapport de succès (Plus de rechargement brutal de la page !)
-            alert(`✅ Achat validé. Fonds déployés et cible [${goalToComplete.title}] éliminée.`);
+            // 3. Purge de la Mémoire du QG (LA SOLUTION EST ICI)
+            alert(`✅ Achat validé. Fonds déployés et cible éliminée.`);
+            window.location.reload(); // Redémarrage forcé pour vider la mémoire du Dashboard
         }
     };
 
