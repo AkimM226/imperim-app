@@ -81,7 +81,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.6-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.1.7-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -2151,7 +2151,7 @@ function GoalsScreen({ onBack }) {
         setAllocAmount(""); setSelectedGoal(null);
     };
 
-    // --- FONCTION DE VALIDATION DE LA CIBLE (L'ARME ABSOLUE) ---
+    // --- FONCTION DE VALIDATION DE LA CIBLE (CORRIGÉE) ---
     const completeGoal = async (goalToComplete) => {
         if (window.confirm(`🎯 MISSION ACCOMPLIE : Confirmez-vous l'achat pour "${goalToComplete.title}" ?\n\nLes ${formatMoney(goalToComplete.current)} ${currency} verrouillés seront définitivement déduits de votre Trésor Total.`)) {
             
@@ -2164,19 +2164,22 @@ function GoalsScreen({ onBack }) {
             localStorage.setItem('imperium_goals', JSON.stringify(updatedGoals));
             setGoals(updatedGoals); 
 
-            // 2. Frappe Cloud (Mise à jour de Firebase)
+            // 2. Frappe Cloud (LE CORRECTIF EST ICI : On donne les vraies données au messager)
             try {
                 if (auth?.currentUser) {
-                    await saveEmpireToCloud(auth.currentUser.uid); 
-                    console.log("☁️ Synchronisation Firebase terminée.");
+                    await saveEmpireToCloud(auth.currentUser.uid, {
+                        balance: newTotal, // On prévient de la baisse du trésor
+                        goals: JSON.stringify(updatedGoals) // On envoie la nouvelle liste sans la cible !
+                    }); 
+                    console.log("☁️ Le QG Firebase a bien reçu et enregistré l'élimination.");
                 }
             } catch (error) {
                 console.error("Erreur de synchronisation :", error);
             }
 
-            // 3. Purge de la Mémoire du QG (LA SOLUTION EST ICI)
+            // 3. Redémarrage propre
             alert(`✅ Achat validé. Fonds déployés et cible éliminée.`);
-            window.location.reload(); // Redémarrage forcé pour vider la mémoire du Dashboard
+            window.location.reload(); 
         }
     };
 
