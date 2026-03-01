@@ -111,7 +111,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.7-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.1.8-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -1989,88 +1989,146 @@ function ProtocolsScreen({ onBack }) {
 }
 
 // ==========================================
-// 8. LE GRAND LIVRE (CORRIGÉ & STICKY)
+// 8. LE GRAND LIVRE (ALPHA : REMBOURSEMENTS PARTIELS)
 // ==========================================
 function DebtsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
     
-    // 1. ON RECUPERE TOUTES LES DONNEES FINANCIERES
+    // 1. ÉTATS
     const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
     const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
     const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
     
-    // Etats de saisie
+    // Formulaire Ajout
     const [newName, setNewName] = useState("");
     const [newAmount, setNewAmount] = useState("");
     const [type, setType] = useState('owe');
 
-    // Synchronisation
+    // Modale Remboursement Partiel
+    const [selectedDebt, setSelectedDebt] = useState(null);
+    const [partialAmount, setPartialAmount] = useState("");
+
+    // Synchronisation locale
     useEffect(() => { localStorage.setItem('imperium_debts', JSON.stringify(debts)); }, [debts]);
     useEffect(() => { localStorage.setItem('imperium_balance', JSON.stringify(balance)); }, [balance]);
 
-    // CALCUL DU VRAI CASH DISPONIBLE (Comme sur le Dashboard)
-    // On ne peut pas payer une dette avec l'argent verrouillé dans les "Cibles"
+    // Trésorerie
     const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
     const availableCash = parseFloat(balance) - lockedCash;
 
-    // Ajouter une entrée
+    // --- AJOUTER ---
     const addEntry = (e) => {
         e.preventDefault();
         if (!newName || !newAmount) return;
-        setDebts([...debts, { id: Date.now(), name: newName, amount: parseFloat(newAmount), type }]);
+        const total = parseFloat(newAmount);
+        
+        // On ajoute la notion de "total" et "current" (remboursé) comme pour les objectifs
+        setDebts([...debts, { 
+            id: Date.now(), 
+            name: newName, 
+            amount: total, // Reste à payer
+            totalAmount: total, // Dette initiale
+            paidAmount: 0, // Déjà remboursé
+            type 
+        }]);
         setNewName(""); setNewAmount("");
+        if(window.triggerVibration) triggerVibration('light');
     };
 
-    // Payer ou Encaisser
-    const settleEntry = (item) => {
-        if(item.type === 'owe') {
-            if(availableCash < item.amount) return alert(`Trésorerie disponible insuffisante (${formatMoney(availableCash)}). L'argent des Cibles est verrouillé.`);
-            if(confirm(`Payer ${item.name} ? ${formatMoney(item.amount)} seront déduits de votre Cash.`)) {
-                setBalance(balance - item.amount);
-                setDebts(debts.filter(d => d.id !== item.id));
+    // --- REMBOURSEMENT (PARTIEL OU TOTAL) ---
+    const handlePayment = (e) => {
+        e.preventDefault();
+        if(!selectedDebt || !partialAmount) return;
+        
+        const payment = parseFloat(partialAmount);
+        if (payment <= 0) return;
+        
+        // Sécurité si on paie plus que la dette
+        const finalPayment = Math.min(payment, selectedDebt.amount);
+
+        if(selectedDebt.type === 'owe') {
+            // JE PAIE UNE DETTE
+            if(availableCash < finalPayment) {
+                if(window.triggerVibration) triggerVibration('error');
+                return alert(`Trésorerie insuffisante (${formatMoney(availableCash)} dispo).`);
             }
+            
+            if(window.triggerVibration) triggerVibration('heavy');
+            setBalance(balance - finalPayment);
+            
         } else {
-            if(confirm(`Avez-vous reçu l'argent de ${item.name} ? ${formatMoney(item.amount)} seront ajoutés à votre Cash.`)) {
-                setBalance(balance + item.amount);
-                setDebts(debts.filter(d => d.id !== item.id));
-            }
+            // ON ME REMBOURSE
+            if(window.triggerVibration) triggerVibration('success');
+            setBalance(balance + finalPayment);
         }
+
+        // Mise à jour de la dette
+        const newRest = selectedDebt.amount - finalPayment;
+        
+        if (newRest <= 0) {
+            // Dette soldée ! On la supprime.
+            setDebts(debts.filter(d => d.id !== selectedDebt.id));
+            if(window.triggerVibration) triggerVibration('success');
+        } else {
+            // Dette partielle
+            const updatedDebts = debts.map(d => {
+                if(d.id === selectedDebt.id) {
+                    return {
+                        ...d,
+                        amount: newRest,
+                        paidAmount: (d.paidAmount || 0) + finalPayment
+                    };
+                }
+                return d;
+            });
+            setDebts(updatedDebts);
+        }
+
+        setSelectedDebt(null);
+        setPartialAmount("");
     };
     
+    // --- SUPPRESSION BRUTALE ---
     const deleteEntry = (id) => {
-        if(confirm("Supprimer cette entrée ? (Aucun impact sur le solde)")) {
+        if(confirm("Supprimer sans impact sur le Trésor ?")) {
             setDebts(debts.filter(d => d.id !== id));
+            if(window.triggerVibration) triggerVibration('light');
         }
     };
+
+    // --- TRI TACTIQUE (Les dettes prioritaires en haut) ---
+    const sortedDebts = [...debts].sort((a, b) => {
+        // 1. Dettes (owe) avant Créances (owed)
+        if (a.type === 'owe' && b.type === 'owed') return -1;
+        if (a.type === 'owed' && b.type === 'owe') return 1;
+        // 2. Si même type, tri par montant restant décroissant
+        return b.amount - a.amount;
+    });
 
     const totalOwe = debts.filter(d => d.type === 'owe').reduce((acc, d) => acc + d.amount, 0);
     const totalOwed = debts.filter(d => d.type === 'owed').reduce((acc, d) => acc + d.amount, 0);
 
-    // LOGIQUE DE L'ALERTE PRIORITAIRE
-    // On cherche la dette la plus petite que l'on peut payer MAINTENANT avec le CASH DISPONIBLE
-    const priorityDebt = debts
-        .filter(d => d.type === 'owe' && d.amount <= availableCash)
-        .sort((a, b) => a.amount - b.amount)[0]; 
+    const priorityDebt = sortedDebts.find(d => d.type === 'owe' && d.amount <= availableCash); 
 
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col relative overflow-hidden">
             
-            {/* 1. EN-TÊTE */}
+            {/* EN-TÊTE */}
             <div className="px-5 pt-safe-top mt-4 flex justify-between items-center shrink-0">
                 <div>
                    <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest">LE REGISTRE</h1>
                    <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Dispo: {formatMoney(availableCash)} {currency}</p>
                 </div>
-                <button onClick={onBack} className="w-10 h-10 bg-[#1a2333] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
+                <button onClick={() => { if(window.triggerVibration) triggerVibration('light'); onBack(); }} className="w-10 h-10 bg-[#1a2333] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
                     <ArrowLeft className="w-5 h-5" />
                 </button>
             </div>
 
-            {/* 2. CONTENU SCROLLABLE */}
+            {/* CONTENU SCROLLABLE */}
             <div className="flex-1 overflow-y-auto px-4 pt-6 pb-40 custom-scrollbar relative">
                 
-                {/* RESUME DES TOTAUX */}
+                {/* RESUME */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="bg-[#1a0f0f] border border-red-900/30 p-4 rounded-xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-2 opacity-10"><UserMinus className="w-12 h-12 text-red-500"/></div>
@@ -2084,7 +2142,7 @@ function DebtsScreen({ onBack }) {
                     </div>
                 </div>
 
-                {/* --- ALERTE PRIORITAIRE (STICKY EN HAUT DE LISTE) --- */}
+                {/* ALERTE PRIORITAIRE */}
                 {priorityDebt && (
                     <div className="sticky top-0 z-10 mb-4 animate-in slide-in-from-top-2">
                         <div className="bg-[#2a0a0a] border border-red-500 p-4 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-between backdrop-blur-md">
@@ -2093,55 +2151,115 @@ function DebtsScreen({ onBack }) {
                                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                                     <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest">Action Requise</p>
                                 </div>
-                                <p className="text-xs text-white leading-tight">Liquidité suffisante pour payer <span className="font-bold border-b border-red-500/50">{priorityDebt.name}</span>.</p>
+                                <p className="text-xs text-white leading-tight">Liquidité pour solder <span className="font-bold border-b border-red-500/50">{priorityDebt.name}</span>.</p>
                                 <p className="text-sm font-serif font-bold text-[#F4D35E] mt-1">{formatMoney(priorityDebt.amount)} {currency}</p>
                             </div>
-                            <button onClick={() => settleEntry(priorityDebt)} className="bg-red-600 text-white font-bold px-4 py-3 rounded-lg text-xs uppercase tracking-wider hover:bg-red-500 transition-colors shadow-lg active:scale-95">
-                                Payer
+                            <button onClick={() => { setSelectedDebt(priorityDebt); setPartialAmount(priorityDebt.amount.toString()); }} className="bg-red-600 text-white font-bold px-4 py-3 rounded-lg text-xs uppercase tracking-wider hover:bg-red-500 transition-colors shadow-lg active:scale-95">
+                                Régler
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* LISTE DES ENTRÉES */}
+                {/* LISTE DES ENTRÉES (TRIÉE) */}
                 <div className="space-y-3 pb-6">
-                    {debts.length === 0 && <div className="text-center py-10 opacity-50"><Scroll className="w-10 h-10 mx-auto mb-2 text-gray-600"/><p className="text-xs text-gray-500">Le registre est vierge.</p></div>}
+                    {sortedDebts.length === 0 && <div className="text-center py-10 opacity-50"><Scroll className="w-10 h-10 mx-auto mb-2 text-gray-600"/><p className="text-xs text-gray-500">Le registre est vierge.</p></div>}
                     
-                    {debts.map(item => (
-                        <div key={item.id} className={`p-4 rounded-xl border flex justify-between items-center bg-[#111] transition-all hover:bg-[#161616] ${item.type === 'owe' ? 'border-red-500/10' : 'border-green-500/10'}`}>
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${item.type === 'owe' ? 'bg-red-900/10 text-red-500' : 'bg-green-900/10 text-green-500'}`}>
-                                    {item.type === 'owe' ? <UserMinus className="w-5 h-5"/> : <UserPlus className="w-5 h-5"/>}
+                    {sortedDebts.map(item => {
+                        const totalInitial = item.totalAmount || item.amount; // Rétrocompatibilité
+                        const isPartial = item.paidAmount > 0;
+                        const percentPaid = isPartial ? Math.round((item.paidAmount / totalInitial) * 100) : 0;
+                        const isOwe = item.type === 'owe';
+
+                        return (
+                            <div key={item.id} className={`p-4 rounded-xl border flex flex-col gap-3 bg-[#111] transition-all hover:bg-[#161616] ${isOwe ? 'border-red-500/10' : 'border-green-500/10'}`}>
+                                
+                                {/* Ligne du Haut : Info */}
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${isOwe ? 'bg-red-900/10 text-red-500' : 'bg-green-900/10 text-green-500'}`}>
+                                            {isOwe ? <UserMinus className="w-5 h-5"/> : <UserPlus className="w-5 h-5"/>}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gray-200">{item.name}</h3>
+                                            <p className={`text-xs font-serif font-bold ${isOwe ? 'text-red-400' : 'text-green-400'}`}>
+                                                Reste : {formatMoney(item.amount)} {currency}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => { setSelectedDebt(item); setPartialAmount(""); if(window.triggerVibration) triggerVibration('light'); }} className={`px-4 py-2 rounded text-[10px] font-bold uppercase border transition-colors ${isOwe ? 'border-red-500/30 text-red-400 hover:bg-red-900/20' : 'border-green-500/30 text-green-400 hover:bg-green-900/20'}`}>
+                                            {isOwe ? "Payer" : "Reçu"}
+                                        </button>
+                                        <button onClick={() => deleteEntry(item.id)} className="p-2 text-gray-600 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-sm font-bold text-gray-200">{item.name}</h3>
-                                    <p className={`text-xs font-serif font-bold ${item.type === 'owe' ? 'text-red-400' : 'text-green-400'}`}>
-                                        {formatMoney(item.amount)} {currency}
-                                    </p>
-                                </div>
+
+                                {/* Ligne du Bas : Barre de Progression (Visible si paiement partiel commencé) */}
+                                {isPartial && (
+                                    <div className="w-full">
+                                        <div className="flex justify-between text-[9px] text-gray-500 mb-1 font-bold">
+                                            <span>Payé: {formatMoney(item.paidAmount)}</span>
+                                            <span>Initial: {formatMoney(totalInitial)}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden">
+                                            <div className={`h-full rounded-full transition-all duration-500 ${isOwe ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${percentPaid}%` }}></div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => settleEntry(item)} className={`px-4 py-2 rounded text-[10px] font-bold uppercase border transition-colors ${item.type === 'owe' ? 'border-red-500/30 text-red-400 hover:bg-red-900/20' : 'border-green-500/30 text-green-400 hover:bg-green-900/20'}`}>
-                                    {item.type === 'owe' ? "Payer" : "Reçu"}
-                                </button>
-                                <button onClick={() => deleteEntry(item.id)} className="p-2 text-gray-600 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4"/></button>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* 3. FORMULAIRE FIXE EN BAS */}
+            {/* MODALE DE PAIEMENT (OVERLAY) */}
+            {selectedDebt && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 animate-in fade-in">
+                    <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+                        <button onClick={() => { setSelectedDebt(null); if(window.triggerVibration) triggerVibration('light'); }} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X className="w-5 h-5"/></button>
+                        
+                        <div className="text-center mb-6 mt-2">
+                            <h3 className="text-white font-serif text-lg font-bold">{selectedDebt.name}</h3>
+                            <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">Reste : {formatMoney(selectedDebt.amount)} {currency}</p>
+                        </div>
+                        
+                        <form onSubmit={handlePayment}>
+                            <input 
+                                type="number" 
+                                value={partialAmount} 
+                                onChange={(e) => setPartialAmount(e.target.value)} 
+                                className="w-full bg-black border border-white/20 rounded-lg p-4 text-white text-center text-3xl font-serif focus:border-gold focus:outline-none mb-4" 
+                                placeholder="Montant..." 
+                                autoFocus 
+                            />
+                            
+                            {/* Boutons Rapides */}
+                            <div className="grid grid-cols-3 gap-2 mb-6">
+                                <button type="button" onClick={() => setPartialAmount(Math.round(selectedDebt.amount * 0.25).toString())} className="bg-white/5 py-2 rounded text-xs text-gray-400 font-bold hover:bg-white/10">25%</button>
+                                <button type="button" onClick={() => setPartialAmount(Math.round(selectedDebt.amount * 0.5).toString())} className="bg-white/5 py-2 rounded text-xs text-gray-400 font-bold hover:bg-white/10">50%</button>
+                                <button type="button" onClick={() => setPartialAmount(selectedDebt.amount.toString())} className="bg-white/5 py-2 rounded text-xs text-white font-bold hover:bg-white/10 border border-white/10">TOTAL</button>
+                            </div>
+
+                            <button type="submit" disabled={!partialAmount} className={`w-full font-bold py-4 rounded-lg uppercase tracking-widest text-xs transition-colors disabled:opacity-50 ${selectedDebt.type === 'owe' ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-green-600 text-white hover:bg-green-500'}`}>
+                                Valider le {selectedDebt.type === 'owe' ? 'Paiement' : 'Reçu'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* FORMULAIRE FIXE EN BAS */}
             <div className="bg-[#161616] border-t border-white/5 p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shrink-0 z-20">
                 <div className="flex bg-black p-1 rounded-lg mb-3 border border-white/5">
-                    <button onClick={() => setType('owe')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owe' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Je Dois (Dette)</button>
-                    <button onClick={() => setType('owed')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owed' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>On me Doit (Créance)</button>
+                    <button onClick={() => { setType('owe'); if(window.triggerVibration) triggerVibration('light'); }} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owe' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Je Dois (Dette)</button>
+                    <button onClick={() => { setType('owed'); if(window.triggerVibration) triggerVibration('light'); }} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-colors ${type === 'owed' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>On me Doit (Créance)</button>
                 </div>
                 
                 <form onSubmit={addEntry} className="flex flex-col gap-3">
                     <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom (ex: Moussa)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-[#F4D35E] focus:outline-none placeholder-gray-600" />
                     <div className="flex gap-2">
-                        <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-[#F4D35E] focus:outline-none placeholder-gray-600" />
+                        <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Montant Initial" className="flex-1 bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-[#F4D35E] focus:outline-none placeholder-gray-600" />
                         <button type="submit" disabled={!newName || !newAmount} className="bg-[#F4D35E] text-black font-bold px-6 py-3 rounded-lg disabled:opacity-50 hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(244,211,94,0.2)]">
                             <Plus className="w-5 h-5" />
                         </button>
