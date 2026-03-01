@@ -2179,7 +2179,7 @@ function GoalsScreen({ onBack }) {
 
             // 3. Redémarrage propre
             alert(`✅ Achat validé. Fonds déployés et cible éliminée.`);
-            window.location.reload(); 
+           
         }
     };
 
