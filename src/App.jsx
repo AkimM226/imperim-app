@@ -2151,6 +2151,24 @@ function GoalsScreen({ onBack }) {
         setAllocAmount(""); setSelectedGoal(null);
     };
 
+    // --- NOUVELLE FONCTION : VALIDATION DE LA CIBLE ---
+    const completeGoal = (goalToComplete) => {
+        // Demande de confirmation sécurisée
+        if (window.confirm(`🎯 MISSION ACCOMPLIE : Confirmez-vous l'achat pour "${goalToComplete.title}" ?\n\nLes ${formatMoney(goalToComplete.current)} ${currency} verrouillés seront définitivement déduits de votre Trésor Total.`)) {
+            
+            // 1. On déduit l'argent du coffre central
+            const currentTotal = parseFloat(localStorage.getItem('imperium_balance') || "0");
+            const newTotal = currentTotal - goalToComplete.current;
+            localStorage.setItem('imperium_balance', newTotal.toString());
+
+            // 2. On supprime la cible du radar
+            setGoals(goals.filter(g => g.id !== goalToComplete.id));
+
+            // 3. Rapport de succès
+            alert(`✅ Achat validé. Fonds déployés et cible [${goalToComplete.title}] éliminée.`);
+        }
+    };
+
     return (
         <PageTransition>
         <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
@@ -2186,7 +2204,19 @@ function GoalsScreen({ onBack }) {
                                 <div className="w-full bg-gray-900 rounded-full h-2 mb-2"><div className={`h-2 rounded-full transition-all duration-500 ${percent >= 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${percent}%` }}></div></div>
                                 <div className="flex justify-between items-center mb-4"><span className="text-xs font-bold text-white">{formatMoney(goal.current)} {currency}</span><span className="text-[10px] text-gray-500">Obj: {formatMoney(goal.target)}</span></div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => setSelectedGoal(goal)} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-2 rounded text-xs font-bold uppercase">Gérer</button>
+                                    <button onClick={() => setSelectedGoal(goal)} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-2 rounded text-xs font-bold uppercase transition-colors">
+                                        Gérer
+                                    </button>
+                                    
+                                    {/* NOUVEAU : LE BOUTON APPARAÎT SI LA CIBLE EST ATTEINTE */}
+                                    {percent >= 100 && (
+                                        <button 
+                                            onClick={() => completeGoal(goal)} 
+                                            className="flex-1 bg-green-900/30 hover:bg-green-900/60 text-green-500 border border-green-500/50 py-2 rounded text-xs font-bold uppercase transition-colors animate-in zoom-in duration-300"
+                                        >
+                                            Mission Accomplie
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );
