@@ -111,7 +111,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.9-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.2.0-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -1449,12 +1449,15 @@ function Dashboard({ onNavigate }) {
     // =======================================================
     // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS)
     // =======================================================
+   // =======================================================
+    // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS & TAXE DE SANG 🩸)
+    // =======================================================
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!amount) return;
         const value = parseFloat(amount);
         
-        // 1. GESTION DES REVENUS
+        // 1. GESTION DES REVENUS (Intact)
         if (transactionType === 'income') {
             setPendingTransaction({ value, description });
             setShowDistributeModal(true); 
@@ -1466,36 +1469,52 @@ function Dashboard({ onNavigate }) {
             return;
         }
         
-        // 2. 🛡️ INTERCEPTEUR JARVIS
+        // 2. 🛡️ INTERCEPTEUR JARVIS (Avertissement si > 20% du cash)
         if (transactionType === 'expense' && expenseCategory === 'want') {
             const threshold = availableCash * 0.20;
-            
             if (value > threshold) {
-                triggerVibration('warning'); // ⚡ LA SECOUSSE JARVIS EST LÀ
+                if(window.triggerVibration) triggerVibration('warning');
                 const confirmAction = window.confirm(
                     `⚠️ ALERTE JARVIS\n\nCommandant, vous êtes sur le point de dépenser ${formatMoney(value)} ${currency} en futilités.\n\nCela représente plus de 20% de votre trésorerie disponible.\n\nConfirmez-vous cet ordre malgré le risque ?`
                 );
                 if (!confirmAction) return; 
             }
         }
-  
-        // 3. GESTION DES DÉPENSES
-        if (transactionType === 'expense') {
-            if (value > balance) {
-                triggerVibration('error'); // ⚡ LA SECOUSSE D'ERREUR
-                return alert("Fonds insuffisants (Cash/OM).");
+
+        // 3. 🩸 LA TAXE DE SANG (CALCUL ET VÉRIFICATION)
+        let taxAmount = 0;
+        if (transactionType === 'expense' && expenseCategory === 'want') {
+            // On calcule 10% de pénalité
+            taxAmount = Math.round(value * 0.10); 
+            
+            // A-t-il les moyens d'être indiscipliné ?
+            if (value + taxAmount > balance) {
+                if(window.triggerVibration) triggerVibration('error');
+                return alert(`❌ DISCIPLINE REQUISE\n\nVous n'avez pas assez de fonds pour payer cette futilité ET la Taxe de Sang obligatoire de 10% (${formatMoney(taxAmount)} ${currency}).\n\nAchat refusé.`);
             }
-            triggerVibration('heavy'); // ⚡ LE CHOC DE LA DÉPENSE
-            setBalance(balance - value);
-        } else {
-            triggerVibration('success'); // ⚡ LA DOUBLE FRAPPE DU REVENU
-            setBalance(balance + value);
+        } else if (transactionType === 'expense' && value > balance) {
+            // Achat normal mais fonds insuffisants
+            if(window.triggerVibration) triggerVibration('error');
+            return alert("Fonds insuffisants (Cash/OM).");
         }
   
-        // 4. ENREGISTREMENT
+        // 4. EXÉCUTION DE LA DÉPENSE & DE LA TAXE
+        if (transactionType === 'expense') {
+            if(window.triggerVibration) triggerVibration('heavy');
+            // On retire le coût de l'objet + la taxe
+            setBalance(balance - value - taxAmount);
+            
+            if (taxAmount > 0) {
+                // L'argent de la taxe part au Bunker
+                setBunker(bunker + taxAmount); 
+                alert(`🩸 TAXE DE SANG APPLIQUÉE\n\nPour avoir cédé à une futilité, l'Empire a prélevé 10% de pénalité (${formatMoney(taxAmount)} ${currency}) de force.\n\nCet argent a été verrouillé dans le Coffre Wave.`);
+            }
+        }
+  
+        // 5. ENREGISTREMENT DANS LE JOURNAL TACTIQUE
         const newTransaction = { 
             id: Date.now(), 
-            desc: description || (transactionType === 'expense' ? "Dépense" : "Revenu"), 
+            desc: description || "Dépense", 
             amount: value, 
             type: transactionType, 
             category: expenseCategory, 
@@ -1503,9 +1522,24 @@ function Dashboard({ onNavigate }) {
             rawDate: new Date().toISOString() 
         };
         
-        setTransactions([newTransaction, ...transactions]);
+        const transactionsToSave = [newTransaction];
+
+        // Si la Taxe de Sang a frappé, on l'ajoute au journal pour que ça fasse mal à voir
+        if (taxAmount > 0) {
+            transactionsToSave.unshift({ // unshift met la taxe tout en haut du journal
+                id: Date.now() + 1, 
+                desc: "🩸 Taxe de Sang", 
+                amount: taxAmount, 
+                type: 'expense', 
+                category: 'want', // Classé comme futilité pour plomber la jauge du jour
+                date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), 
+                rawDate: new Date().toISOString() 
+            });
+        }
+        
+        setTransactions([...transactionsToSave, ...transactions]);
         setAmount(''); setDescription(''); setIsModalOpen(false);
-      };
+    };
   
     const finalizeIncome = () => {
         if (!pendingTransaction) return;
