@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
     // Outils de base (Doublons supprimés)
-    ArrowLeft, Wallet, Shield, Target, Award, Zap, 
+    ArrowLeft, ArrowDownRight, Wallet, Shield, Target, Award, Zap, 
     TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
     AlertTriangle, Lock, Clock, History, Radio, 
     MessageSquare, Send, ChevronRight, Calculator,
@@ -111,7 +111,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.1.8-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.1.9-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -1244,6 +1244,9 @@ function Dashboard({ onNavigate }) {
     const [debts, setDebts] = useState(() => safeParse(localStorage.getItem('imperium_debts'), []));
     const [projects, setProjects] = useState(() => safeParse(localStorage.getItem('imperium_projects'), []));
     
+    // État pour les filtres du Journal Tactique (à ajouter vers la ligne 40)
+    const [historyFilter, setHistoryFilter] = useState('all');
+
     // Pour Jarvis
     const [skills, setSkills] = useState(() => safeParse(localStorage.getItem('imperium_skills'), []));
     const [protocols, setProtocols] = useState(() => safeParse(localStorage.getItem('imperium_protocols'), []));
@@ -1811,8 +1814,94 @@ function Dashboard({ onNavigate }) {
         {/* MODALES INTEGREES */}
         {isModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#161616] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)]"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-gray-400 text-xs tracking-widest uppercase">Nouvelle Entrée</h2><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex bg-black p-1 rounded-lg mb-4 border border-white/5"><button onClick={() => setTransactionType('expense')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'expense' ? 'bg-red-900/50 text-red-200' : 'text-gray-600'}`}>Dépense</button><button onClick={() => setTransactionType('income')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${transactionType === 'income' ? 'bg-green-900/50 text-green-200' : 'text-gray-600'}`}>Revenu</button></div>{transactionType === 'expense' && (<div className="flex gap-2 mb-4"><button onClick={() => setExpenseCategory('need')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'need' ? 'border-white text-white bg-white/10' : 'border-white/5 text-gray-600 bg-black'}`}>NÉCESSITÉ</button><button onClick={() => setExpenseCategory('want')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${expenseCategory === 'want' ? 'border-red-500 text-red-500 bg-red-900/20' : 'border-white/5 text-gray-600 bg-black'}`}>FUTILITÉ ⚠️</button></div>)}{transactionType === 'expense' && expenseCategory === 'want' && amount > 0 && (<div className="mb-4 p-3 bg-red-900/10 border border-red-500/30 rounded-lg flex items-start gap-3"><Clock className="w-5 h-5 text-red-500 shrink-0" /><div><p className="text-red-400 font-bold text-xs uppercase">Alerte</p><p className="text-gray-300 text-xs mt-1">Coût: <span className="text-white font-bold">{daysLost} jours</span> de survie.</p></div></div>)}<form onSubmit={handleSubmit} className="space-y-5"><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent border-b border-gray-700 py-2 text-white text-4xl font-serif focus:border-gold focus:outline-none placeholder-gray-800 text-center" placeholder="0" autoFocus /><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none" placeholder={transactionType === 'expense' ? "Ex: Burger..." : "Ex: Vente..."} /><button type="submit" className={`w-full font-bold py-4 rounded-lg mt-2 transition-colors uppercase tracking-widest text-xs ${transactionType === 'expense' ? 'bg-white text-black' : 'bg-[#EAB308] text-black'}`}>VALIDER</button></form></div></div>)}
         {isBunkerModalOpen && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"><div className="bg-[#050b1a] border-t border-blue-500/30 w-full max-w-md rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-10 mb-[env(safe-area-inset-bottom)] relative overflow-hidden"><div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div><div className="flex justify-between items-center mb-6"><div className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-400"/><h2 className="font-serif text-blue-400 text-sm tracking-widest uppercase font-bold">Compte Wave</h2></div><button onClick={() => setIsBunkerModalOpen(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="text-center mb-6"><h2 className="text-4xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</h2></div><div className="space-y-4"><input type="number" value={bunkerAmount} onChange={(e) => setBunkerAmount(e.target.value)} className="w-full bg-blue-900/20 border border-blue-500/20 rounded-lg py-3 text-white text-center text-2xl font-serif focus:border-blue-400 focus:outline-none placeholder-gray-600" placeholder="0" autoFocus /><div className="flex gap-3"><button onClick={() => handleBunkerAction('withdraw')} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-4 rounded-lg font-bold text-xs uppercase">Retrait</button><button onClick={() => handleBunkerAction('deposit')} className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-xs uppercase">Dépôt</button></div></div></div></div>)}
-        {showHistory && (<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in"><div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300"><div className="flex justify-between items-center mb-6"><h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold">Journal</h2><button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-gray-500" /></button></div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">{transactions.map(tx => (<div key={tx.id} className="flex justify-between items-center p-3 bg-[#1a1a1a] rounded-lg border border-white/5"><div><p className="text-xs text-white font-bold">{tx.desc}</p><p className="text-[10px] text-gray-500">{tx.date}</p></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${tx.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>{tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}</span><button onClick={() => handleUndoTransaction(tx.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></div></div>))}</div></div></div>)}
-        
+        {showHistory && (
+            <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/90 backdrop-blur-sm animate-in fade-in">
+                <div className="bg-[#111] border-t border-white/10 w-full max-w-md rounded-t-2xl p-6 shadow-2xl h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+                    
+                    {/* EN-TÊTE DU JOURNAL */}
+                    <div className="flex justify-between items-center mb-4 shrink-0">
+                        <h2 className="font-serif text-white text-sm tracking-widest uppercase font-bold flex items-center gap-2">
+                            <History className="w-5 h-5 text-[#F4D35E]"/> Journal Tactique
+                        </h2>
+                        <button onClick={() => { setShowHistory(false); setHistoryFilter('all'); }} className="p-1 hover:bg-white/10 rounded-full transition-colors">
+                            <X className="w-5 h-5 text-gray-500 hover:text-white" />
+                        </button>
+                    </div>
+
+                    {/* BOUTONS DE FILTRAGE RAPIDE */}
+                    <div className="flex gap-2 mb-4 overflow-x-auto custom-scrollbar pb-2 shrink-0">
+                        <button onClick={() => { setHistoryFilter('all'); if(window.triggerVibration) triggerVibration('light'); }} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap transition-all border ${historyFilter === 'all' ? 'bg-white/20 text-white border-white/50 shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-black text-gray-500 border-white/5'}`}>
+                            Toutes
+                        </button>
+                        <button onClick={() => { setHistoryFilter('income'); if(window.triggerVibration) triggerVibration('light'); }} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap transition-all border ${historyFilter === 'income' ? 'bg-green-900/40 text-green-400 border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-black text-gray-500 border-white/5'}`}>
+                            Revenus
+                        </button>
+                        <button onClick={() => { setHistoryFilter('need'); if(window.triggerVibration) triggerVibration('light'); }} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap transition-all border ${historyFilter === 'need' ? 'bg-blue-900/40 text-blue-400 border-blue-500/50 shadow-[0_0_10px_rgba(59,130,246,0.1)]' : 'bg-black text-gray-500 border-white/5'}`}>
+                            Nécessités
+                        </button>
+                        <button onClick={() => { setHistoryFilter('want'); if(window.triggerVibration) triggerVibration('light'); }} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap transition-all border ${historyFilter === 'want' ? 'bg-red-900/40 text-red-400 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'bg-black text-gray-500 border-white/5'}`}>
+                            Futilités ⚠️
+                        </button>
+                    </div>
+
+                    {/* LISTE DES TRANSACTIONS (AVEC FILTRE INTELLIGENT) */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-10">
+                        {transactions
+                            .filter(tx => {
+                                // Le cerveau du filtrage
+                                if (historyFilter === 'all') return true;
+                                if (historyFilter === 'income') return tx.type === 'income';
+                                if (historyFilter === 'need') return tx.type === 'expense' && tx.category === 'need';
+                                if (historyFilter === 'want') return tx.type === 'expense' && tx.category === 'want';
+                                return true;
+                            })
+                            .map(tx => {
+                                // Détermination du design selon le type
+                                const isIncome = tx.type === 'income';
+                                const isWant = tx.type === 'expense' && tx.category === 'want';
+                                const isNeed = tx.type === 'expense' && tx.category === 'need';
+
+                                return (
+                                <div key={tx.id} className={`flex justify-between items-center p-3 rounded-xl border bg-[#1a1a1a] transition-all ${isWant ? 'border-red-500/30' : isIncome ? 'border-green-500/20' : 'border-white/5'}`}>
+                                    
+                                    <div className="flex items-center gap-3">
+                                        {/* L'ICÔNE STRATÉGIQUE */}
+                                        <div className={`p-2 rounded-lg ${isWant ? 'bg-red-900/20 text-red-500' : isIncome ? 'bg-green-900/20 text-green-500' : 'bg-gray-800 text-gray-400'}`}>
+                                            {isIncome ? <ArrowDownRight className="w-4 h-4"/> : (isWant ? <AlertTriangle className="w-4 h-4 animate-pulse"/> : <Shield className="w-4 h-4"/>)}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-white font-bold">{tx.desc}</p>
+                                            <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">
+                                                {tx.date} • <span className={isWant ? 'text-red-500/80 font-bold' : isIncome ? 'text-green-500/80' : 'text-blue-400/80'}>
+                                                    {isIncome ? 'Revenu' : (isWant ? 'Futilité' : 'Nécessité')}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <span className={`text-sm font-bold ${isWant ? 'text-red-400' : isNeed ? 'text-white' : 'text-green-500'}`}>
+                                            {tx.type === 'expense' ? '-' : '+'}{formatMoney(tx.amount)}
+                                        </span>
+                                        <button onClick={() => { if(window.triggerVibration) triggerVibration('heavy'); handleUndoTransaction(tx.id); }} className="p-2 text-gray-600 hover:text-red-500 transition-colors">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )})}
+                            
+                        {/* Si le filtre ne renvoie rien */}
+                        {transactions.length === 0 && (
+                            <div className="text-center mt-10 opacity-50">
+                                <History className="w-10 h-10 mx-auto mb-2 text-gray-600"/>
+                                <p className="text-xs text-gray-500 uppercase tracking-widest">Journal vierge</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* MODALE DE RÉPARTITION TACTIQUE */}
       {showDistributeModal && pendingTransaction && (
           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
