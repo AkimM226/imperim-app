@@ -1283,6 +1283,37 @@ function Dashboard({ onNavigate }) {
     const [showBetaLock, setShowBetaLock] = useState(false); 
     const [betaCodeInput, setBetaCodeInput] = useState("");
     const [isQuantumUnlocked, setIsQuantumUnlocked] = useState(() => localStorage.getItem('imperium_beta_quantum') === 'GRANTED');
+    
+   // ==========================================
+    // 👁️ L'ŒIL DE JARVIS (AUTO-CATÉGORISATION INTELLIGENTE)
+    // ==========================================
+    useEffect(() => {
+        if (transactionType !== 'expense' || !description) return;
+
+        const text = description.toLowerCase();
+
+        // 1. Les connaissances de base
+        const baseContraband = ['netflix', '1xbet', 'bet', 'pizza', 'chicha'];
+        const survivalWords = ['loyer', 'pharmacie', 'medicament', 'hopital', 'riz', 'essence', 'facture', 'sante'];
+
+        // 2. Les connaissances acquises (Machine Learning Local)
+        const learnedContraband = JSON.parse(localStorage.getItem('imperium_jarvis_memory') || "[]");
+        
+        // 3. Fusion des connaissances (Base + Appris)
+        const allContraband = [...baseContraband, ...learnedContraband];
+
+        // 4. Le radar scanne (en évitant de confondre "riz" et "horizon")
+        // On vérifie si un des mots de contrebande est présent comme un vrai mot complet
+        const isFutility = allContraband.some(word => new RegExp(`\\b${word}\\b`, 'i').test(text));
+        const isNecessity = survivalWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(text));
+
+        // 5. Jarvis prend le contrôle
+        if (isFutility) {
+            setExpenseCategory('want');
+        } else if (isNecessity) {
+            setExpenseCategory('need');
+        }
+    }, [description, transactionType]);
 
     // 3. CHARGEMENT INTELLIGENT (LOAD)
     useEffect(() => {
@@ -1447,9 +1478,6 @@ function Dashboard({ onNavigate }) {
   
     
     // =======================================================
-    // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS)
-    // =======================================================
-   // =======================================================
     // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS & TAXE DE SANG 🩸)
     // =======================================================
     const handleSubmit = (e) => {
@@ -1496,6 +1524,36 @@ function Dashboard({ onNavigate }) {
             // Achat normal mais fonds insuffisants
             if(window.triggerVibration) triggerVibration('error');
             return alert("Fonds insuffisants (Cash/OM).");
+        }
+
+        // ==========================================
+        // 🧠 JARVIS MACHINE LEARNING (Mémorisation)
+        // ==========================================
+        if (transactionType === 'expense' && expenseCategory === 'want' && description) {
+            // 1. On nettoie la phrase et on la découpe en mots
+            const cleanText = description.toLowerCase().replace(/[^a-z0-9áéíóúñâêîôûàèìòùç\s]/g, '');
+            const words = cleanText.split(/\s+/);
+            
+            // 2. Les mots que Jarvis doit ignorer (pour ne pas bloquer des mots normaux)
+            const ignoreList = ['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'au', 'aux', 'et', 'pour', 'avec', 'sans', 'dans', 'sur', 'a', 'à', 'mon', 'ma', 'mes'];
+            
+            // 3. On récupère la mémoire actuelle de Jarvis
+            let learnedWords = JSON.parse(localStorage.getItem('imperium_jarvis_memory') || "[]");
+            let memoryUpdated = false;
+
+            // 4. Il apprend les nouveaux mots de contrebande
+            words.forEach(word => {
+                if (word.length > 2 && !ignoreList.includes(word) && !learnedWords.includes(word)) {
+                    learnedWords.push(word);
+                    memoryUpdated = true;
+                }
+            });
+
+            // 5. On sauvegarde le nouveau cerveau
+            if (memoryUpdated) {
+                localStorage.setItem('imperium_jarvis_memory', JSON.stringify(learnedWords));
+                console.log("🧠 Jarvis a appris de nouvelles faiblesses :", learnedWords);
+            }
         }
   
         // 4. EXÉCUTION DE LA DÉPENSE & DE LA TAXE
