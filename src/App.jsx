@@ -111,7 +111,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.2.0-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.2.1-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -2190,7 +2190,29 @@ function DebtsScreen({ onBack }) {
     const [partialAmount, setPartialAmount] = useState("");
 
     // Synchronisation locale
-    useEffect(() => { localStorage.setItem('imperium_debts', JSON.stringify(debts)); }, [debts]);
+    // ==========================================
+    // 📡 SYNCHRONISATION ABSOLUE (LOCAL + FIREBASE)
+    // ==========================================
+    useEffect(() => { 
+        // 1. Sauvegarde sur le téléphone (hors-ligne)
+        localStorage.setItem('imperium_debts', JSON.stringify(debts)); 
+
+        // 2. Frappe Cloud : On met à jour la base de données Firebase
+        const syncDebtsToCloud = async () => {
+            try {
+                if (auth?.currentUser) {
+                    const userRef = doc(db, 'users', auth.currentUser.uid);
+                    await updateDoc(userRef, { 
+                        debts: debts 
+                    });
+                }
+            } catch (error) {
+                console.error("Erreur de transmission radio (Dettes) :", error);
+            }
+        };
+
+        syncDebtsToCloud();
+    }, [debts]);
     useEffect(() => { localStorage.setItem('imperium_balance', JSON.stringify(balance)); }, [balance]);
 
     // Trésorerie
