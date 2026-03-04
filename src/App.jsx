@@ -21,10 +21,11 @@ import {
 import { GoogleGenerativeAI } from "@google/generative-ai";
 // Remplacez : import { auth, saveEmpireToCloud, loadEmpireFromCloud } from './firebase';
 // PAR CECI :
-import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser, messaging, updateRadarConfig } from './firebase';
+import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser, messaging, updateRadarConfig, db } from './firebase';
 import { onAuthStateChanged } from "firebase/auth";
 // On importe l'outil pour générer le jeton depuis la bibliothèque Firebase
 import { getToken } from 'firebase/messaging';
+import { doc, updateDoc } from 'firebase/firestore';
 
 // ==========================================
 // MOTEUR HAPTIQUE (VIBRATIONS)
