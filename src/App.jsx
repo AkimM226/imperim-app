@@ -112,7 +112,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.2.1-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.2.2-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -2189,6 +2189,26 @@ function DebtsScreen({ onBack }) {
     const [selectedDebt, setSelectedDebt] = useState(null);
     const [partialAmount, setPartialAmount] = useState("");
 
+    // ==========================================
+    // 🚀 FRAPPE DIRECTE SUR FIREBASE (VERSION OPTIMISÉE)
+    // ==========================================
+    const forceCloudSync = async (newDebts, newBalance) => {
+        try {
+            if (auth?.currentUser) {
+                // On utilise VOTRE arme personnalisée qui marche déjà ailleurs !
+                await saveEmpireToCloud(auth.currentUser.uid, { 
+                    debts: newDebts,
+                    balance: newBalance 
+                });
+                console.log("🔥 Firebase : Cible éliminée de la base de données avec succès !");
+            } else {
+                alert("❌ Erreur : L'application ne détecte pas votre connexion Firebase. Avez-vous été déconnecté ?");
+            }
+        } catch (error) {
+            alert("❌ Erreur de transmission Firebase : " + error.message);
+        }
+    };
+
     // Synchronisation locale
     // ==========================================
     // 📡 SYNCHRONISATION ABSOLUE (LOCAL + FIREBASE)
@@ -2267,34 +2287,45 @@ function DebtsScreen({ onBack }) {
 
         // Mise à jour de la dette
         const newRest = selectedDebt.amount - finalPayment;
+        const newBalance = selectedDebt.type === 'owe' ? balance - finalPayment : balance + finalPayment;
         
         if (newRest <= 0) {
             // Dette soldée ! On la supprime.
-            setDebts(debts.filter(d => d.id !== selectedDebt.id));
+            const newDebts = debts.filter(d => d.id !== selectedDebt.id);
+            setDebts(newDebts);
+            localStorage.setItem('imperium_debts', JSON.stringify(newDebts));
+            forceCloudSync(newDebts, newBalance); // 🔥 Frappe Firebase
             if(window.triggerVibration) triggerVibration('success');
         } else {
             // Dette partielle
             const updatedDebts = debts.map(d => {
                 if(d.id === selectedDebt.id) {
-                    return {
-                        ...d,
-                        amount: newRest,
-                        paidAmount: (d.paidAmount || 0) + finalPayment
-                    };
+                    return { ...d, amount: newRest, paidAmount: (d.paidAmount || 0) + finalPayment };
                 }
                 return d;
             });
             setDebts(updatedDebts);
+            localStorage.setItem('imperium_debts', JSON.stringify(updatedDebts));
+            forceCloudSync(updatedDebts, newBalance); // 🔥 Frappe Firebase
         }
 
         setSelectedDebt(null);
         setPartialAmount("");
     };
+        
     
     // --- SUPPRESSION BRUTALE ---
     const deleteEntry = (id) => {
-        if(confirm("Supprimer sans impact sur le Trésor ?")) {
-            setDebts(debts.filter(d => d.id !== id));
+        if(window.confirm("Supprimer sans impact sur le Trésor ?")) {
+            const newDebts = debts.filter(d => d.id !== id);
+            
+            // 1. Mise à jour de l'écran et du téléphone
+            setDebts(newDebts);
+            localStorage.setItem('imperium_debts', JSON.stringify(newDebts));
+            
+            // 2. Tir direct sur Firebase
+            forceCloudSync(newDebts, balance);
+            
             if(window.triggerVibration) triggerVibration('light');
         }
     };
