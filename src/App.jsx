@@ -2323,9 +2323,13 @@ function DebtsScreen({ onBack }) {
                    <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest">LE REGISTRE</h1>
                    <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Dispo: {formatMoney(availableCash)} {currency}</p>
                 </div>
-                <button onClick={() => { if(window.triggerVibration) triggerVibration('light'); onBack(); }} className="w-10 h-10 bg-[#1a2333] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
+                <button onClick={() => { 
+    if(window.triggerVibration) triggerVibration('light'); 
+    // On force le rafraîchissement de la mémoire du Dashboard en quittant
+    window.location.reload(); 
+}} className="w-10 h-10 bg-[#1a2333] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
+    <ArrowLeft className="w-5 h-5" />
+</button>
             </div>
 
             {/* CONTENU SCROLLABLE */}
