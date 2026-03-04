@@ -730,7 +730,16 @@ useEffect(() => {
           {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'quantum' && <QuantumScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'debts' && (
+              <DebtsScreen 
+                  onBack={() => navigate('dashboard')} 
+                  balance={balance} 
+                  setBalance={setBalance} 
+                  debts={debts} 
+                  setDebts={setDebts} 
+                  goals={goals} 
+              />
+          )}
           {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'academy' && <AcademyScreen onBack={() => navigate('dashboard')} />}
@@ -2172,14 +2181,8 @@ function ProtocolsScreen({ onBack }) {
 // ==========================================
 // 8. LE GRAND LIVRE (ALPHA : REMBOURSEMENTS PARTIELS)
 // ==========================================
-function DebtsScreen({ onBack }) {
-    const currency = localStorage.getItem('imperium_currency') || "€";
-    
-    // 1. ÉTATS
-    const [balance, setBalance] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_balance') || "0"); } catch { return 0; } });
-    const [debts, setDebts] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_debts') || "[]"); } catch { return []; } });
-    const [goals, setGoals] = useState(() => { try { return JSON.parse(localStorage.getItem('imperium_goals') || "[]"); } catch { return []; } });
-    
+function DebtsScreen({ onBack, balance, setBalance, debts, setDebts, goals }) {
+    const currency = localStorage.getItem('imperium_currency') || "€";    
     // Formulaire Ajout
     const [newName, setNewName] = useState("");
     const [newAmount, setNewAmount] = useState("");
