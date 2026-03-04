@@ -112,7 +112,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.2.2-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.2.3-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -731,7 +731,20 @@ useEffect(() => {
           {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'quantum' && <QuantumScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'debts' && (
+    <DebtsScreen onBack={() => {
+        // 1. Le Dashboard relit silencieusement la nouvelle mémoire
+        if (typeof setDebts === 'function') {
+            setDebts(JSON.parse(localStorage.getItem('imperium_debts') || "[]"));
+        }
+        if (typeof setBalance === 'function') {
+            setBalance(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+        }
+        
+        // 2. On referme la porte et on affiche le Dashboard
+        navigate('dashboard');
+    }} />
+)}
           {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'academy' && <AcademyScreen onBack={() => navigate('dashboard')} />}
@@ -2356,8 +2369,7 @@ function DebtsScreen({ onBack }) {
                 </div>
                 <button onClick={() => { 
     if(window.triggerVibration) triggerVibration('light'); 
-    // On force le rafraîchissement de la mémoire du Dashboard en quittant
-    window.location.reload(); 
+    onBack(); // <-- Le retour redevient instantané et silencieux
 }} className="w-10 h-10 bg-[#1a2333] border border-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all">
     <ArrowLeft className="w-5 h-5" />
 </button>
