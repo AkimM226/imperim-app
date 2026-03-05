@@ -112,7 +112,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.2.4-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.2.3-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -1298,39 +1298,6 @@ function Dashboard({ onNavigate }) {
     const [betaCodeInput, setBetaCodeInput] = useState("");
     const [isQuantumUnlocked, setIsQuantumUnlocked] = useState(() => localStorage.getItem('imperium_beta_quantum') === 'GRANTED');
     
-// ==========================================
-    // 🛑 SYSTÈME DE COMMUNICATION JARVIS (MODALES CUSTOM)
-    // ==========================================
-    const [jarvisDialog, setJarvisDialog] = useState({ isOpen: false, type: 'alert', alertType: 'error', title: '', message: '', onConfirm: null, onCancel: null });
-
-    // Arme 1 : Demande de Confirmation (Choix Oui/Non)
-    const showJarvisConfirm = (title, message) => {
-        return new Promise((resolve) => {
-            setJarvisDialog({
-                isOpen: true,
-                type: 'confirm',
-                title,
-                message,
-                onConfirm: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(true); },
-                onCancel: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(false); }
-            });
-        });
-    };
-
-    // Arme 2 : Message d'Alerte Simple (Bouton OK)
-    const showJarvisAlert = (title, message, alertType = 'error') => {
-        return new Promise((resolve) => {
-            setJarvisDialog({
-                isOpen: true,
-                type: 'alert',
-                alertType, // 'error' (Rouge), 'warning' (Or), 'success' (Vert)
-                title,
-                message,
-                onConfirm: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(true); }
-            });
-        });
-    };
-
    // ==========================================
     // 👁️ L'ŒIL DE JARVIS (AUTO-CATÉGORISATION INTELLIGENTE)
     // ==========================================
@@ -1527,7 +1494,7 @@ function Dashboard({ onNavigate }) {
     // =======================================================
     // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS & TAXE DE SANG 🩸)
     // =======================================================
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         if (!amount) return;
         const value = parseFloat(amount);
@@ -1549,10 +1516,8 @@ function Dashboard({ onNavigate }) {
             const threshold = availableCash * 0.20;
             if (value > threshold) {
                 if(window.triggerVibration) triggerVibration('warning');
-                // ⚠️ NOUVEAU SYSTÈME DE CONFIRMATION
-                const confirmAction = await showJarvisConfirm(
-                    "⚠️ ALERTE JARVIS",
-                    `Commandant, vous êtes sur le point de dépenser ${formatMoney(value)} ${currency} en futilités.\n\nCela représente plus de 20% de votre trésorerie disponible.\n\nConfirmez-vous cet ordre ?`
+                const confirmAction = window.confirm(
+                    `⚠️ ALERTE JARVIS\n\nCommandant, vous êtes sur le point de dépenser ${formatMoney(value)} ${currency} en futilités.\n\nCela représente plus de 20% de votre trésorerie disponible.\n\nConfirmez-vous cet ordre malgré le risque ?`
                 );
                 if (!confirmAction) return; 
             }
@@ -1567,20 +1532,12 @@ function Dashboard({ onNavigate }) {
             // A-t-il les moyens d'être indiscipliné ?
             if (value + taxAmount > balance) {
                 if(window.triggerVibration) triggerVibration('error');
-                // ⚠️ NOUVELLE ALERTE D'ERREUR
-                await showJarvisAlert(
-                    "❌ DISCIPLINE REQUISE", 
-                    `Vous n'avez pas assez de fonds pour payer cette futilité ET la Taxe de Sang obligatoire de 10% (${formatMoney(taxAmount)} ${currency}).\n\nAchat refusé.`, 
-                    'error'
-                );
                 return alert(`❌ DISCIPLINE REQUISE\n\nVous n'avez pas assez de fonds pour payer cette futilité ET la Taxe de Sang obligatoire de 10% (${formatMoney(taxAmount)} ${currency}).\n\nAchat refusé.`);
             }
         } else if (transactionType === 'expense' && value > balance) {
             // Achat normal mais fonds insuffisants
             if(window.triggerVibration) triggerVibration('error');
-            await showJarvisAlert("❌ FONDS INSUFFISANTS", "Vos liquidités ne permettent pas cette manœuvre.", 'error');
-            return;
-            
+            return alert("Fonds insuffisants (Cash/OM).");
         }
 
         // ==========================================
@@ -1622,7 +1579,7 @@ function Dashboard({ onNavigate }) {
             if (taxAmount > 0) {
                 // L'argent de la taxe part au Bunker
                 setBunker(bunker + taxAmount); 
-                
+                alert(`🩸 TAXE DE SANG APPLIQUÉE\n\nPour avoir cédé à une futilité, l'Empire a prélevé 10% de pénalité (${formatMoney(taxAmount)} ${currency}) de force.\n\nCet argent a été verrouillé dans le Coffre Wave.`);
             }
         }
   
@@ -2135,47 +2092,7 @@ function Dashboard({ onNavigate }) {
                 </div>
              </div>
         )}
-           {/* ========================================== */}
-            {/* 🛑 MODALE COMMUNICATION JARVIS */}
-            {/* ========================================== */}
-            {jarvisDialog.isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
-                    <div className={`bg-[#111] border w-full max-w-sm rounded-2xl p-6 shadow-2xl relative text-center transition-all transform scale-100 ${jarvisDialog.type === 'confirm' ? 'border-[#F4D35E]/50 shadow-[0_0_30px_rgba(244,211,94,0.1)]' : jarvisDialog.alertType === 'error' ? 'border-red-500/50 shadow-[0_0_30px_rgba(220,38,38,0.15)]' : 'border-green-500/50'}`}>
-                        
-                        {/* L'icône dynamique */}
-                        <div className="flex justify-center mb-5">
-                            {jarvisDialog.type === 'confirm' ? (
-                                <AlertTriangle className="w-14 h-14 text-[#F4D35E] animate-pulse" />
-                            ) : jarvisDialog.alertType === 'error' ? (
-                                <Shield className="w-14 h-14 text-red-500" />
-                            ) : (
-                                <CheckCircle className="w-14 h-14 text-green-500" />
-                            )}
-                        </div>
 
-                        {/* Titre et Message */}
-                        <h3 className={`font-serif text-lg font-bold mb-3 uppercase tracking-widest ${jarvisDialog.type === 'confirm' ? 'text-[#F4D35E]' : jarvisDialog.alertType === 'error' ? 'text-red-500' : 'text-green-500'}`}>
-                            {jarvisDialog.title}
-                        </h3>
-                        
-                        <p className="text-sm text-gray-300 mb-8 whitespace-pre-line leading-relaxed font-medium">
-                            {jarvisDialog.message}
-                        </p>
-
-                        {/* Boutons d'action tactiques */}
-                        <div className="flex gap-3">
-                            {jarvisDialog.type === 'confirm' && (
-                                <button onClick={jarvisDialog.onCancel} className="flex-1 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-[#1a1a1a] border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 transition-all active:scale-95">
-                                    Annuler l'ordre
-                                </button>
-                            )}
-                            <button onClick={jarvisDialog.onConfirm} className={`flex-1 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95 text-black ${jarvisDialog.type === 'confirm' ? 'bg-[#F4D35E] hover:bg-yellow-400' : jarvisDialog.alertType === 'error' ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-green-500 hover:bg-green-400 text-white'}`}>
-                                {jarvisDialog.type === 'confirm' ? "Confirmer l'Action" : "Bien Reçu"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
       </div>
       </PageTransition>
     );
@@ -2605,7 +2522,7 @@ function DebtsScreen({ onBack }) {
 }
 
 // ==========================================
-// 7. CIBLES DE CONQUÊTE (ÉQUIPÉES AVEC JARVIS 🛑)
+// 7. CIBLES DE CONQUÊTE
 // ==========================================
 function GoalsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -2616,70 +2533,18 @@ function GoalsScreen({ onBack }) {
     const [selectedGoal, setSelectedGoal] = useState(null);
     const [allocAmount, setAllocAmount] = useState("");
 
-    // ==========================================
-    // 🛑 SYSTÈME DE COMMUNICATION JARVIS
-    // ==========================================
-    const [jarvisDialog, setJarvisDialog] = useState({ isOpen: false, type: 'alert', alertType: 'error', title: '', message: '', onConfirm: null, onCancel: null });
-
-    const showJarvisConfirm = (title, message) => {
-        return new Promise((resolve) => {
-            setJarvisDialog({
-                isOpen: true, type: 'confirm', title, message,
-                onConfirm: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(true); },
-                onCancel: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(false); }
-            });
-        });
-    };
-
-    const showJarvisAlert = (title, message, alertType = 'error') => {
-        return new Promise((resolve) => {
-            setJarvisDialog({
-                isOpen: true, type: 'alert', alertType, title, message,
-                onConfirm: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(true); }
-            });
-        });
-    };
-
-    // Synchro locale
     useEffect(() => { localStorage.setItem('imperium_goals', JSON.stringify(goals)); }, [goals]);
 
-    // --- AJOUTER ---
     const addGoal = (e) => {
         e.preventDefault();
         if (!newGoalName || !newGoalTarget) return;
         setGoals([...goals, { id: Date.now(), title: newGoalName, target: parseFloat(newGoalTarget), deadline: newGoalDeadline, current: 0 }]);
         setNewGoalName(""); setNewGoalTarget(""); setNewGoalDeadline("");
-        if(window.triggerVibration) triggerVibration('light');
     };
 
-    // --- SUPPRIMER (CORRIGÉ AVEC JARVIS) ---
-    const deleteGoal = async (id) => {
-        const confirmAction = await showJarvisConfirm(
-            "⚠️ ABANDON DE LA CIBLE",
-            "Commandant, confirmez-vous l'annulation de cet objectif stratégique ?\n\nLes fonds déjà alloués retourneront dans la trésorerie générale."
-        );
+    const deleteGoal = (id) => { setGoals(goals.filter(g => g.id !== id)); };
 
-        if (!confirmAction) return; 
-
-        if(window.triggerVibration) triggerVibration('light'); 
-        
-        // Exécution de la suppression
-        const updatedGoals = goals.filter(g => g.id !== id);
-        setGoals(updatedGoals);
-        localStorage.setItem('imperium_goals', JSON.stringify(updatedGoals));
-        
-        // Mise à jour sur Firebase pour éviter le retour du fantôme
-        try {
-            if (typeof auth !== 'undefined' && auth?.currentUser) {
-                await saveEmpireToCloud(auth.currentUser.uid, { goals: JSON.stringify(updatedGoals) });
-            }
-        } catch (error) {
-            console.error("Erreur synchro:", error);
-        }
-    };
-
-    // --- GERER LES FONDS ---
-    const handleAllocation = (type) => { 
+    const handleAllocation = (type) => { // type = 'deposit' or 'withdraw'
         if(!allocAmount || !selectedGoal) return;
         const val = parseFloat(allocAmount);
         const updatedGoals = goals.map(g => {
@@ -2689,70 +2554,55 @@ function GoalsScreen({ onBack }) {
             return g;
         });
         setGoals(updatedGoals);
-        
-        // Mise à jour sur Firebase
-        try {
-            if (typeof auth !== 'undefined' && auth?.currentUser) {
-                saveEmpireToCloud(auth.currentUser.uid, { goals: JSON.stringify(updatedGoals) });
-            }
-        } catch (error) {}
-
         setAllocAmount(""); setSelectedGoal(null);
-        if(window.triggerVibration) triggerVibration('light');
     };
 
-    // --- MISSION ACCOMPLIE (CORRIGÉE AVEC JARVIS) ---
+    // --- FONCTION DE VALIDATION DE LA CIBLE (CORRIGÉE) ---
     const completeGoal = async (goalToComplete) => {
-        const confirmAction = await showJarvisConfirm(
-            "🎯 MISSION ACCOMPLIE",
-            `Confirmez-vous l'achat pour "${goalToComplete.title}" ?\n\nLes fonds verrouillés seront définitivement déduits de votre Trésor Total.`
-        );
+        if (window.confirm(`🎯 MISSION ACCOMPLIE : Confirmez-vous l'achat pour "${goalToComplete.title}" ?\n\nLes ${formatMoney(goalToComplete.current)} ${currency} verrouillés seront définitivement déduits de votre Trésor Total.`)) {
+            
+            // 1. Frappe Locale (Mise à jour du téléphone)
+            const currentTotal = parseFloat(localStorage.getItem('imperium_balance') || "0");
+            const newTotal = currentTotal - goalToComplete.current;
+            localStorage.setItem('imperium_balance', newTotal.toString());
 
-        if (!confirmAction) return;
+            const updatedGoals = goals.filter(g => g.id !== goalToComplete.id);
+            localStorage.setItem('imperium_goals', JSON.stringify(updatedGoals));
+            setGoals(updatedGoals); 
 
-        // 1. Frappe Locale 
-        const currentTotal = parseFloat(localStorage.getItem('imperium_balance') || "0");
-        const newTotal = currentTotal - goalToComplete.current;
-        localStorage.setItem('imperium_balance', newTotal.toString());
-
-        const updatedGoals = goals.filter(g => g.id !== goalToComplete.id);
-        localStorage.setItem('imperium_goals', JSON.stringify(updatedGoals));
-        setGoals(updatedGoals); 
-
-        // 2. Frappe Cloud 
-        try {
-            if (typeof auth !== 'undefined' && auth?.currentUser) {
-                await saveEmpireToCloud(auth.currentUser.uid, {
-                    balance: newTotal, 
-                    goals: JSON.stringify(updatedGoals) 
-                }); 
+            // 2. Frappe Cloud (LE CORRECTIF EST ICI : On donne les vraies données au messager)
+            try {
+                if (auth?.currentUser) {
+                    await saveEmpireToCloud(auth.currentUser.uid, {
+                        balance: newTotal, // On prévient de la baisse du trésor
+                        goals: JSON.stringify(updatedGoals) // On envoie la nouvelle liste sans la cible !
+                    }); 
+                    console.log("☁️ Le QG Firebase a bien reçu et enregistré l'élimination.");
+                }
+            } catch (error) {
+                console.error("Erreur de synchronisation :", error);
             }
-        } catch (error) {
-            console.error("Erreur de synchronisation :", error);
-        }
 
-        // 3. Message de victoire
-        if(window.triggerVibration) triggerVibration('success'); 
-        await showJarvisAlert("✅ MISSION ACCOMPLIE", `Fonds déployés. La cible "${goalToComplete.title}" a été éliminée avec succès.`, 'success');
+            // 3. Redémarrage propre
+            triggerVibration('success'); // ⚡ LE DOUBLE CHOC DE LA VICTOIRE
+            alert(`✅ Achat validé. Fonds déployés et cible éliminée.`);
+           
+        }
     };
 
     return (
         <PageTransition>
-        <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden relative">
-            
-            {/* EN-TETE */}
+        <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
             <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
                 <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                 <h1 className="text-2xl font-serif text-white font-bold">Cibles</h1>
             </div>
 
-            {/* LISTE DES CIBLES */}
             <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar">
                 <div className="space-y-4">
                     {goals.map(goal => {
                         const percent = Math.min(100, Math.round((goal.current / goal.target) * 100));
-                        const daysLeft = typeof getDaysLeft === 'function' ? getDaysLeft(goal.deadline) : null;
-                        
+                        const daysLeft = getDaysLeft(goal.deadline);
                         return (
                             <div key={goal.id} className="bg-[#111] border border-white/5 p-4 rounded-xl">
                                 <div className="flex justify-between items-start mb-2">
@@ -2773,17 +2623,18 @@ function GoalsScreen({ onBack }) {
                                 )}
 
                                 <div className="w-full bg-gray-900 rounded-full h-2 mb-2"><div className={`h-2 rounded-full transition-all duration-500 ${percent >= 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${percent}%` }}></div></div>
-                                <div className="flex justify-between items-center mb-4">
-                                    <span className="text-xs font-bold text-white">{typeof formatMoney === 'function' ? formatMoney(goal.current) : goal.current} {currency}</span>
-                                    <span className="text-[10px] text-gray-500">Obj: {typeof formatMoney === 'function' ? formatMoney(goal.target) : goal.target}</span>
-                                </div>
+                                <div className="flex justify-between items-center mb-4"><span className="text-xs font-bold text-white">{formatMoney(goal.current)} {currency}</span><span className="text-[10px] text-gray-500">Obj: {formatMoney(goal.target)}</span></div>
                                 <div className="flex gap-2">
                                     <button onClick={() => setSelectedGoal(goal)} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-2 rounded text-xs font-bold uppercase transition-colors">
                                         Gérer
                                     </button>
                                     
+                                    {/* NOUVEAU : LE BOUTON APPARAÎT SI LA CIBLE EST ATTEINTE */}
                                     {percent >= 100 && (
-                                        <button onClick={() => completeGoal(goal)} className="flex-1 bg-green-900/30 hover:bg-green-900/60 text-green-500 border border-green-500/50 py-2 rounded text-xs font-bold uppercase transition-colors animate-in zoom-in duration-300">
+                                        <button 
+                                            onClick={() => completeGoal(goal)} 
+                                            className="flex-1 bg-green-900/30 hover:bg-green-900/60 text-green-500 border border-green-500/50 py-2 rounded text-xs font-bold uppercase transition-colors animate-in zoom-in duration-300"
+                                        >
                                             Mission Accomplie
                                         </button>
                                     )}
@@ -2794,7 +2645,6 @@ function GoalsScreen({ onBack }) {
                 </div>
             </div>
 
-            {/* MODALE DE GESTION DES FONDS */}
             {selectedGoal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 animate-in fade-in">
                     <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
@@ -2809,8 +2659,7 @@ function GoalsScreen({ onBack }) {
                 </div>
             )}
 
-            {/* FORMULAIRE D'AJOUT EN BAS */}
-            <div className="shrink-0 p-4 bg-[#0a0a0a] border-t border-white/10 pb-[calc(2rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full z-10">
+            <div className="shrink-0 p-4 bg-[#0a0a0a] border-t border-white/10 pb-[calc(2rem+env(safe-area-inset-bottom))] max-w-md mx-auto w-full">
                 <form onSubmit={addGoal} className="flex flex-col gap-3">
                     <input type="text" value={newGoalName} onChange={(e) => setNewGoalName(e.target.value)} placeholder="Nom (ex: PC Gamer)" className="w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold focus:outline-none" />
                     <div className="flex gap-2">
@@ -2820,29 +2669,6 @@ function GoalsScreen({ onBack }) {
                     </div>
                 </form>
             </div>
-
-            {/* 🛑 MODALE COMMUNICATION JARVIS (PLACÉE CORRECTEMENT EN DERNIER) */}
-            {jarvisDialog.isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
-                    <div className={`bg-[#111] border w-full max-w-sm rounded-2xl p-6 shadow-2xl relative text-center transition-all transform scale-100 ${jarvisDialog.type === 'confirm' ? 'border-[#F4D35E]/50 shadow-[0_0_30px_rgba(244,211,94,0.1)]' : jarvisDialog.alertType === 'error' ? 'border-red-500/50 shadow-[0_0_30px_rgba(220,38,38,0.15)]' : 'border-green-500/50'}`}>
-                        <div className="flex justify-center mb-5">
-                            {jarvisDialog.type === 'confirm' ? <AlertTriangle className="w-14 h-14 text-[#F4D35E] animate-pulse" /> : jarvisDialog.alertType === 'error' ? <Shield className="w-14 h-14 text-red-500" /> : <CheckCircle className="w-14 h-14 text-green-500" />}
-                        </div>
-                        <h3 className={`font-serif text-lg font-bold mb-3 uppercase tracking-widest ${jarvisDialog.type === 'confirm' ? 'text-[#F4D35E]' : jarvisDialog.alertType === 'error' ? 'text-red-500' : 'text-green-500'}`}>
-                            {jarvisDialog.title}
-                        </h3>
-                        <p className="text-sm text-gray-300 mb-8 whitespace-pre-line leading-relaxed font-medium">{jarvisDialog.message}</p>
-                        <div className="flex gap-3">
-                            {jarvisDialog.type === 'confirm' && (
-                                <button onClick={jarvisDialog.onCancel} className="flex-1 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-[#1a1a1a] border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 transition-all active:scale-95">Annuler</button>
-                            )}
-                            <button onClick={jarvisDialog.onConfirm} className={`flex-1 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95 text-black ${jarvisDialog.type === 'confirm' ? 'bg-[#F4D35E] hover:bg-yellow-400' : jarvisDialog.alertType === 'error' ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-green-500 hover:bg-green-400 text-white'}`}>
-                                {jarvisDialog.type === 'confirm' ? "Confirmer" : "Bien Reçu"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
         </PageTransition>
     );
@@ -3758,13 +3584,14 @@ function AcademyScreen({ onBack }) {
 }
 
 // ==========================================
-// 12. ÉCRAN PARAMÈTRES (SÉCURISÉ AVEC JARVIS 🛑)
+// 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC DEVISE/ZONE)
 // ==========================================
 function SettingsScreen({ onBack }) { 
     // ÉTATS
     const [importData, setImportData] = useState("");
     const [exportCode, setExportCode] = useState(""); 
     const [sending, setSending] = useState(false);
+    // NOUVEAU : On récupère le jeton sauvegardé
     const [fcmToken, setFcmToken] = useState(localStorage.getItem('imperium_fcm_token') || "");
 
     // Identité (Inclusion)
@@ -3774,18 +3601,21 @@ function SettingsScreen({ onBack }) {
     const [notifTime, setNotifTime] = useState(localStorage.getItem('imperium_notif_time') || "20:00");
     const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('imperium_notif_enabled') === 'true');
 
-    // Calibrage
-    const goals = JSON.parse(localStorage.getItem('imperium_goals') || "[]");
-    const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
-    const initialTotal = JSON.parse(localStorage.getItem('imperium_balance') || "0");
-    const [calibBalance, setCalibBalance] = useState(initialTotal - lockedCash);
-    const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
-    
+   // Calibrage
+// On récupère les cibles pour calculer l'argent verrouillé
+const goals = JSON.parse(localStorage.getItem('imperium_goals') || "[]");
+const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
+
+// Le solde affiché dans les paramètres est maintenant identique au Dashboard (Solde brut - Argent verrouillé)
+const initialTotal = JSON.parse(localStorage.getItem('imperium_balance') || "0");
+const [calibBalance, setCalibBalance] = useState(initialTotal - lockedCash);
+
+const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
     // Feedback
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedbackText, setFeedbackText] = useState("");
 
-    // ÉTATS DEVISE & ZONE
+    // --- NOUVEAU : ÉTATS DEVISE & ZONE ---
     const [empireCurrency, setEmpireCurrency] = useState(localStorage.getItem('imperium_currency') || "€");
     const [empireZone, setEmpireZone] = useState(() => {
         try {
@@ -3794,85 +3624,69 @@ function SettingsScreen({ onBack }) {
         } catch { return 'europe'; }
     });
 
-    // ==========================================
-    // 🛑 SYSTÈME DE COMMUNICATION JARVIS
-    // ==========================================
-    const [jarvisDialog, setJarvisDialog] = useState({ isOpen: false, type: 'alert', alertType: 'error', title: '', message: '', onConfirm: null, onCancel: null });
-
-    const showJarvisConfirm = (title, message) => {
-        return new Promise((resolve) => {
-            setJarvisDialog({
-                isOpen: true, type: 'confirm', title, message,
-                onConfirm: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(true); },
-                onCancel: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(false); }
-            });
-        });
-    };
-
-    const showJarvisAlert = (title, message, alertType = 'error') => {
-        return new Promise((resolve) => {
-            setJarvisDialog({
-                isOpen: true, type: 'alert', alertType, title, message,
-                onConfirm: () => { setJarvisDialog(prev => ({...prev, isOpen: false})); resolve(true); }
-            });
-        });
-    };
-
     // --- LOGIQUE IDENTITÉ ---
     const changeGender = (newGender) => {
         setGender(newGender);
         localStorage.setItem('imperium_gender', newGender);
     };
 
-   // --- LOGIQUE NOTIFICATIONS ---
+   // --- LOGIQUE NOTIFICATIONS (AVEC SÉCURITÉ CLOUD) ---
    const toggleNotifications = async () => {
     if (!notifEnabled) {
+        
+        // 🛑 1. VÉRIFICATION DE SÉCURITÉ : Le soldat est-il connecté ?
         if (!auth.currentUser) {
-            await showJarvisAlert(
-                "⚠️ ACCÈS REFUSÉ", 
-                "Vous devez d'abord établir la Liaison Satellitaire (Connexion Google) plus bas dans les paramètres pour que le QG puisse vous identifier.",
-                'warning'
-            );
+            alert("⚠️ ACCÈS REFUSÉ : Vous devez d'abord établir la Liaison Satellitaire (Connexion Google) plus bas dans les paramètres pour que le QG puisse vous identifier.");
             
+            // Manœuvre UX : On fait défiler l'écran automatiquement vers la zone de connexion
             const liaisonZone = document.getElementById('zone-liaison-compte');
             if (liaisonZone) {
                 liaisonZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Petit effet visuel pour attirer l'œil
                 liaisonZone.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'ring-offset-black');
                 setTimeout(() => liaisonZone.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2', 'ring-offset-black'), 2000);
             }
-            return; 
+            return; // On annule l'activation de la radio
         }
 
         try {
+            // 2. On demande la permission
             const permission = await Notification.requestPermission();
             
             if (permission === 'granted') {
                 setNotifEnabled(true);
                 localStorage.setItem('imperium_notif_enabled', 'true');
                 
+                // 3. Manœuvre furtive : génération du jeton
                 const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
                 const token = await getToken(messaging, {
-                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A", 
+                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A", // ⚠️ Laissez votre vraie clé ici
                     serviceWorkerRegistration: registration
                 });
 
                 if (token) {
                     localStorage.setItem('imperium_fcm_token', token);
                     setFcmToken(token); 
+                    
+                    // On envoie les coordonnées au Sniper (On sait que currentUser existe grâce à l'étape 1)
                     updateRadarConfig(auth.currentUser.uid, token, notifTime);
+                    
                     new Notification("QG IMPERIUM", { body: "Liaison établie. Rappels tactiques activés." });
                 }
             } else {
-                await showJarvisAlert("❌ PERMISSION REFUSÉE", "Veuillez autoriser les notifications dans les réglages de votre téléphone.", 'error');
+                alert("❌ Permission refusée. Veuillez autoriser les notifications dans les réglages de votre téléphone.");
             }
         } catch (error) {
             console.error("Erreur d'activation furtive :", error);
-            await showJarvisAlert("❌ ERREUR RÉSEAU", "Impossible d'établir le contact avec le QG.", 'error');
+            alert("Erreur réseau. Impossible d'établir le contact avec le QG.");
         }
     } else {
+        // --- DÉSACTIVATION ---
         setNotifEnabled(false);
         localStorage.setItem('imperium_notif_enabled', 'false');
+        
         if (auth.currentUser) {
+            // On efface la cible du radar
             updateRadarConfig(auth.currentUser.uid, "", ""); 
         }
     }
@@ -3882,12 +3696,14 @@ function SettingsScreen({ onBack }) {
         const newTime = e.target.value;
         setNotifTime(newTime);
         localStorage.setItem('imperium_notif_time', newTime);
+        
+        // On met à jour le serveur si l'utilisateur est connecté et qu'il a déjà un jeton
         if (auth.currentUser && fcmToken) {
             updateRadarConfig(auth.currentUser.uid, fcmToken, newTime);
         }
     };
 
-    const testNotification = async () => {
+    const testNotification = () => {
         if (Notification.permission === 'granted') {
             const title = gender === 'F' ? 'Commandante' : 'Commandant';
             new Notification("RAPPEL DU QG", { 
@@ -3895,17 +3711,19 @@ function SettingsScreen({ onBack }) {
                 icon: '/icon.png'
             });
         } else {
-            await showJarvisAlert("⚠️ SIGNAL BLOQUÉ", "Activez d'abord les notifications via le bouton ci-dessus.", 'warning');
+            alert("Activez d'abord les notifications via le bouton ci-dessus.");
         }
     };
+    
+    // --- CONNEXION FIREBASE ARRIÈRE-PLAN (VERSION FORCÉE) ---
 
-    const handleImport = async () => { 
+
+    const handleImport = () => { 
         try { 
             if(!importData) return; 
             const jsonString = decodeURIComponent(escape(atob(importData)));
             const decoded = JSON.parse(jsonString); 
             
-            // ... (Rest of your import logic remains the same) ...
             if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); 
             if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); 
             if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects);
@@ -3923,16 +3741,15 @@ function SettingsScreen({ onBack }) {
             if(decoded.license) localStorage.setItem('imperium_license', decoded.license); 
             if(decoded.gender) localStorage.setItem('imperium_gender', decoded.gender); 
             
-            await showJarvisAlert("✅ RESTAURATION RÉUSSIE", "Les données ont été restaurées. Le système va redémarrer.", 'success');
+            alert("✅ RESTAURATION RÉUSSIE."); 
             window.location.reload(); 
         } catch (e) { 
-            await showJarvisAlert("❌ ERREUR DE RESTAURATION", "Le code fourni est invalide ou corrompu.", 'error');
+            alert("❌ ERREUR : Code invalide."); 
         } 
     }; 
 
     const handleExport = () => {
          const data = {
-            // ... (Rest of your export logic remains the same) ...
             balance: localStorage.getItem('imperium_balance'),
             transactions: localStorage.getItem('imperium_transactions'),
             projects: localStorage.getItem('imperium_projects'),
@@ -3952,65 +3769,36 @@ function SettingsScreen({ onBack }) {
          setExportCode(encoded);
     };
 
-    const handleRecalibrate = async () => {
-        const confirmAction = await showJarvisConfirm(
-            "⚠️ RECALIBRAGE DU SYSTÈME",
-            "Confirmez-vous le recalibrage manuel des soldes ?\n\nCette action écrasera les données actuelles de la trésorerie."
-        );
-
-        if (confirmAction) {
+    const handleRecalibrate = () => {
+        if(confirm("Confirmer le recalibrage manuel des soldes ?")) {
+            // Lors de la sauvegarde, on RAJOUTE l'argent verrouillé en arrière-plan pour ne pas fausser le système
             const newTotalBalance = (parseFloat(calibBalance) || 0) + lockedCash;
+            
             localStorage.setItem('imperium_balance', JSON.stringify(newTotalBalance));
             localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(calibBunker) || 0));
             
-            await showJarvisAlert("✅ SYSTÈME RECALIBRÉ", "Les nouveaux paramètres ont été enregistrés.", 'success');
+            alert("SYSTÈME RECALIBRÉ.");
             window.location.reload();
         }
     };
     
-    const handleSaveRegion = async () => {
-        const confirmAction = await showJarvisConfirm(
-            "⚠️ CHANGEMENT DE ZONE",
-            "Confirmez-vous la modification de la devise et de la zone économique ?\n\nLe système devra redémarrer pour appliquer ces changements."
-        );
-
-        if (confirmAction) {
-            localStorage.setItem('imperium_currency', empireCurrency);
-            // Assuming ZONES is available in the scope
-            if (typeof ZONES !== 'undefined') {
-                const selectedZoneInfo = ZONES.find(z => z.id === empireZone);
-                if (selectedZoneInfo) {
-                    localStorage.setItem('imperium_zone', JSON.stringify(selectedZoneInfo));
-                }
-            }
-            await showJarvisAlert("✅ ZONE MISE À JOUR", "Localisation et Devise modifiées. Redémarrage...", 'success');
-            window.location.reload();
+    // --- NOUVEAU : SAUVEGARDE RÉGION ---
+    const handleSaveRegion = () => {
+        localStorage.setItem('imperium_currency', empireCurrency);
+        const selectedZoneInfo = ZONES.find(z => z.id === empireZone);
+        if (selectedZoneInfo) {
+            localStorage.setItem('imperium_zone', JSON.stringify(selectedZoneInfo));
         }
+        alert("✅ Localisation et Devise mises à jour. Redémarrage du système...");
+        window.location.reload();
     };
 
-    const resetEmpire = async () => { 
-        const confirmAction = await showJarvisConfirm(
-            "🛑 DESTRUCTION IMMINENTE",
-            "DANGER : Voulez-vous vraiment TOUT effacer ?\n\nToutes les données de l'Empire seront définitivement supprimées. Cette action est irréversible."
-        );
-
-        if(confirmAction) { 
+    const resetEmpire = () => { 
+        if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { 
             localStorage.clear(); 
             window.location.reload(); 
         } 
     }; 
-
-    const handleLogout = async () => {
-        const confirmAction = await showJarvisConfirm(
-            "⚠️ COUPURE LIAISON",
-            "Voulez-vous vraiment déconnecter votre compte Google ?\n\nLa synchronisation cloud sera interrompue."
-        );
-
-        if(confirmAction && typeof logoutUser === 'function') {
-            logoutUser();
-            window.location.reload();
-        }
-    }
 
     const sendFeedbackToHQ = async () => {
         if (!feedbackText.trim()) return;
@@ -4026,19 +3814,15 @@ function SettingsScreen({ onBack }) {
                 method: "POST", headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             if (response.ok) {
-                await showJarvisAlert("✅ TRANSMISSION RÉUSSIE", "Le QG a bien reçu votre rapport.", 'success');
+                alert("✅ TRANSMISSION REÇUE AU QG.");
                 setFeedbackText(""); setShowFeedback(false);
-            } else { 
-                await showJarvisAlert("⚠️ ÉCHEC", "La transmission a échoué. Veuillez réessayer.", 'error');
-            }
-        } catch (error) { 
-            await showJarvisAlert("⚠️ ERREUR RÉSEAU", "Impossible de joindre le QG. Vérifiez votre connexion.", 'error');
-        } finally { setSending(false); }
+            } else { alert("⚠️ ÉCHEC TRANSMISSION."); }
+        } catch (error) { alert("⚠️ ERREUR RÉSEAU."); } finally { setSending(false); }
     };
 
     return (
         <PageTransition>
-            <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden relative">
+            <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
                 <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
                     <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
                     <h1 className="text-2xl font-serif text-white font-bold">Paramètres</h1>
@@ -4058,7 +3842,7 @@ function SettingsScreen({ onBack }) {
                         </div>
                     </div>
 
-                    {/* LOCALISATION & DEVISE */}
+                    {/* --- NOUVEAU BLOC : LOCALISATION & DEVISE --- */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-5"><Globe className="w-24 h-24 text-white" /></div>
                         <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -4074,8 +3858,7 @@ function SettingsScreen({ onBack }) {
                                     onChange={(e) => setEmpireCurrency(e.target.value)}
                                     className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none text-sm"
                                 >
-                                    {/* Assuming CURRENCIES is available */}
-                                    {typeof CURRENCIES !== 'undefined' && CURRENCIES.map(c => (
+                                    {CURRENCIES.map(c => (
                                         <option key={c.code} value={c.symbol}>{c.name} ({c.symbol})</option>
                                     ))}
                                 </select>
@@ -4088,8 +3871,7 @@ function SettingsScreen({ onBack }) {
                                     onChange={(e) => setEmpireZone(e.target.value)}
                                     className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-orange-500 outline-none text-sm"
                                 >
-                                    {/* Assuming ZONES is available */}
-                                    {typeof ZONES !== 'undefined' && ZONES.map(z => (
+                                    {ZONES.map(z => (
                                         <option key={z.id} value={z.id}>{z.name}</option>
                                     ))}
                                 </select>
@@ -4132,37 +3914,37 @@ function SettingsScreen({ onBack }) {
                     </div>
 
                     {/* ZONE CLOUD IMPERIUM */}
-                    <div id="zone-liaison-compte" className="bg-[#1a1a1a] rounded-xl p-5 border border-white/10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-3 opacity-10">
-                            <Globe className="w-24 h-24 text-blue-500" />
-                        </div>
+{/* On ajoute l'ID directement sur cette ligne (la div principale du bloc) : */}
+<div id="zone-liaison-compte" className="bg-[#1a1a1a] rounded-xl p-5 border border-white/10 relative overflow-hidden">
+    
+    <div className="absolute top-0 right-0 p-3 opacity-10">
+        <Globe className="w-24 h-24 text-blue-500" />
+    </div>
 
-                        <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 text-blue-400"/> Liaison Satellitaire
-                        </h3>
+    <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+        <Loader2 className="w-4 h-4 text-blue-400"/> Liaison Satellitaire
+    </h3>
 
-                        {!auth?.currentUser ? (
-                            <div>
-                                <p className="text-xs text-gray-400 mb-4">
-                                    Connectez-vous au Cloud Impérial pour sécuriser vos données et synchroniser vos appareils.
-                                </p>
-                                <button 
-                                    onClick={async () => {
-                                        try {
-                                            if (typeof loginWithGoogle === 'function') {
-                                                await loginWithGoogle();
-                                                await showJarvisAlert("📡 LIAISON ÉTABLIE", "Synchronisation avec le Cloud réussie.", 'success');
-                                            }
-                                        } catch (e) {
-                                            await showJarvisAlert("❌ ÉCHEC", "Impossible d'établir la connexion satellite.", 'error');
-                                        }
-                                    }}
-                                    className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
-                                >
-                                    Connexion Google
-                                </button>
-                            </div>
-                        ) : (
+    {!auth.currentUser ? (
+        <div>
+            <p className="text-xs text-gray-400 mb-4">
+                Connectez-vous au Cloud Impérial pour sécuriser vos données et synchroniser vos appareils.
+            </p>
+            <button 
+                onClick={async () => {
+                    try {
+                        await loginWithGoogle();
+                        alert("📡 Connexion établie. Synchronisation...");
+                    } catch (e) {
+                        alert("Échec connexion satellite.");
+                    }
+                }}
+                className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
+            >
+                Connexion Google
+            </button>
+        </div>
+    ) : (
                             <div>
                                 <div className="flex items-center gap-3 mb-4 bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">
                                     {auth.currentUser.photoURL && (
@@ -4179,7 +3961,7 @@ function SettingsScreen({ onBack }) {
                                 </p>
 
                                 <button 
-                                    onClick={handleLogout}
+                                    onClick={logoutUser}
                                     className="w-full border border-red-500/30 text-red-500 font-bold py-2 rounded-lg text-xs hover:bg-red-900/20 transition-colors uppercase tracking-widest"
                                 >
                                     Couper la liaison
@@ -4294,51 +4076,7 @@ function SettingsScreen({ onBack }) {
                         </div>
                     </div>
                 )}
-
-               {/* 🛑 MODALE COMMUNICATION JARVIS (MISE À JOUR) */}
-               {jarvisDialog.isOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in">
-                        <div className={`bg-[#111] border w-full max-w-sm rounded-2xl p-6 shadow-2xl relative text-center transition-all transform scale-100 
-                            ${jarvisDialog.type === 'confirm' ? 'border-[#F4D35E]/50 shadow-[0_0_30px_rgba(244,211,94,0.1)]' : 
-                              jarvisDialog.alertType === 'error' ? 'border-red-500/50 shadow-[0_0_30px_rgba(220,38,38,0.15)]' : 
-                              jarvisDialog.alertType === 'warning' ? 'border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.15)]' :
-                              'border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.15)]'}`}>
-                            
-                            <div className="flex justify-center mb-5">
-                                {jarvisDialog.type === 'confirm' ? <AlertTriangle className="w-14 h-14 text-[#F4D35E] animate-pulse" /> : 
-                                 jarvisDialog.alertType === 'error' ? <Shield className="w-14 h-14 text-red-500" /> : 
-                                 jarvisDialog.alertType === 'warning' ? <AlertTriangle className="w-14 h-14 text-orange-500" /> : 
-                                 <CheckCircle className="w-14 h-14 text-green-500" />}
-                            </div>
-                            
-                            <h3 className={`font-serif text-lg font-bold mb-3 uppercase tracking-widest 
-                                ${jarvisDialog.type === 'confirm' ? 'text-[#F4D35E]' : 
-                                  jarvisDialog.alertType === 'error' ? 'text-red-500' : 
-                                  jarvisDialog.alertType === 'warning' ? 'text-orange-500' :
-                                  'text-green-500'}`}>
-                                {jarvisDialog.title}
-                            </h3>
-                            
-                            <p className="text-sm text-gray-300 mb-8 whitespace-pre-line leading-relaxed font-medium">
-                                {jarvisDialog.message}
-                            </p>
-                            
-                            <div className="flex gap-3">
-                                {jarvisDialog.type === 'confirm' && (
-                                    <button onClick={jarvisDialog.onCancel} className="flex-1 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-[#1a1a1a] border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 transition-all active:scale-95">Annuler</button>
-                                )}
-                                <button onClick={jarvisDialog.onConfirm} className={`flex-1 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95 text-black 
-                                    ${jarvisDialog.type === 'confirm' ? 'bg-[#F4D35E] hover:bg-yellow-400' : 
-                                      jarvisDialog.alertType === 'error' ? 'bg-red-600 hover:bg-red-500 text-white' : 
-                                      jarvisDialog.alertType === 'warning' ? 'bg-orange-500 hover:bg-orange-400 text-white' :
-                                      'bg-green-500 hover:bg-green-400 text-white'}`}>
-                                    {jarvisDialog.type === 'confirm' ? "Confirmer" : "Bien Reçu"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}        
-                </div>
+            </div>
         </PageTransition>
     ); 
 }
