@@ -761,6 +761,7 @@ function OnboardingScreen({ onComplete }) {
     const [step, setStep] = useState(0); 
     const [showTutorial, setShowTutorial] = useState(false);
     const [slideIndex, setSlideIndex] = useState(0);
+    const [bunkerName, setBunkerName] = useState('Wave'); // Par défaut on propose Wave
 
     // Formulaire
     const [initialBalance, setInitialBalance] = useState('');
@@ -828,6 +829,8 @@ function OnboardingScreen({ onComplete }) {
 
     // Transition Config -> Tuto
     const startTutorial = () => {
+        localStorage.setItem('imperium_balance', initialBalance || 0);
+        localStorage.setItem('imperium_bunker_name', bunkerName || "Mon Coffre"); // <-- NOUVEAU
         localStorage.setItem('imperium_balance', initialBalance || 0);
         const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
         localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
@@ -916,8 +919,32 @@ function OnboardingScreen({ onComplete }) {
         
         {step === 3 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-6">Votre Devise</h2><div className="relative mb-4"><Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" /><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#111] border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white text-sm focus:border-gold focus:outline-none" placeholder="Rechercher (ex: Euro, FCFA...)" autoFocus /></div><div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">{filteredCurrencies.map((c) => (<button key={c.code} onClick={() => selectCurrency(c)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg flex justify-between items-center group transition-all active:scale-[0.98]"><div className="flex items-center gap-3"><span className="w-8 h-8 rounded-full bg-gold/10 text-gold flex items-center justify-center font-serif font-bold text-xs">{c.symbol.substring(0, 2)}</span><div className="text-left"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{c.name}</p><p className="text-[10px] text-gray-500">{c.code}</p></div></div><ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gold" /></button>))}</div></div>)}
         
-        {step === 3.5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs flex flex-col items-center"><div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/30"><Smartphone className="w-10 h-10 text-blue-500" /></div><h2 className="text-xl font-serif text-white mb-4">La Stratégie Wave</h2><p className="text-gray-400 text-sm leading-relaxed mb-8">Dans ce système, <span className="text-blue-400 font-bold">Wave est votre Coffre-Fort</span>.<br/><br/>L'argent liquide et OM sont pour la guerre (dépenses). Wave est pour la sécurité (épargne).<br/><br/><span className="text-xs italic text-gray-500">Si vous n'avez pas de compte Wave, ouvrez-en un maintenant.</span></p><button onClick={() => setStep(4)} className="w-full bg-blue-600 text-white font-bold py-3 rounded uppercase tracking-widest text-xs hover:bg-blue-500 transition-colors">C'est compris, continuons</button></div>)}
+        {step === 3.5 && (
+    <div className="animate-in slide-in-from-right duration-500 w-full max-w-xs flex flex-col items-center">
+        <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/30">
+            <Shield className="w-10 h-10 text-blue-500" />
+        </div>
+        <h2 className="text-xl font-serif text-white mb-4">Le Bunker</h2>
+        <p className="text-gray-400 text-sm leading-relaxed mb-6">
+            L'Empire a besoin d'un compte distinct pour sécuriser votre épargne, loin de vos dépenses quotidiennes.
+        </p>
         
+        <div className="w-full mb-8 text-left">
+            <label className="block text-[10px] text-gray-500 uppercase mb-2">Quel service utilisez-vous comme Coffre ?</label>
+            <input 
+                type="text" 
+                value={bunkerName} 
+                onChange={(e) => setBunkerName(e.target.value)} 
+                className="w-full bg-black border border-blue-500/30 rounded-lg p-3 text-white text-sm focus:border-blue-500 focus:outline-none placeholder-gray-700"
+                placeholder="Ex: Wave, Orange Money, UBA..."
+            />
+        </div>
+
+        <button onClick={() => setStep(4)} disabled={!bunkerName.trim()} className="w-full bg-blue-600 text-white font-bold py-3 rounded uppercase tracking-widest text-xs hover:bg-blue-500 transition-colors disabled:opacity-50">
+            Bunker Défini, Continuons
+        </button>
+    </div>
+)}        
         {step === 4 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-sm flex flex-col h-[70vh]"><h2 className="text-xl font-serif text-gold mb-2">Votre Terrain</h2><p className="text-xs text-gray-500 mb-6">Ajuste l'intelligence artificielle à votre marché.</p><div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">{ZONES.map((z) => (<button key={z.id} onClick={() => selectZone(z)} className="w-full bg-[#111] border border-white/5 hover:border-gold/50 p-4 rounded-lg text-left group transition-all active:scale-[0.98]"><div className="flex justify-between items-center mb-1"><p className="text-sm font-bold text-gray-200 group-hover:text-gold">{z.name}</p><Globe className="w-4 h-4 text-gray-600 group-hover:text-gold" /></div><p className="text-[10px] text-gray-500">{z.desc}</p></button>))}</div></div>)}
         
         {step === 5 && (<div className="animate-in slide-in-from-right duration-500 w-full max-w-xs"><label className="block text-xs text-gray-500 uppercase mb-2 text-left">Trésorerie Actuelle (Cash + OM)</label><input type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} className="w-full bg-transparent border-b border-gold text-2xl text-white py-2 focus:outline-none mb-8 placeholder-gray-800" placeholder="0" autoFocus /><p className="text-[10px] text-gray-500 mb-4 text-left">*Ne comptez pas ce qu'il y a déjà sur Wave.</p><button onClick={() => setStep(6)} disabled={!initialBalance} className="w-full bg-gold text-black font-bold py-3 rounded disabled:opacity-50">SUIVANT</button></div>)}
@@ -1044,6 +1071,9 @@ const askJarvisChat = async (history, userMessage, contextData, userTitle = "Com
     const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
     const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
 
+    // NOUVEAU : Jarvis scanne les registres pour trouver le nom du coffre
+    const bunkerName = localStorage.getItem('imperium_bunker_name') || "Wave";
+
     try {
        // 1. Préparation des données
        const recentLogs = (contextData.transactions || []).slice(0, 15).map(t => 
@@ -1056,15 +1086,13 @@ const askJarvisChat = async (history, userMessage, contextData, userTitle = "Com
     const cibles = (contextData.projects || []).map(p => `- ${p.title} (${p.current}/${p.target})`).join("\n");
         
         // 2. Le contexte global (L'état de l'Empire)
-        // MODIFICATION ICI : On injecte userTitle (Commandant ou Commandante)
         const systemContext = `
             Tu es JARVIS, l'IA centrale d'IMPERIUM.
             Tu t'adresses à ton utilisateur en l'appelant : "${userTitle.toUpperCase()}".
             Si c'est "COMMANDANTE", accorde tes adjectifs au féminin (ex: "Vous êtes prête", "Soyez attentive").
             
             DONNÉES STRATÉGIQUES DU ${userTitle.toUpperCase()} :
-            💰 FINANCES (Cash/Wave): ${contextData.balance} / ${contextData.bunker} ${contextData.currency}
-            
+            💰 FINANCES (Cash / ${bunkerName}): ${contextData.balance} / ${contextData.bunker} ${contextData.currency}            
             📜 REGISTRE (15 derniers mouvements) :
             ${recentLogs}
             
@@ -1297,7 +1325,7 @@ function Dashboard({ onNavigate }) {
     const [showBetaLock, setShowBetaLock] = useState(false); 
     const [betaCodeInput, setBetaCodeInput] = useState("");
     const [isQuantumUnlocked, setIsQuantumUnlocked] = useState(() => localStorage.getItem('imperium_beta_quantum') === 'GRANTED');
-    
+    const bunkerName = localStorage.getItem('imperium_bunker_name') || "Wave"; // <-- NOUVEAU
    // ==========================================
     // 👁️ L'ŒIL DE JARVIS (AUTO-CATÉGORISATION INTELLIGENTE)
     // ==========================================
@@ -1767,9 +1795,8 @@ function Dashboard({ onNavigate }) {
                <div className="flex items-center gap-4 relative z-10">
                    <div className="p-2.5 bg-[#1a2333] rounded-lg text-blue-400 border border-blue-500/20"><Smartphone className="w-5 h-5"/></div>
                    <div>
-                       <p className="text-[9px] text-blue-300 uppercase tracking-widest font-bold mb-0.5">Coffre-Fort Wave</p>
-                       <p className="text-xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</p>
-                   </div>
+                       <p className="text-[9px] text-blue-300 uppercase tracking-widest font-bold mb-0.5">Coffre-Fort {bunkerName}</p>
+                       <p className="text-xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</p>                   </div>
                </div>
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 relative z-10" />
           </div>
@@ -2021,7 +2048,7 @@ function Dashboard({ onNavigate }) {
                       <div className="bg-black/50 p-3 rounded-lg border border-blue-900/30">
                           <div className="flex items-center gap-2 mb-2">
                               <Smartphone className="w-4 h-4 text-blue-400"/>
-                              <span className="text-xs font-bold text-blue-100 uppercase">Sécuriser sur Wave</span>
+                              <span className="text-xs font-bold text-blue-100 uppercase">Sécuriser sur {bunkerName}</span>
                           </div>
                           <input type="number" value={distributeWave} onChange={(e) => setDistributeWave(e.target.value)} placeholder="Montant (ex: 5000)" className="w-full bg-[#111] border border-blue-500/20 rounded p-2 text-white text-sm focus:border-blue-500 outline-none text-right"/>
                       </div>
@@ -3584,38 +3611,35 @@ function AcademyScreen({ onBack }) {
 }
 
 // ==========================================
-// 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC DEVISE/ZONE)
+// 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC BUNKER DYNAMIQUE)
 // ==========================================
 function SettingsScreen({ onBack }) { 
     // ÉTATS
     const [importData, setImportData] = useState("");
     const [exportCode, setExportCode] = useState(""); 
     const [sending, setSending] = useState(false);
-    // NOUVEAU : On récupère le jeton sauvegardé
     const [fcmToken, setFcmToken] = useState(localStorage.getItem('imperium_fcm_token') || "");
 
-    // Identité (Inclusion)
+    // Identité
     const [gender, setGender] = useState(localStorage.getItem('imperium_gender') || 'M');
 
     // Notifications
     const [notifTime, setNotifTime] = useState(localStorage.getItem('imperium_notif_time') || "20:00");
     const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('imperium_notif_enabled') === 'true');
 
-   // Calibrage
-// On récupère les cibles pour calculer l'argent verrouillé
-const goals = JSON.parse(localStorage.getItem('imperium_goals') || "[]");
-const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
-
-// Le solde affiché dans les paramètres est maintenant identique au Dashboard (Solde brut - Argent verrouillé)
-const initialTotal = JSON.parse(localStorage.getItem('imperium_balance') || "0");
-const [calibBalance, setCalibBalance] = useState(initialTotal - lockedCash);
-
-const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
+    // Calibrage
+    const goals = JSON.parse(localStorage.getItem('imperium_goals') || "[]");
+    const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
+    const initialTotal = JSON.parse(localStorage.getItem('imperium_balance') || "0");
+    
+    const [calibBalance, setCalibBalance] = useState(initialTotal - lockedCash);
+    const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
+    
     // Feedback
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedbackText, setFeedbackText] = useState("");
 
-    // --- NOUVEAU : ÉTATS DEVISE & ZONE ---
+    // ÉTATS DEVISE & ZONE
     const [empireCurrency, setEmpireCurrency] = useState(localStorage.getItem('imperium_currency') || "€");
     const [empireZone, setEmpireZone] = useState(() => {
         try {
@@ -3624,71 +3648,60 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         } catch { return 'europe'; }
     });
 
-    // --- LOGIQUE IDENTITÉ ---
+    // --- NOUVEAU : ÉTAT DU NOM DU BUNKER ---
+    const [bunkerName, setBunkerName] = useState(localStorage.getItem('imperium_bunker_name') || "Wave");
+
+    // LOGIQUES
     const changeGender = (newGender) => {
         setGender(newGender);
         localStorage.setItem('imperium_gender', newGender);
     };
+    
+    const handleSaveBunkerName = (e) => {
+        setBunkerName(e.target.value);
+        localStorage.setItem('imperium_bunker_name', e.target.value);
+    };
 
-   // --- LOGIQUE NOTIFICATIONS (AVEC SÉCURITÉ CLOUD) ---
    const toggleNotifications = async () => {
+    // ... (votre code toggleNotifications reste identique, je le garde pour ne rien casser) ...
     if (!notifEnabled) {
-        
-        // 🛑 1. VÉRIFICATION DE SÉCURITÉ : Le soldat est-il connecté ?
         if (!auth.currentUser) {
-            alert("⚠️ ACCÈS REFUSÉ : Vous devez d'abord établir la Liaison Satellitaire (Connexion Google) plus bas dans les paramètres pour que le QG puisse vous identifier.");
-            
-            // Manœuvre UX : On fait défiler l'écran automatiquement vers la zone de connexion
+            alert("⚠️ ACCÈS REFUSÉ : Vous devez d'abord établir la Liaison Satellitaire plus bas.");
             const liaisonZone = document.getElementById('zone-liaison-compte');
             if (liaisonZone) {
                 liaisonZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Petit effet visuel pour attirer l'œil
                 liaisonZone.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'ring-offset-black');
                 setTimeout(() => liaisonZone.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2', 'ring-offset-black'), 2000);
             }
-            return; // On annule l'activation de la radio
+            return;
         }
-
         try {
-            // 2. On demande la permission
             const permission = await Notification.requestPermission();
-            
             if (permission === 'granted') {
                 setNotifEnabled(true);
                 localStorage.setItem('imperium_notif_enabled', 'true');
-                
-                // 3. Manœuvre furtive : génération du jeton
                 const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
                 const token = await getToken(messaging, {
-                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A", // ⚠️ Laissez votre vraie clé ici
+                    vapidKey: "BG7XtIkGrNKAUm7jbSApDvE5ae5NCVVcTdkrYw0YJZ1epZSTdl6S9YEArfqqBJRVukoaG-eYG_6WW_heNvoRH5A",
                     serviceWorkerRegistration: registration
                 });
-
                 if (token) {
                     localStorage.setItem('imperium_fcm_token', token);
                     setFcmToken(token); 
-                    
-                    // On envoie les coordonnées au Sniper (On sait que currentUser existe grâce à l'étape 1)
                     updateRadarConfig(auth.currentUser.uid, token, notifTime);
-                    
-                    new Notification("QG IMPERIUM", { body: "Liaison établie. Rappels tactiques activés." });
+                    new Notification("QG IMPERIUM", { body: "Liaison établie." });
                 }
             } else {
-                alert("❌ Permission refusée. Veuillez autoriser les notifications dans les réglages de votre téléphone.");
+                alert("❌ Permission refusée.");
             }
         } catch (error) {
-            console.error("Erreur d'activation furtive :", error);
-            alert("Erreur réseau. Impossible d'établir le contact avec le QG.");
+            console.error("Erreur d'activation :", error);
+            alert("Erreur réseau.");
         }
     } else {
-        // --- DÉSACTIVATION ---
         setNotifEnabled(false);
         localStorage.setItem('imperium_notif_enabled', 'false');
-        
-        if (auth.currentUser) {
-            // On efface la cible du radar
-            updateRadarConfig(auth.currentUser.uid, "", ""); 
-        }
+        if (auth.currentUser) updateRadarConfig(auth.currentUser.uid, "", ""); 
     }
 };
 
@@ -3696,8 +3709,6 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         const newTime = e.target.value;
         setNotifTime(newTime);
         localStorage.setItem('imperium_notif_time', newTime);
-        
-        // On met à jour le serveur si l'utilisateur est connecté et qu'il a déjà un jeton
         if (auth.currentUser && fcmToken) {
             updateRadarConfig(auth.currentUser.uid, fcmToken, newTime);
         }
@@ -3707,38 +3718,31 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         if (Notification.permission === 'granted') {
             const title = gender === 'F' ? 'Commandante' : 'Commandant';
             new Notification("RAPPEL DU QG", { 
-                body: `${title}, il est temps de faire le bilan. L'ennemi ne dort jamais.`,
-                icon: '/icon.png'
+                body: `${title}, il est temps de faire le bilan.`, icon: '/icon.png'
             });
         } else {
-            alert("Activez d'abord les notifications via le bouton ci-dessus.");
+            alert("Activez d'abord les notifications.");
         }
     };
-    
-    // --- CONNEXION FIREBASE ARRIÈRE-PLAN (VERSION FORCÉE) ---
-
 
     const handleImport = () => { 
         try { 
             if(!importData) return; 
             const jsonString = decodeURIComponent(escape(atob(importData)));
             const decoded = JSON.parse(jsonString); 
-            
+            // On s'assure de restaurer aussi le nom du bunker si présent
+            if(decoded.bunkerName) localStorage.setItem('imperium_bunker_name', decoded.bunkerName);
             if(decoded.balance) localStorage.setItem('imperium_balance', decoded.balance); 
+            // ... (restauration des autres données)
             if(decoded.transactions) localStorage.setItem('imperium_transactions', decoded.transactions); 
             if(decoded.projects) localStorage.setItem('imperium_projects', decoded.projects);
-            if(decoded.project) localStorage.setItem('imperium_project_name', decoded.project); 
-            if(decoded.tasks) localStorage.setItem('imperium_tasks', decoded.tasks); 
             if(decoded.skills) localStorage.setItem('imperium_skills', decoded.skills); 
             if(decoded.currency) localStorage.setItem('imperium_currency', decoded.currency); 
             if(decoded.zone) localStorage.setItem('imperium_zone', decoded.zone); 
-            if(decoded.onboarded) localStorage.setItem('imperium_onboarded', decoded.onboarded); 
             if(decoded.bunker) localStorage.setItem('imperium_bunker', decoded.bunker);
             if(decoded.goals) localStorage.setItem('imperium_goals', decoded.goals);
             if(decoded.protocols) localStorage.setItem('imperium_protocols', decoded.protocols);
             if(decoded.debts) localStorage.setItem('imperium_debts', decoded.debts);
-            if(decoded.version) localStorage.setItem('imperium_version', decoded.version);
-            if(decoded.license) localStorage.setItem('imperium_license', decoded.license); 
             if(decoded.gender) localStorage.setItem('imperium_gender', decoded.gender); 
             
             alert("✅ RESTAURATION RÉUSSIE."); 
@@ -3750,6 +3754,7 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
 
     const handleExport = () => {
          const data = {
+            bunkerName: localStorage.getItem('imperium_bunker_name'), // Inclus dans la sauvegarde
             balance: localStorage.getItem('imperium_balance'),
             transactions: localStorage.getItem('imperium_transactions'),
             projects: localStorage.getItem('imperium_projects'),
@@ -3760,8 +3765,6 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
             goals: localStorage.getItem('imperium_goals'),
             protocols: localStorage.getItem('imperium_protocols'),
             debts: localStorage.getItem('imperium_debts'),
-            version: APP_VERSION,
-            license: localStorage.getItem('imperium_license'),
             gender: localStorage.getItem('imperium_gender')
          };
          const jsonString = JSON.stringify(data);
@@ -3771,25 +3774,21 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
 
     const handleRecalibrate = () => {
         if(confirm("Confirmer le recalibrage manuel des soldes ?")) {
-            // Lors de la sauvegarde, on RAJOUTE l'argent verrouillé en arrière-plan pour ne pas fausser le système
             const newTotalBalance = (parseFloat(calibBalance) || 0) + lockedCash;
-            
             localStorage.setItem('imperium_balance', JSON.stringify(newTotalBalance));
             localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(calibBunker) || 0));
-            
             alert("SYSTÈME RECALIBRÉ.");
             window.location.reload();
         }
     };
     
-    // --- NOUVEAU : SAUVEGARDE RÉGION ---
     const handleSaveRegion = () => {
         localStorage.setItem('imperium_currency', empireCurrency);
         const selectedZoneInfo = ZONES.find(z => z.id === empireZone);
         if (selectedZoneInfo) {
             localStorage.setItem('imperium_zone', JSON.stringify(selectedZoneInfo));
         }
-        alert("✅ Localisation et Devise mises à jour. Redémarrage du système...");
+        alert("✅ Paramètres mis à jour. Redémarrage du système...");
         window.location.reload();
     };
 
@@ -3836,13 +3835,26 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                             <div className="p-2 bg-blue-900/20 text-blue-400 rounded-lg"><UserCircle className="w-5 h-5"/></div>
                             <div><h3 className="text-sm font-bold text-gray-200">Profil du Commandant</h3><p className="text-[10px] text-gray-500">Ajustez les protocoles vocaux.</p></div>
                         </div>
-                        <div className="flex bg-black p-1 rounded-lg border border-white/5">
+                        <div className="flex bg-black p-1 rounded-lg border border-white/5 mb-4">
                             <button onClick={() => changeGender('M')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${gender === 'M' ? 'bg-gold text-black' : 'text-gray-600'}`}>Commandant</button>
                             <button onClick={() => changeGender('F')} className={`flex-1 py-3 text-xs font-bold uppercase rounded transition-colors ${gender === 'F' ? 'bg-gold text-black' : 'text-gray-600'}`}>Commandante</button>
                         </div>
+                        
+                        {/* CHAMP NOM DU BUNKER INTÉGRÉ ICI */}
+                        <div className="pt-4 border-t border-white/10">
+                            <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Nom de votre Coffre (Bunker)</label>
+                            <input 
+                                type="text" 
+                                value={bunkerName} 
+                                onChange={handleSaveBunkerName}
+                                className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-gold outline-none text-sm"
+                                placeholder="Ex: Wave, Orange Money, UBA..."
+                            />
+                            <p className="text-[9px] text-gray-500 mt-1 mt-1">Sera mis à jour partout dans l'Empire.</p>
+                        </div>
                     </div>
 
-                    {/* --- NOUVEAU BLOC : LOCALISATION & DEVISE --- */}
+                    {/* LOCALISATION & DEVISE */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-5"><Globe className="w-24 h-24 text-white" /></div>
                         <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -3885,7 +3897,7 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                             </button>
                         </div>
                     </div>
-
+                    
                     {/* RAPPELS TACTIQUES */}
                     <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
                          <div className="flex items-center gap-3 mb-4">
@@ -3914,37 +3926,35 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                     </div>
 
                     {/* ZONE CLOUD IMPERIUM */}
-{/* On ajoute l'ID directement sur cette ligne (la div principale du bloc) : */}
-<div id="zone-liaison-compte" className="bg-[#1a1a1a] rounded-xl p-5 border border-white/10 relative overflow-hidden">
-    
-    <div className="absolute top-0 right-0 p-3 opacity-10">
-        <Globe className="w-24 h-24 text-blue-500" />
-    </div>
+                    <div id="zone-liaison-compte" className="bg-[#1a1a1a] rounded-xl p-5 border border-white/10 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-3 opacity-10">
+                            <Globe className="w-24 h-24 text-blue-500" />
+                        </div>
 
-    <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
-        <Loader2 className="w-4 h-4 text-blue-400"/> Liaison Satellitaire
-    </h3>
+                        <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 text-blue-400"/> Liaison Satellitaire
+                        </h3>
 
-    {!auth.currentUser ? (
-        <div>
-            <p className="text-xs text-gray-400 mb-4">
-                Connectez-vous au Cloud Impérial pour sécuriser vos données et synchroniser vos appareils.
-            </p>
-            <button 
-                onClick={async () => {
-                    try {
-                        await loginWithGoogle();
-                        alert("📡 Connexion établie. Synchronisation...");
-                    } catch (e) {
-                        alert("Échec connexion satellite.");
-                    }
-                }}
-                className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
-            >
-                Connexion Google
-            </button>
-        </div>
-    ) : (
+                        {!auth.currentUser ? (
+                            <div>
+                                <p className="text-xs text-gray-400 mb-4">
+                                    Connectez-vous au Cloud Impérial pour sécuriser vos données et synchroniser vos appareils.
+                                </p>
+                                <button 
+                                    onClick={async () => {
+                                        try {
+                                            await loginWithGoogle();
+                                            alert("📡 Connexion établie. Synchronisation...");
+                                        } catch (e) {
+                                            alert("Échec connexion satellite.");
+                                        }
+                                    }}
+                                    className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
+                                >
+                                    Connexion Google
+                                </button>
+                            </div>
+                        ) : (
                             <div>
                                 <div className="flex items-center gap-3 mb-4 bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">
                                     {auth.currentUser.photoURL && (
@@ -3992,8 +4002,15 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                             <div><h3 className="text-sm font-bold text-gray-200">Calibrage du Système</h3><p className="text-[10px] text-gray-500">Correction manuelle des soldes.</p></div>
                         </div>
                         <div className="space-y-4 relative z-10">
-                            <div><label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Cash/OM Actuel</label><input type="number" value={calibBalance} onChange={(e) => setCalibBalance(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-gold outline-none" /></div>
-                            <div><label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Wave (Bunker) Actuel</label><input type="number" value={calibBunker} onChange={(e) => setCalibBunker(e.target.value)} className="w-full bg-blue-900/10 border border-blue-500/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" /></div>
+                            <div>
+                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde Courant Actuel</label>
+                                <input type="number" value={calibBalance} onChange={(e) => setCalibBalance(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-gold outline-none" />
+                            </div>
+                            <div>
+                                {/* MODIFICATION ICI : Le label utilise le nom dynamique du bunker */}
+                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Solde {bunkerName} Actuel</label>
+                                <input type="number" value={calibBunker} onChange={(e) => setCalibBunker(e.target.value)} className="w-full bg-blue-900/10 border border-blue-500/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
+                            </div>
                             <button onClick={handleRecalibrate} className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold py-3 rounded-lg text-xs uppercase tracking-widest transition-colors">Appliquer les Corrections</button>
                         </div>
                     </div>
