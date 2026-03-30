@@ -130,7 +130,7 @@ const RELEASE_NOTES = [
 const TUTORIAL_STEPS = [
     { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement. Ici, la discipline est votre seule arme.", icon: Shield },
     { title: "LE SOLDE VIRTUEL", text: "Le chiffre central est votre Cash réel. S'il est positif, vous survivez.", icon: PiggyBank },
-    { title: "LA STRATÉGIE WAVE", text: "Wave est votre Bunker (Épargne). Ne touchez jamais à cet argent sans raison vitale.", icon: Smartphone },
+    { title: "LA STRATÉGIE DU BUNKER", text: `${bunkerName || 'Votre compte'} est votre Bunker (Épargne). Ne touchez jamais à cet argent sans raison vitale.`, icon: Smartphone },
     { title: "LES ORDRES", text: "Chaque matin, recevez 3 missions. Accomplissez-les pour renforcer votre discipline.", icon: Radio },
     { title: "LA CITADELLE", text: "Vérifiez votre temps de survie estimé si tous vos revenus s'arrêtent.", icon: Castle },
 ];
@@ -762,8 +762,10 @@ function OnboardingScreen({ onComplete }) {
     const [showTutorial, setShowTutorial] = useState(false);
     const [slideIndex, setSlideIndex] = useState(0);
     const [bunkerName, setBunkerName] = useState('Wave'); // Par défaut on propose Wave
+    const [bunkerName, setBunkerName] = useState('Wave');
 
     // Formulaire
+    const [initialBalance, setInitialBalance] = useState('');
     const [initialBalance, setInitialBalance] = useState('');
     const [mainProject, setMainProject] = useState('');     
     const [currency, setCurrency] = useState('');
