@@ -112,7 +112,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.2.3-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.4.0-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -1344,6 +1344,8 @@ function JarvisModal({ onClose, contextData }) {
 //             DASHBOARD
 // ==========================================
 function Dashboard({ onNavigate }) {
+    // 📡 APPEL AU QG
+    const { showAlert, showConfirm } = useJarvis();
     
     // 🛡️ FONCTION DE SÉCURITÉ : Empêche le crash si les données sont bizarres
     const safeParse = (data, fallback) => {
@@ -1599,8 +1601,8 @@ function Dashboard({ onNavigate }) {
   }, [balance, bunker, transactions, goals]);
   
     
-    // =======================================================
-    // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS & TAXE DE SANG 🩸)
+// =======================================================
+    // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS HUD)
     // =======================================================
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -1618,107 +1620,103 @@ function Dashboard({ onNavigate }) {
             setAmount(''); setDescription('');
             return;
         }
-        
-        // 2. 🛡️ INTERCEPTEUR JARVIS (Avertissement si > 20% du cash)
-        if (transactionType === 'expense' && expenseCategory === 'want') {
-            const threshold = availableCash * 0.20;
-            if (value > threshold) {
-                if(window.triggerVibration) triggerVibration('warning');
-                const confirmAction = window.confirm(
-                    `⚠️ ALERTE JARVIS\n\nCommandant, vous êtes sur le point de dépenser ${formatMoney(value)} ${currency} en futilités.\n\nCela représente plus de 20% de votre trésorerie disponible.\n\nConfirmez-vous cet ordre malgré le risque ?`
-                );
-                if (!confirmAction) return; 
-            }
-        }
 
-        // 3. 🩸 LA TAXE DE SANG (CALCUL ET VÉRIFICATION)
+        // 2. 🩸 LA TAXE DE SANG ET VÉRIFICATION DES FONDS (Avant l'alerte)
         let taxAmount = 0;
         if (transactionType === 'expense' && expenseCategory === 'want') {
-            // On calcule 10% de pénalité
             taxAmount = Math.round(value * 0.10); 
-            
-            // A-t-il les moyens d'être indiscipliné ?
             if (value + taxAmount > balance) {
-                if(window.triggerVibration) triggerVibration('error');
-                return alert(`❌ DISCIPLINE REQUISE\n\nVous n'avez pas assez de fonds pour payer cette futilité ET la Taxe de Sang obligatoire de 10% (${formatMoney(taxAmount)} ${currency}).\n\nAchat refusé.`);
+                return showAlert(
+                    "DISCIPLINE REQUISE", 
+                    `Vous n'avez pas assez de fonds pour payer cette futilité ET la Taxe de Sang obligatoire de 10% (${formatMoney(taxAmount)} ${currency}).\n\nAchat refusé.`, 
+                    "error"
+                );
             }
         } else if (transactionType === 'expense' && value > balance) {
-            // Achat normal mais fonds insuffisants
-            if(window.triggerVibration) triggerVibration('error');
-            return alert("Fonds insuffisants (Cash/OM).");
+            return showAlert("FONDS INSUFFISANTS", "Trésorerie insuffisante (Cash/OM) pour cette opération.", "error");
         }
 
-        // ==========================================
-        // 🧠 JARVIS MACHINE LEARNING (Mémorisation)
-        // ==========================================
-        if (transactionType === 'expense' && expenseCategory === 'want' && description) {
-            // 1. On nettoie la phrase et on la découpe en mots
-            const cleanText = description.toLowerCase().replace(/[^a-z0-9áéíóúñâêîôûàèìòùç\s]/g, '');
-            const words = cleanText.split(/\s+/);
-            
-            // 2. Les mots que Jarvis doit ignorer (pour ne pas bloquer des mots normaux)
-            const ignoreList = ['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'au', 'aux', 'et', 'pour', 'avec', 'sans', 'dans', 'sur', 'a', 'à', 'mon', 'ma', 'mes'];
-            
-            // 3. On récupère la mémoire actuelle de Jarvis
-            let learnedWords = JSON.parse(localStorage.getItem('imperium_jarvis_memory') || "[]");
-            let memoryUpdated = false;
+        // 3. L'ACTION D'EXÉCUTION (Préparée pour être appelée plus tard)
+        const executePurchase = () => {
+            // 🧠 JARVIS MACHINE LEARNING (Mémorisation)
+            if (expenseCategory === 'want' && description) {
+                const cleanText = description.toLowerCase().replace(/[^a-z0-9áéíóúñâêîôûàèìòùç\s]/g, '');
+                const words = cleanText.split(/\s+/);
+                const ignoreList = ['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'au', 'aux', 'et', 'pour', 'avec', 'sans', 'dans', 'sur', 'a', 'à', 'mon', 'ma', 'mes'];
+                let learnedWords = JSON.parse(localStorage.getItem('imperium_jarvis_memory') || "[]");
+                let memoryUpdated = false;
 
-            // 4. Il apprend les nouveaux mots de contrebande
-            words.forEach(word => {
-                if (word.length > 2 && !ignoreList.includes(word) && !learnedWords.includes(word)) {
-                    learnedWords.push(word);
-                    memoryUpdated = true;
+                words.forEach(word => {
+                    if (word.length > 2 && !ignoreList.includes(word) && !learnedWords.includes(word)) {
+                        learnedWords.push(word);
+                        memoryUpdated = true;
+                    }
+                });
+
+                if (memoryUpdated) {
+                    localStorage.setItem('imperium_jarvis_memory', JSON.stringify(learnedWords));
                 }
-            });
-
-            // 5. On sauvegarde le nouveau cerveau
-            if (memoryUpdated) {
-                localStorage.setItem('imperium_jarvis_memory', JSON.stringify(learnedWords));
-                console.log("🧠 Jarvis a appris de nouvelles faiblesses :", learnedWords);
             }
-        }
-  
-        // 4. EXÉCUTION DE LA DÉPENSE & DE LA TAXE
-        if (transactionType === 'expense') {
+      
+            // EXÉCUTION FINANCIÈRE
             if(window.triggerVibration) triggerVibration('heavy');
-            // On retire le coût de l'objet + la taxe
             setBalance(balance - value - taxAmount);
             
             if (taxAmount > 0) {
-                // L'argent de la taxe part au Bunker
                 setBunker(bunker + taxAmount); 
-                alert(`🩸 TAXE DE SANG APPLIQUÉE\n\nPour avoir cédé à une futilité, l'Empire a prélevé 10% de pénalité (${formatMoney(taxAmount)} ${currency}) de force.\n\nCet argent a été verrouillé dans le Coffre Wave.`);
+                // Alerte HUD pour la taxe
+                showAlert(
+                    "TAXE DE SANG APPLIQUÉE", 
+                    `Pour avoir cédé à une futilité, l'Empire a prélevé 10% de pénalité (${formatMoney(taxAmount)} ${currency}) de force.\n\nCet argent a été verrouillé dans le Coffre Wave.`, 
+                    "error"
+                );
             }
-        }
-  
-        // 5. ENREGISTREMENT DANS LE JOURNAL TACTIQUE
-        const newTransaction = { 
-            id: Date.now(), 
-            desc: description || "Dépense", 
-            amount: value, 
-            type: transactionType, 
-            category: expenseCategory, 
-            date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), 
-            rawDate: new Date().toISOString() 
-        };
-        
-        const transactionsToSave = [newTransaction];
-
-        // Si la Taxe de Sang a frappé, on l'ajoute au journal pour que ça fasse mal à voir
-        if (taxAmount > 0) {
-            transactionsToSave.unshift({ // unshift met la taxe tout en haut du journal
-                id: Date.now() + 1, 
-                desc: "🩸 Taxe de Sang", 
-                amount: taxAmount, 
-                type: 'expense', 
-                category: 'want', // Classé comme futilité pour plomber la jauge du jour
+      
+            // JOURNAL TACTIQUE
+            const newTransaction = { 
+                id: Date.now(), 
+                desc: description || "Dépense", 
+                amount: value, 
+                type: transactionType, 
+                category: expenseCategory, 
                 date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), 
                 rawDate: new Date().toISOString() 
-            });
+            };
+            
+            const transactionsToSave = [newTransaction];
+
+            if (taxAmount > 0) {
+                transactionsToSave.unshift({ 
+                    id: Date.now() + 1, 
+                    desc: "🩸 Taxe de Sang", 
+                    amount: taxAmount, 
+                    type: 'expense', 
+                    category: 'want', 
+                    date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), 
+                    rawDate: new Date().toISOString() 
+                });
+            }
+            
+            setTransactions([...transactionsToSave, ...transactions]);
+            setAmount(''); setDescription(''); setIsModalOpen(false);
+        };
+
+        // 4. 🛡️ INTERCEPTEUR JARVIS (Avertissement si > 20% du cash)
+        if (transactionType === 'expense' && expenseCategory === 'want') {
+            const threshold = availableCash * 0.20;
+            if (value > threshold) {
+                showConfirm(
+                    "ALERTE JARVIS",
+                    `Vous êtes sur le point de dépenser ${formatMoney(value)} ${currency} en futilités.\n\nCela représente plus de 20% de votre trésorerie disponible.\n\nConfirmez-vous cet ordre malgré le risque ?`,
+                    () => executePurchase(), // L'ordre est donné SEULEMENT si confirmé
+                    "warning"
+                );
+                return; // On stoppe la fonction ici pour attendre le choix
+            }
         }
-        
-        setTransactions([...transactionsToSave, ...transactions]);
-        setAmount(''); setDescription(''); setIsModalOpen(false);
+
+        // 5. SI AUCUN INTERCEPTEUR N'A BLOQUÉ, ON EXÉCUTE DIRECTEMENT
+        executePurchase();
     };
   
     const finalizeIncome = () => {
@@ -1772,11 +1770,13 @@ function Dashboard({ onNavigate }) {
         if (!bunkerAmount) return;
         const val = parseFloat(bunkerAmount);
         if (action === 'deposit') {
-            if (val > availableCash) return alert(`Fonds insuffisants.`);
+            if (val > availableCash) return showAlert("ÉCHEC DU TRANSFERT", "Fonds insuffisants pour sécuriser ce montant.", "error");
             setBalance(balance - val); setBunker(bunker + val);     
+            showAlert("FONDS SÉCURISÉS", "Le transfert vers le Bunker est confirmé.", "success");
         } else if (action === 'withdraw') {
-            if (val > bunker) return alert(`Fonds insuffisants sur Wave.`);
+            if (val > bunker) return showAlert("ÉCHEC DU TRANSFERT", "Fonds insuffisants dans le Coffre Wave.", "error");
             setBunker(bunker - val); setBalance(balance + val); 
+            showAlert("FONDS DÉPLOYÉS", "Le retrait a été effectué avec succès.", "success");
         }
         setBunkerAmount(''); setIsBunkerModalOpen(false);
     };
@@ -2295,6 +2295,8 @@ function ProtocolsScreen({ onBack }) {
 // 8. LE GRAND LIVRE (ALPHA : REMBOURSEMENTS PARTIELS)
 // ==========================================
 function DebtsScreen({ onBack }) {
+    // 📡 APPEL AU QG
+    const { showAlert, showConfirm } = useJarvis();
     const currency = localStorage.getItem('imperium_currency') || "€";
     
     // 1. ÉTATS
@@ -2387,16 +2389,15 @@ function DebtsScreen({ onBack }) {
         const payment = parseFloat(partialAmount);
         if (payment <= 0) return;
         
-        // Sécurité si on paie plus que la dette
         const finalPayment = Math.min(payment, selectedDebt.amount);
 
         if(selectedDebt.type === 'owe') {
             // JE PAIE UNE DETTE
             if(availableCash < finalPayment) {
                 if(window.triggerVibration) triggerVibration('error');
-                return alert(`Trésorerie insuffisante (${formatMoney(availableCash)} dispo).`);
+                // NOUVEAU HUD D'ERREUR
+                return showAlert("FONDS INSUFFISANTS", `Trésorerie insuffisante (${formatMoney(availableCash)} dispo).`, "error");
             }
-            
             if(window.triggerVibration) triggerVibration('heavy');
             setBalance(balance - finalPayment);
             
@@ -2411,14 +2412,11 @@ function DebtsScreen({ onBack }) {
         const newBalance = selectedDebt.type === 'owe' ? balance - finalPayment : balance + finalPayment;
         
         if (newRest <= 0) {
-            // Dette soldée ! On la supprime.
             const newDebts = debts.filter(d => d.id !== selectedDebt.id);
             setDebts(newDebts);
             localStorage.setItem('imperium_debts', JSON.stringify(newDebts));
-            forceCloudSync(newDebts, newBalance); // 🔥 Frappe Firebase
-            if(window.triggerVibration) triggerVibration('success');
+            forceCloudSync(newDebts, newBalance);
         } else {
-            // Dette partielle
             const updatedDebts = debts.map(d => {
                 if(d.id === selectedDebt.id) {
                     return { ...d, amount: newRest, paidAmount: (d.paidAmount || 0) + finalPayment };
@@ -2427,29 +2425,32 @@ function DebtsScreen({ onBack }) {
             });
             setDebts(updatedDebts);
             localStorage.setItem('imperium_debts', JSON.stringify(updatedDebts));
-            forceCloudSync(updatedDebts, newBalance); // 🔥 Frappe Firebase
+            forceCloudSync(updatedDebts, newBalance);
         }
 
         setSelectedDebt(null);
         setPartialAmount("");
+        // NOUVEAU HUD DE SUCCÈS
+        showAlert("REGISTRE MIS À JOUR", "La transaction a été validée et enregistrée.", "success");
     };
-        
+   
     
-    // --- SUPPRESSION BRUTALE ---
-    const deleteEntry = (id) => {
-        if(window.confirm("Supprimer sans impact sur le Trésor ?")) {
+   // --- SUPPRESSION BRUTALE ---
+   const deleteEntry = (id) => {
+    showConfirm(
+        "EFFACER LE REGISTRE",
+        "Supprimer cette ligne sans impacter votre trésor actuel ?",
+        () => {
             const newDebts = debts.filter(d => d.id !== id);
-            
-            // 1. Mise à jour de l'écran et du téléphone
             setDebts(newDebts);
             localStorage.setItem('imperium_debts', JSON.stringify(newDebts));
-            
-            // 2. Tir direct sur Firebase
             forceCloudSync(newDebts, balance);
-            
             if(window.triggerVibration) triggerVibration('light');
-        }
-    };
+            showAlert("LIGNE EFFACÉE", "L'entrée a été supprimée des archives.", "info");
+        },
+        "warning"
+    );
+};
 
     // --- TRI TACTIQUE (Les dettes prioritaires en haut) ---
     const sortedDebts = [...debts].sort((a, b) => {
@@ -2633,6 +2634,8 @@ function DebtsScreen({ onBack }) {
 // 7. CIBLES DE CONQUÊTE
 // ==========================================
 function GoalsScreen({ onBack }) {
+    // 📡 APPEL AU QG
+    const { showAlert, showConfirm } = useJarvis();
     const currency = localStorage.getItem('imperium_currency') || "€";
     const [goals, setGoals] = useState(JSON.parse(localStorage.getItem('imperium_goals') || "[]"));
     const [newGoalName, setNewGoalName] = useState("");
@@ -2665,37 +2668,40 @@ function GoalsScreen({ onBack }) {
         setAllocAmount(""); setSelectedGoal(null);
     };
 
-    // --- FONCTION DE VALIDATION DE LA CIBLE (CORRIGÉE) ---
+    // --- FONCTION DE VALIDATION DE LA CIBLE (HUD TACTIQUE) ---
     const completeGoal = async (goalToComplete) => {
-        if (window.confirm(`🎯 MISSION ACCOMPLIE : Confirmez-vous l'achat pour "${goalToComplete.title}" ?\n\nLes ${formatMoney(goalToComplete.current)} ${currency} verrouillés seront définitivement déduits de votre Trésor Total.`)) {
-            
-            // 1. Frappe Locale (Mise à jour du téléphone)
-            const currentTotal = parseFloat(localStorage.getItem('imperium_balance') || "0");
-            const newTotal = currentTotal - goalToComplete.current;
-            localStorage.setItem('imperium_balance', newTotal.toString());
+        showConfirm(
+            "MISSION ACCOMPLIE",
+            `Confirmez-vous l'achat de "${goalToComplete.title}" ?\n\nLes ${formatMoney(goalToComplete.current)} ${currency} verrouillés seront définitivement déduits de votre Trésor Total.`,
+            async () => {
+                // 1. Frappe Locale
+                const currentTotal = parseFloat(localStorage.getItem('imperium_balance') || "0");
+                const newTotal = currentTotal - goalToComplete.current;
+                localStorage.setItem('imperium_balance', newTotal.toString());
 
-            const updatedGoals = goals.filter(g => g.id !== goalToComplete.id);
-            localStorage.setItem('imperium_goals', JSON.stringify(updatedGoals));
-            setGoals(updatedGoals); 
+                const updatedGoals = goals.filter(g => g.id !== goalToComplete.id);
+                localStorage.setItem('imperium_goals', JSON.stringify(updatedGoals));
+                setGoals(updatedGoals); 
 
-            // 2. Frappe Cloud (LE CORRECTIF EST ICI : On donne les vraies données au messager)
-            try {
-                if (auth?.currentUser) {
-                    await saveEmpireToCloud(auth.currentUser.uid, {
-                        balance: newTotal, // On prévient de la baisse du trésor
-                        goals: JSON.stringify(updatedGoals) // On envoie la nouvelle liste sans la cible !
-                    }); 
-                    console.log("☁️ Le QG Firebase a bien reçu et enregistré l'élimination.");
+                // 2. Frappe Cloud
+                try {
+                    if (auth?.currentUser) {
+                        await saveEmpireToCloud(auth.currentUser.uid, {
+                            balance: newTotal, 
+                            goals: JSON.stringify(updatedGoals) 
+                        }); 
+                        console.log("☁️ Le QG Firebase a bien reçu et enregistré l'élimination.");
+                    }
+                } catch (error) {
+                    console.error("Erreur de synchronisation :", error);
                 }
-            } catch (error) {
-                console.error("Erreur de synchronisation :", error);
-            }
 
-            // 3. Redémarrage propre
-            triggerVibration('success'); // ⚡ LE DOUBLE CHOC DE LA VICTOIRE
-            alert(`✅ Achat validé. Fonds déployés et cible éliminée.`);
-           
-        }
+                // 3. Conclusion Visuelle
+                if(window.triggerVibration) triggerVibration('success'); 
+                showAlert("CIBLE ÉLIMINÉE", `Fonds déployés avec succès pour : ${goalToComplete.title}.`, "success");
+            },
+            "jarvis"
+        );
     };
 
     return (
@@ -3080,6 +3086,8 @@ function TrophiesScreen({ onBack }) {
 // 6. PROJET & STRATÉGIE (AVEC JARVIS AI)
 // ==========================================
 function ProjectScreen({ onBack }) { 
+    // 📡 APPEL AU QG
+    const { showAlert, showConfirm } = useJarvis();
     const currency = localStorage.getItem('imperium_currency') || "€";
 
     // --- TOUS LES ÉTATS (En haut pour éviter les crashs) ---
@@ -3121,40 +3129,58 @@ function ProjectScreen({ onBack }) {
 
     const deleteProject = (id, e) => {
         e.stopPropagation();
-        if(confirm("Confirmer l'abandon de ce front ?")) {
-             setProjects(projects.filter(p => p.id !== id));
-             if(activeProject && activeProject.id === id) setActiveProject(null);
-        }
+        showConfirm(
+            "ABANDON DE CONQUÊTE",
+            "Confirmer l'abandon de ce front ? Les ressources investies seront perdues.",
+            () => {
+                setProjects(projects.filter(p => p.id !== id));
+                if(activeProject && activeProject.id === id) setActiveProject(null);
+            },
+            "error"
+        );
     };
 
     const deployProtocol = (project) => {
         if (project.roi > 0) {
             const isRecurring = project.roiType === 'recurring';
             const msg = isRecurring 
-                ? `DÉPLOIEMENT TACTIQUE\n\nVoulez-vous transformer "${project.title}" en un nouveau Protocole générant ${project.roi} ${currency} par mois ?`
-                : `BUTIN SÉCURISÉ\n\nVoulez-vous encaisser le gain unique de ${project.roi} ${currency} pour la conquête "${project.title}" ?`;
+                ? `Voulez-vous transformer "${project.title}" en un nouveau Protocole générant ${project.roi} ${currency} par mois ?`
+                : `Voulez-vous encaisser le gain unique de ${project.roi} ${currency} pour la conquête "${project.title}" ?`;
                 
-            if (!confirm(msg)) return;
-            
-            if (isRecurring) {
-                const existingProtocols = JSON.parse(localStorage.getItem('imperium_protocols') || "[]");
-                const newProtocol = { id: Date.now(), name: project.title, amount: project.roi, type: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) };
-                localStorage.setItem('imperium_protocols', JSON.stringify([...existingProtocols, newProtocol]));
-                alert("✅ PROTOCOLE DÉPLOYÉ !");
-            } else {
-                const currentBalance = parseFloat(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
-                const existingTransactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
-                const newTransaction = { id: Date.now(), desc: `🏆 Conquête accomplie : ${project.title}`, amount: project.roi, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
-                localStorage.setItem('imperium_balance', JSON.stringify(currentBalance + project.roi));
-                localStorage.setItem('imperium_transactions', JSON.stringify([newTransaction, ...existingTransactions]));
-                alert(`💰 BUTIN ENCAISSÉ : +${project.roi} ${currency}`);
-            }
+            showConfirm(
+                isRecurring ? "DÉPLOIEMENT TACTIQUE" : "BUTIN SÉCURISÉ",
+                msg,
+                () => {
+                    if (isRecurring) {
+                        const existingProtocols = JSON.parse(localStorage.getItem('imperium_protocols') || "[]");
+                        const newProtocol = { id: Date.now(), name: project.title, amount: project.roi, type: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) };
+                        localStorage.setItem('imperium_protocols', JSON.stringify([...existingProtocols, newProtocol]));
+                        showAlert("PROTOCOLE DÉPLOYÉ", "La rente a été ajoutée à vos revenus fixes.", "success");
+                    } else {
+                        const currentBalance = parseFloat(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
+                        const existingTransactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
+                        const newTransaction = { id: Date.now(), desc: `🏆 Conquête accomplie : ${project.title}`, amount: project.roi, type: 'income', category: 'income', date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), rawDate: new Date().toISOString() };
+                        localStorage.setItem('imperium_balance', JSON.stringify(currentBalance + project.roi));
+                        localStorage.setItem('imperium_transactions', JSON.stringify([newTransaction, ...existingTransactions]));
+                        showAlert("BUTIN ENCAISSÉ", `+${project.roi} ${currency} ajoutés à votre trésor.`, "success");
+                    }
+                    setProjects(projects.filter(p => p.id !== project.id));
+                    setActiveProject(null);
+                },
+                "success"
+            );
         } else {
-            if (!confirm(`ARCHIVAGE\n\nMarquer la conquête "${project.title}" comme achevée avec succès ?`)) return;
-            alert("🏆 Conquête achevée.");
+            showConfirm(
+                "ARCHIVAGE",
+                `Marquer la conquête "${project.title}" comme achevée avec succès ?`,
+                () => {
+                    showAlert("VICTOIRE", "Conquête achevée avec succès.", "jarvis");
+                    setProjects(projects.filter(p => p.id !== project.id));
+                    setActiveProject(null);
+                },
+                "jarvis"
+            );
         }
-        setProjects(projects.filter(p => p.id !== project.id));
-        setActiveProject(null);
     };
 
     const addTask = (e) => { 
@@ -3695,6 +3721,8 @@ function AcademyScreen({ onBack }) {
 // 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC DEVISE/ZONE)
 // ==========================================
 function SettingsScreen({ onBack }) { 
+    // 📡 APPEL AU QG : Récupération des outils du HUD
+    const { showAlert, showConfirm } = useJarvis();
     // ÉTATS
     const [importData, setImportData] = useState("");
     const [exportCode, setExportCode] = useState(""); 
@@ -3744,8 +3772,7 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         
         // 🛑 1. VÉRIFICATION DE SÉCURITÉ : Le soldat est-il connecté ?
         if (!auth.currentUser) {
-            alert("⚠️ ACCÈS REFUSÉ : Vous devez d'abord établir la Liaison Satellitaire (Connexion Google) plus bas dans les paramètres pour que le QG puisse vous identifier.");
-            
+            showAlert("ACCÈS REFUSÉ", "Vous devez d'abord établir la Liaison Satellitaire (Connexion Google) plus bas dans les paramètres pour que le QG puisse vous identifier.", "warning");            
             // Manœuvre UX : On fait défiler l'écran automatiquement vers la zone de connexion
             const liaisonZone = document.getElementById('zone-liaison-compte');
             if (liaisonZone) {
@@ -3782,12 +3809,10 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                     new Notification("QG IMPERIUM", { body: "Liaison établie. Rappels tactiques activés." });
                 }
             } else {
-                alert("❌ Permission refusée. Veuillez autoriser les notifications dans les réglages de votre téléphone.");
-            }
+                showAlert("PERMISSION REFUSÉE", "Veuillez autoriser les notifications dans les réglages de votre téléphone.", "error");            }
         } catch (error) {
             console.error("Erreur d'activation furtive :", error);
-            alert("Erreur réseau. Impossible d'établir le contact avec le QG.");
-        }
+            showAlert("ERREUR RÉSEAU", "Impossible d'établir le contact avec le QG.", "error");        }
     } else {
         // --- DÉSACTIVATION ---
         setNotifEnabled(false);
@@ -3819,7 +3844,7 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                 icon: '/icon.png'
             });
         } else {
-            alert("Activez d'abord les notifications via le bouton ci-dessus.");
+            showAlert("SIGNAL BLOQUÉ", "Activez d'abord les notifications via le bouton ci-dessus.", "warning");
         }
     };
     
@@ -3849,12 +3874,15 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
             if(decoded.license) localStorage.setItem('imperium_license', decoded.license); 
             if(decoded.gender) localStorage.setItem('imperium_gender', decoded.gender); 
             
-            alert("✅ RESTAURATION RÉUSSIE."); 
-            window.location.reload(); 
-        } catch (e) { 
-            alert("❌ ERREUR : Code invalide."); 
-        } 
-    }; 
+            showAlert("RESTAURATION RÉUSSIE", "Les données de l'Empire ont été réintégrées avec succès.", "success");
+        
+        setTimeout(() => window.location.reload(), 2000); // Petit délai pour laisser le temps de lire
+    } catch (e) { 
+        
+        // NOUVEAU :
+        showAlert("ÉCHEC DE DÉCRYPTAGE", "Le code de sauvegarde fourni est invalide ou corrompu.", "error");
+    } 
+};
 
     const handleExport = () => {
          const data = {
@@ -3878,16 +3906,19 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
     };
 
     const handleRecalibrate = () => {
-        if(confirm("Confirmer le recalibrage manuel des soldes ?")) {
-            // Lors de la sauvegarde, on RAJOUTE l'argent verrouillé en arrière-plan pour ne pas fausser le système
-            const newTotalBalance = (parseFloat(calibBalance) || 0) + lockedCash;
-            
-            localStorage.setItem('imperium_balance', JSON.stringify(newTotalBalance));
-            localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(calibBunker) || 0));
-            
-            alert("SYSTÈME RECALIBRÉ.");
-            window.location.reload();
-        }
+        showConfirm(
+            "RECALIBRAGE DU SYSTÈME",
+            "Confirmer le recalibrage manuel des soldes ?",
+            () => {
+                const newTotalBalance = (parseFloat(calibBalance) || 0) + lockedCash;
+                localStorage.setItem('imperium_balance', JSON.stringify(newTotalBalance));
+                localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(calibBunker) || 0));
+                
+                showAlert("SYSTÈME RECALIBRÉ", "Les nouvelles coordonnées financières sont enregistrées. Redémarrage...", "success");
+                setTimeout(() => window.location.reload(), 2000);
+            },
+            "warning"
+        );
     };
     
     // --- NOUVEAU : SAUVEGARDE RÉGION ---
@@ -3897,16 +3928,21 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         if (selectedZoneInfo) {
             localStorage.setItem('imperium_zone', JSON.stringify(selectedZoneInfo));
         }
-        alert("✅ Localisation et Devise mises à jour. Redémarrage du système...");
-        window.location.reload();
+        showAlert("PARAMÈTRES APPLIQUÉS", "Localisation et Devise mises à jour. Redémarrage du système...", "success");
+        setTimeout(() => window.location.reload(), 2000);
     };
 
     const resetEmpire = () => { 
-        if(confirm("DANGER : Voulez-vous vraiment TOUT effacer ?")) { 
-            localStorage.clear(); 
-            window.location.reload(); 
-        } 
-    }; 
+        showConfirm(
+            "AUTODESTRUCTION", // Le Titre
+            "Commandant, voulez-vous vraiment détruire l'Empire ?\n\nToutes les données locales seront purgées. Cette action est irréversible.", // Le Message
+            () => { // L'ordre à exécuter SI vous confirmez
+                localStorage.clear(); 
+                window.location.reload(); 
+            },
+            "error" // Le thème (rouge pour danger critique)
+        );
+    };
 
     const sendFeedbackToHQ = async () => {
         if (!feedbackText.trim()) return;
@@ -3922,10 +3958,14 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                 method: "POST", headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             if (response.ok) {
-                alert("✅ TRANSMISSION REÇUE AU QG.");
+                showAlert("RAPPORT TRANSMIS", "Votre message a bien été reçu par l'Architecte.", "success");
                 setFeedbackText(""); setShowFeedback(false);
-            } else { alert("⚠️ ÉCHEC TRANSMISSION."); }
-        } catch (error) { alert("⚠️ ERREUR RÉSEAU."); } finally { setSending(false); }
+            } else { 
+                showAlert("ÉCHEC DE TRANSMISSION", "Le serveur a rejeté le rapport.", "error"); 
+            }
+        } catch (error) { 
+            showAlert("ERREUR RÉSEAU", "Connexion au QG perdue.", "error"); 
+        } finally { setSending(false); }
     };
 
     return (
@@ -4039,18 +4079,18 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                 Connectez-vous au Cloud Impérial pour sécuriser vos données et synchroniser vos appareils.
             </p>
             <button 
-                onClick={async () => {
-                    try {
-                        await loginWithGoogle();
-                        alert("📡 Connexion établie. Synchronisation...");
-                    } catch (e) {
-                        alert("Échec connexion satellite.");
-                    }
-                }}
-                className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
-            >
-                Connexion Google
-            </button>
+        onClick={async () => {
+            try {
+                await loginWithGoogle();
+                showAlert("LIAISON ÉTABLIE", "Connexion satellite réussie. Synchronisation en cours...", "success");
+            } catch (e) {
+                showAlert("ÉCHEC DE CONNEXION", "Impossible d'établir la liaison satellite.", "error");
+            }
+        }}
+        className="w-full bg-white text-black font-bold py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-200 transition-colors"
+    >
+        Connexion Google
+    </button>
         </div>
     ) : (
                             <div>
