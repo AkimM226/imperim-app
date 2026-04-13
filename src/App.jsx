@@ -5,7 +5,7 @@ import {
     TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
     AlertTriangle, Lock, Clock, History, Radio, 
     MessageSquare, Send, ChevronRight, Calculator,
-    Bell, UserCircle, Cpu, Sparkles,
+    Bell, UserCircle, Cpu, Sparkles, Crown, Check, 
     
     // Outils avancés & Arsenal
     Sword, Loader2, Globe, PiggyBank, Skull, Flame, 
@@ -791,7 +791,11 @@ function AppContent() {
 }
   
   function MainOS() {
+    const [view, setView] = useState('dashboard');
     const [currentView, setCurrentView] = useState('dashboard');
+    // 🎖️ ÉTATS DU GRADE IMPÉRIAL
+    const [currentTier, setCurrentTier] = useState(localStorage.getItem('imperium_tier') || 'FREE');
+    const [showUpgrade, setShowUpgrade] = useState(false);
     const [showPatchNotes, setShowPatchNotes] = useState(false);
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
@@ -830,7 +834,20 @@ useEffect(() => {
     }
 }, []);
     return (
-      <>
+      <> 
+           {/* 🛡️ LE BUREAU DE RECRUTEMENT (S'affiche par-dessus tout) */}
+          {showUpgrade && (
+             <UpgradeScreen 
+                currentTier={currentTier} 
+                onClose={() => setShowUpgrade(false)} 
+                onSelectPlan={(planId) => {
+                    setCurrentTier(planId);
+                    localStorage.setItem('imperium_tier', planId);
+                    setShowUpgrade(false);
+                }}
+            />
+          )}
+
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
           {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
           {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
@@ -852,11 +869,29 @@ useEffect(() => {
         // 2. On referme la porte et on affiche le Dashboard
         navigate('dashboard');
     }} />
+)}   {/* 🛡️ LE BUREAU DE RECRUTEMENT */}
+       {showUpgrade && (
+     <UpgradeScreen 
+        currentTier={currentTier} 
+        onClose={() => setShowUpgrade(false)} 
+        onSelectPlan={(planId) => {
+            setCurrentTier(planId);
+            localStorage.setItem('imperium_tier', planId);
+            setShowUpgrade(false);
+        }}
+    />
 )}
           {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'academy' && <AcademyScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'settings' && <SettingsScreen onBack={() => navigate('dashboard')} />}
+          {currentView === 'settings' && (
+          <SettingsScreen 
+             onBack={() => navigate('dashboard')} 
+             onNavigate={navigate} 
+             currentTier={currentTier} 
+             setShowUpgrade={setShowUpgrade} 
+            />
+          )}
       </>
     );
 }
@@ -3720,7 +3755,7 @@ function AcademyScreen({ onBack }) {
 // ==========================================
 // 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC DEVISE/ZONE)
 // ==========================================
-function SettingsScreen({ onBack }) { 
+function SettingsScreen({ onBack, onNavigate, currentTier, setShowUpgrade}) { 
     // 📡 APPEL AU QG : Récupération des outils du HUD
     const { showAlert, showConfirm } = useJarvis();
     // ÉTATS
@@ -4187,6 +4222,23 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                         <textarea value={importData} onChange={(e) => setImportData(e.target.value)} placeholder="Collez votre code ici..." className="w-full bg-black border border-white/10 rounded-lg p-3 text-xs text-gray-300 focus:border-gold focus:outline-none h-20 mb-3 font-mono"/>
                         <button onClick={handleImport} disabled={!importData} className="w-full bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-500/30 font-bold py-3 rounded-lg text-xs uppercase tracking-widest disabled:opacity-50 transition-colors">Restaurer</button>
                     </div>
+                    {/* 🎖️ AFFICHAGE DU GRADE DANS LES RÉGLAGES */}
+                   <div className="mt-8 p-5 bg-yellow-900/10 border border-yellow-500/20 rounded-2xl">
+                 <div className="flex justify-between items-center">
+                   <div>
+                 <p className="text-[10px] text-yellow-500 font-bold uppercase tracking-widest">Grade Actuel</p>
+                  <p className="text-white font-black text-lg">
+                 {currentTier === 'PRO' ? 'GÉNÉRAL' : currentTier === 'PLUS' ? 'OFFICIER' : 'SOLDAT'}
+                 </p>
+                 </div>
+                 <button 
+                    onClick={() => setShowUpgrade(true)}
+                   className="bg-yellow-500 text-black text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10"
+                   >
+                   AMÉLIORER
+                 </button>
+                 </div>
+                </div>
                     
                     {/* RESET */}
                     <div className="pt-10 border-t border-white/5">
@@ -4241,3 +4293,117 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         </PageTransition>
     ); 
 }
+ // ============================================================================
+// 🛡️ COMPOSANT : BUREAU DE RECRUTEMENT (UPGRADE SCREEN)
+// ============================================================================
+const UpgradeScreen = ({ currentTier, onSelectPlan, onClose }) => {
+    const plans = [
+        {
+            id: 'FREE',
+            name: 'SOLDAT',
+            price: '0 FCFA',
+            description: 'La base de la discipline.',
+            icon: <Shield className="text-gray-400" size={32} />,
+            features: [
+                'Intercepteur Jarvis (Local)',
+                '1 Conseil Radio / jour',
+                '1 Plan Arsenal / semaine',
+                'Gestion manuelle des Projets'
+            ],
+            color: 'bg-gray-800'
+        },
+        {
+            id: 'PLUS',
+            name: 'OFFICIER',
+            price: '2 500 FCFA',
+            period: '/ mois',
+            description: 'Le confort tactique.',
+            icon: <Zap className="text-blue-400" size={32} />,
+            features: [
+                'Radio QG Illimitée',
+                'Arsenal IA Illimité',
+                'Stratégies IA (3 / mois)',
+                'Badge Officier sur le HUD'
+            ],
+            color: 'bg-blue-900/40 border-blue-500/50',
+            recommended: false
+        },
+        {
+            id: 'PRO',
+            name: 'GÉNÉRAL',
+            price: '5 000 FCFA',
+            period: '/ mois',
+            description: 'L\'arme de conquête absolue.',
+            icon: <Crown className="text-yellow-500" size={32} />,
+            features: [
+                'TOUT EN ILLIMITÉ',
+                'Priorité sur l\'API Jarvis',
+                'Générateur de Projets illimité',
+                'Accès anticipé aux modules'
+            ],
+            color: 'bg-yellow-900/40 border-yellow-500/50',
+            recommended: true
+        }
+    ];
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col p-6 overflow-y-auto">
+            <div className="flex justify-between items-center mb-8 pt-4">
+                <h2 className="text-2xl font-black text-white tracking-tighter">BUREAU DE RECRUTEMENT</h2>
+                <button onClick={onClose} className="text-gray-400 hover:text-white font-bold text-xs uppercase tracking-widest">Fermer</button>
+            </div>
+
+            <p className="text-gray-400 text-sm mb-8 text-center uppercase tracking-widest">
+                Élevez votre grade pour déverrouiller la pleine puissance de l'IA.
+            </p>
+
+            <div className="space-y-6 pb-12">
+                {plans.map((plan) => (
+                    <div 
+                        key={plan.id}
+                        className={`relative p-6 rounded-2xl border-2 transition-all ${plan.color} ${plan.recommended ? 'scale-105 border-yellow-500' : 'border-gray-700'}`}
+                    >
+                        {plan.recommended && (
+                            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[10px] font-bold px-3 py-1 rounded-full">
+                                RECOMMANDÉ
+                            </span>
+                        )}
+
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                {plan.icon}
+                                <h3 className="text-xl font-black text-white mt-2">{plan.name}</h3>
+                                <p className="text-xs text-gray-400 uppercase">{plan.description}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xl font-black text-white">{plan.price}</span>
+                                <span className="text-[10px] text-gray-400 block">{plan.period}</span>
+                            </div>
+                        </div>
+
+                        <ul className="space-y-3 mb-6">
+                            {plan.features.map((feature, index) => (
+                                <li key={index} className="flex items-center gap-3 text-sm text-gray-300">
+                                    <Check size={14} className="text-green-500" />
+                                    {feature}
+                                </li>
+                            ))}
+                        </ul>
+
+                        <button
+                            onClick={() => onSelectPlan(plan.id)}
+                            disabled={currentTier === plan.id}
+                            className={`w-full py-3 rounded-xl font-bold transition-all ${
+                                currentTier === plan.id 
+                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                                : plan.id === 'PRO' ? 'bg-yellow-500 text-black hover:bg-yellow-400' : 'bg-white text-black hover:bg-gray-200'
+                            }`}
+                        >
+                            {currentTier === plan.id ? 'GRADE ACTUEL' : `S'ENRÔLER : ${plan.id}`}
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+ };
