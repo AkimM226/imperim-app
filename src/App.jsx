@@ -4081,8 +4081,21 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
             <button 
         onClick={async () => {
             try {
-                await loginWithGoogle();
-                showAlert("LIAISON ÉTABLIE", "Connexion satellite réussie. Synchronisation en cours...", "success");
+                // 1. On récupère le badge (Auth)
+                const user = await loginWithGoogle();
+                
+                // 2. On rassemble les ressources locales actuelles
+                const localData = {
+                    balance: JSON.parse(localStorage.getItem('imperium_balance') || "0"),
+                    bunker: JSON.parse(localStorage.getItem('imperium_bunker') || "0"),
+                    goals: JSON.parse(localStorage.getItem('imperium_goals') || "[]"),
+                    transactions: JSON.parse(localStorage.getItem('imperium_transactions') || "[]")
+                };
+                
+                // 3. On force la création du dossier dans Firestore
+                await saveEmpireToCloud(user.uid, localData);
+                
+                showAlert("LIAISON ÉTABLIE", "Connexion réussie. Le QG a créé et synchronisé votre dossier Cloud.", "success");
             } catch (e) {
                 showAlert("ÉCHEC DE CONNEXION", "Impossible d'établir la liaison satellite.", "error");
             }
@@ -4091,7 +4104,7 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
     >
         Connexion Google
     </button>
-        </div>
+           </div> 
     ) : (
                             <div>
                                 <div className="flex items-center gap-3 mb-4 bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">
