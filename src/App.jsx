@@ -112,17 +112,17 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.4.1-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.4.2-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
-        version: "17.1.0",
-        title: "Opération Identité",
-        desc: "L'Empire reconnaît désormais ses Commandantes et renforce ses communications.",
+        version: "17.4.2", // Assurez-vous que ce numéro correspond à APP_VERSION
+        title: "Déploiement Stratégique",
+        desc: "Le QG renforce la sécurité et les communications de l'Empire.",
         changes: [
-            { icon: UserCircle, text: "PROTOCOLE INCLUSION : Vous pouvez désormais définir votre titre (Commandant ou Commandante) dans les Réglages." },
-            { icon: Bell, text: "SYSTÈME D'ALERTE : Activation des Notifications Tactiques. Recevez vos ordres directement sur votre appareil." },
-            { icon: Zap, text: "STABILISATION DU NOYAU : Correction des conflits d'armement (Imports) et optimisation de la fluidité." }
+            { icon: Globe, text: "LIAISON SATELLITAIRE : Sauvegarde Cloud via Google maintenant disponible." },
+            { icon: Bell, text: "RADAR TACTIQUE : Système de notifications activé pour vos rapports." },
+            { icon: Award, text: "BUREAU DE RECRUTEMENT : Structure des grades en place (Phase 1)." }
         ]
     }
 ];
@@ -534,10 +534,10 @@ function PatchNotesModal({ onAck }) {
                     </div>
 
                     <button 
-                        onClick={onAck}
-                        className="w-full bg-gold text-black font-bold py-4 rounded-xl uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-lg shadow-gold/20 flex items-center justify-center gap-2"
-                    >
-                        <CheckCircle className="w-4 h-4" /> Prendre connaissance
+                      onClick={onAck} // onAck ici est la fonction ackPatchNotes transmise par MainOS
+                     className="..."
+                     >
+                     Prendre connaissance
                     </button>
                 </div>
             </div>
@@ -850,6 +850,21 @@ function AppContent() {
     const [currentTier, setCurrentTier] = useState(localStorage.getItem('imperium_tier') || 'FREE');
     const [showUpgrade, setShowUpgrade] = useState(false);
     const [showPatchNotes, setShowPatchNotes] = useState(false);
+    // --- SYSTÈME DE DÉTECTION DE MISE À JOUR ---
+useEffect(() => {
+    const lastSeenVersion = localStorage.getItem('imperium_version_seen');
+    
+    // Si la version est différente (nouvelle install ou mise à jour)
+    if (lastSeenVersion !== APP_VERSION) {
+        setShowPatchNotes(true);
+    }
+}, []);
+
+// Fonction pour fermer et enregistrer que la mise à jour est lue
+const ackPatchNotes = () => {
+    localStorage.setItem('imperium_version_seen', APP_VERSION);
+    setShowPatchNotes(false);
+};
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
     // --- SYSTÈME CLOUD : GESTION DES NOUVEAUX ---
