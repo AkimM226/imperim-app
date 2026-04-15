@@ -846,6 +846,7 @@ function AppContent() {
   function MainOS() {
     const [view, setView] = useState('dashboard');
     const [currentView, setCurrentView] = useState('dashboard');
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     // 🎖️ ÉTATS DU GRADE IMPÉRIAL
     const [currentTier, setCurrentTier] = useState(localStorage.getItem('imperium_tier') || 'FREE');
     const [showUpgrade, setShowUpgrade] = useState(false);
@@ -867,34 +868,12 @@ const ackPatchNotes = () => {
 };
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
-    // --- SYSTÈME CLOUD : GESTION DES NOUVEAUX ---
+ // --- SYSTÈME CLOUD : GESTION DES NOUVEAUX (VERSION MODERNE) ---
 useEffect(() => {
     // On vérifie toujours le localStorage
     if (!auth.currentUser && !localStorage.getItem('imperium_login_asked')) {
         const timer = setTimeout(() => {
-            if(confirm("🔒 SÉCURITÉ :\n\nVoulez-vous lier votre Empire à un compte Google maintenant pour activer la sauvegarde automatique Cloud ?")) {
-                
-                // --- CORRECTION ICI : On utilise VOTRE fonction de navigation ---
-                navigate('settings'); 
-                
-                // On fait défiler la page jusqu'au bouton de liaison
-                setTimeout(() => {
-                    const sectionLiaison = document.getElementById('zone-liaison-compte');
-                    if (sectionLiaison) {
-                        sectionLiaison.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        
-                        // Effet visuel : Une lueur bleue temporaire pour attirer l'œil
-                        sectionLiaison.style.transition = "box-shadow 0.5s ease-in-out";
-                        sectionLiaison.style.boxShadow = "0 0 25px rgba(59, 130, 246, 0.8)";
-                        
-                        // On retire la lueur après 2 secondes
-                        setTimeout(() => {
-                            sectionLiaison.style.boxShadow = "none";
-                        }, 2000);
-                    }
-                }, 300); // On attend 300ms que la page 'settings' soit bien chargée
-            }
-            
+            setShowLoginPrompt(true); // On affiche la belle fenêtre au lieu du vieux confirm()
             // MARQUEUR PERMANENT
             localStorage.setItem('imperium_login_asked', 'true');
         }, 3000);
@@ -915,7 +894,33 @@ useEffect(() => {
                 }}
             />
           )}
-
+          {/* 🛡️ MODAL DE LIAISON POUR LES NOUVEAUX RECRUES */}
+          {showLoginPrompt && (
+              <LoginPromptModal 
+                  onAccept={() => {
+                      setShowLoginPrompt(false);
+                      navigate('settings'); 
+                      
+                      // L'ancienne logique parfaite de défilement et de lueur
+                      setTimeout(() => {
+                          const sectionLiaison = document.getElementById('zone-liaison-compte');
+                          if (sectionLiaison) {
+                              sectionLiaison.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              
+                              // Effet visuel : Une lueur bleue temporaire pour attirer l'œil
+                              sectionLiaison.style.transition = "box-shadow 0.5s ease-in-out";
+                              sectionLiaison.style.boxShadow = "0 0 25px rgba(59, 130, 246, 0.8)";
+                              
+                              // On retire la lueur après 2 secondes
+                              setTimeout(() => {
+                                  sectionLiaison.style.boxShadow = "none";
+                              }, 2000);
+                          }
+                      }, 300); // On attend 300ms que la page 'settings' soit bien chargée
+                  }}
+                  onDecline={() => setShowLoginPrompt(false)}
+              />
+          )}
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
           {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
           {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
@@ -4475,3 +4480,44 @@ const UpgradeScreen = ({ currentTier, onSelectPlan, onClose }) => {
         </div>
     );
  };
+ // ============================================================================
+// 🛡️ COMPOSANT : MODAL DE LIAISON SATELLITAIRE (NOUVEAUX UTILISATEURS)
+// ============================================================================
+const LoginPromptModal = ({ onAccept, onDecline }) => {
+    return (
+        <div className="fixed inset-0 z-[150] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="bg-[#1a1a1a] border border-blue-500/30 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                {/* Effet visuel de fond */}
+                <div className="absolute -top-10 -right-10 text-blue-500/5">
+                    <Globe className="w-48 h-48" />
+                </div>
+
+                <div className="relative z-10 text-center">
+                    <div className="w-16 h-16 bg-blue-900/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
+                        <Shield className="w-8 h-8" />
+                    </div>
+                    
+                    <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-2">SÉCURITÉ DU QG</h2>
+                    <p className="text-gray-400 text-xs mb-8">
+                        Voulez-vous lier votre Empire à un compte Google maintenant pour activer la sauvegarde automatique Cloud ?
+                    </p>
+
+                    <div className="space-y-3">
+                        <button 
+                            onClick={onAccept}
+                            className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl uppercase tracking-widest text-xs hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20"
+                        >
+                            Établir la liaison
+                        </button>
+                        <button 
+                            onClick={onDecline}
+                            className="w-full bg-transparent text-gray-500 font-bold py-3 rounded-xl uppercase tracking-widest text-[10px] hover:text-white transition-all"
+                        >
+                            Pas maintenant
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
