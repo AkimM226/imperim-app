@@ -1909,73 +1909,74 @@ function Dashboard({ onNavigate }) {
       <PageTransition>
       <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col relative overflow-hidden">
         
-        {/* 1. EN-TÊTE */}
-        <div className="px-5 pt-safe-top mt-4 flex justify-between items-start shrink-0">
-           <div>
-              <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest">IMPERIUM</h1>
-              <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">J-{daysRemaining} • {todayStr}</p>
+       {/* ========================================== */}
+        {/* 1. LIGNE D'EN-TÊTE (Titre et Badges)        */}
+        {/* ========================================== */}
+        <div className="px-5 pt-safe-top mt-4 flex justify-between items-start shrink-0 w-full">
+           
+           {/* PARTIE GAUCHE : TITRE */}
+           <div className="flex-1 min-w-0 pr-2">
+              <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest truncate">IMPERIUM</h1>
+              <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">J-{daysRemaining} • {todayStr}</p>
            </div>
         
-        {/* EN-TÊTE EXISTANT */}
-        <div className="flex justify-between items-center px-5 py-4 bg-[#151515] border-b border-white/5 sticky top-0 z-20 pt-12">
-                    {/* ... votre code de l'en-tête (Avatar, Titre, Bouton Settings) ... */}
-                </div>
-
-              {/* 🛡️ MISSION TACTIQUE : SÉCURITÉ (Design Élégant) */}
-              {(!isCloudSecure || !isRadarActive) && (
-                    <div className="mx-5 mt-4 group cursor-pointer" onClick={() => onNavigate('settings')}>
-                        <div className="relative p-[1px] rounded-2xl bg-gradient-to-r from-blue-500/30 via-transparent to-transparent">
-                            <div className="bg-[#111] rounded-[15px] p-4 flex items-center justify-between relative overflow-hidden">
-                                
-                                {/* Effet de fond subtil */}
-                                <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-5 transition-opacity group-hover:opacity-10">
-                                    <Shield className="w-20 h-20 text-blue-500" />
-                                </div>
-                                
-                                <div className="flex items-center gap-4 relative z-10">
-                                    {/* Petit point lumineux bleu au lieu d'une grosse alerte */}
-                                    <div className="flex h-2 w-2 relative">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
-                                    </div>
-                                    
-                                    <div>
-                                        <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-0.5">
-                                            Mission : Sécuriser le QG
-                                        </h4>
-                                        <p className="text-gray-500 text-[10px]">
-                                            {!isCloudSecure && !isRadarActive 
-                                                ? "Liaison Cloud et Radar hors ligne." 
-                                                : !isCloudSecure 
-                                                    ? "Liaison Cloud requise." 
-                                                    : "Radar tactique inactif."}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="relative z-10 text-gray-600 group-hover:text-blue-400 transition-colors">
-                                    <ChevronRight className="w-5 h-5" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-           <div className="flex gap-2">
+           {/* PARTIE DROITE : BADGES */}
+           <div className="flex items-center justify-end gap-1.5 shrink-0">
                {/* FLAMME */}
-               <div className={`flex items-center gap-1.5 bg-[#1a2333] border ${streak > 0 ? 'border-orange-500/30' : 'border-white/5'} px-3 py-1.5 rounded-full`}>
-                  <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'}`} />
-                  <span className={`text-[10px] font-bold uppercase ${streak > 0 ? 'text-orange-400' : 'text-gray-600'} tracking-wider`}>{streak}J</span>
+               <div className={`flex items-center justify-center gap-1 bg-[#1a2333] border ${streak > 0 ? 'border-orange-500/30' : 'border-white/5'} px-2 py-1 md:px-3 md:py-1.5 rounded-full shrink-0`}>
+                  <Flame className={`w-3 h-3 ${streak > 0 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-gray-600'} shrink-0`} />
+                  <span className={`text-[9px] md:text-[10px] font-bold uppercase ${streak > 0 ? 'text-orange-400' : 'text-gray-600'} tracking-wider whitespace-nowrap`}>
+                      {streak}J
+                  </span>
                </div>
   
                {/* GRADE */}
-               <button onClick={() => onNavigate('trophies')} className="flex items-center gap-1.5 bg-[#1a2333] border border-blue-500/30 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
-                  <RankIcon className={`w-3 h-3 ${rank.color}`} />
-                  <span className={`text-[10px] font-bold uppercase ${rank.color} tracking-wider`}>{rank.title}</span>
+               <button 
+                  onClick={() => onNavigate('trophies')} 
+                  className="flex items-center justify-center gap-1 bg-[#1a2333] border border-blue-500/30 px-2 py-1 md:px-3 md:py-1.5 rounded-full active:scale-95 transition-transform shrink-0 max-w-[85px] md:max-w-none"
+               >
+                  <RankIcon className={`w-3 h-3 ${rank.color} shrink-0`} />
+                  <span className={`text-[9px] md:text-[10px] font-bold uppercase ${rank.color} tracking-wider truncate`}>
+                      {rank.title}
+                  </span>
                </button>
            </div>
         </div>
-  
+        {/* FIN DE L'EN-TÊTE */}
+
+        {/* ========================================== */}
+        {/* 2. MISSION TACTIQUE (Sur la ligne en dessous) */}
+        {/* ========================================== */}
+        {(!isCloudSecure || !isRadarActive) && (
+            <div 
+                onClick={() => onNavigate('settings')}
+                className="mx-5 mt-4 p-3 bg-blue-900/10 border border-blue-500/20 rounded-xl cursor-pointer flex items-center justify-between group hover:bg-blue-900/20 transition-all shrink-0"
+            >
+                <div className="flex items-center gap-3 min-w-0">
+                    {/* Diode bleue */}
+                    <div className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </div>
+                    
+                    <div className="truncate">
+                        <h4 className="text-white font-bold text-[10px] uppercase tracking-widest leading-tight truncate">
+                            Mission de Sécurité
+                        </h4>
+                        <p className="text-blue-200/50 text-[9px] mt-0.5 truncate">
+                            {!isCloudSecure && !isRadarActive 
+                                ? "Cloud et Radar hors ligne" 
+                                : !isCloudSecure 
+                                    ? "Liaison Cloud requise" 
+                                    : "Radar tactique inactif"}
+                        </p>
+                    </div>
+                </div>
+                
+                <ChevronRight className="w-4 h-4 text-blue-500/50 group-hover:text-blue-400 shrink-0 ml-2" />
+            </div>
+        )}
+          
         {/* 2. CONTENU SCROLLABLE */}
         <div className="flex-1 overflow-y-auto px-4 pt-6 pb-48 custom-scrollbar space-y-4">
           
