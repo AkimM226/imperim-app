@@ -112,7 +112,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.4.0-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.4.1-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -473,21 +473,74 @@ function SecurityGate({ onAccessGranted }) {
 }
 
 function PatchNotesModal({ onAck }) {
-    const note = RELEASE_NOTES[0];
     return (
-        <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-             <div className="bg-[#151515] border border-gold/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><FileText className="w-32 h-32 text-gold" /></div>
-                <div className="relative z-10">
-                     <div className="flex items-center gap-3 mb-6">
-                         <div className="w-10 h-10 bg-gold/10 rounded-full flex items-center justify-center border border-gold/20"><Info className="w-5 h-5 text-gold"/></div>
-                         <div><p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Rapport de Mise à Jour</p><h2 className="text-white font-serif font-bold text-lg">Version {note.version}</h2></div>
-                     </div>
-                     <div className="mb-6"><h3 className="text-gold font-bold text-sm uppercase mb-1">{note.title}</h3><p className="text-gray-400 text-xs italic">{note.desc}</p></div>
-                     <div className="space-y-3 mb-8">{note.changes.map((change, idx) => { const Icon = change.icon; return ( <div key={idx} className="flex gap-3 items-start bg-black/40 p-3 rounded-lg border border-white/5"><Icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" /><p className="text-xs text-gray-200 leading-relaxed">{change.text}</p></div> ) })}</div>
-                     <button onClick={onAck} className="w-full bg-gold text-black font-bold py-3.5 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all active:scale-95 shadow-[0_0_20px_rgba(212,175,55,0.2)]">Reçu, Retour au combat</button>
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in zoom-in duration-300">
+            <div className="bg-[#1a1a1a] border border-gold/30 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                
+                {/* Effet visuel */}
+                <div className="absolute -top-10 -right-10 text-gold/5">
+                    <Shield className="w-48 h-48" />
                 </div>
-             </div>
+
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-gold/10 text-gold rounded-lg">
+                            <Sparkles className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-white uppercase tracking-tighter">Mise à Jour QG</h2>
+                            <p className="text-gold text-[10px] uppercase tracking-widest font-bold">Version {APP_VERSION}</p>
+                        </div>
+                    </div>
+
+                    <p className="text-gray-400 text-xs mb-6 mt-4">
+                        Commandant, de nouveaux modules stratégiques ont été déployés sur votre terminal :
+                    </p>
+
+                    <div className="space-y-4 mb-8">
+                        
+                        <div className="flex gap-3">
+                            <Globe className="w-5 h-5 text-blue-400 shrink-0" />
+                            <div>
+                                <h4 className="text-white text-sm font-bold">Liaison Satellitaire (Cloud)</h4>
+                                <p className="text-gray-500 text-xs">Connectez votre compte Google dans les paramètres pour sauvegarder automatiquement votre Empire et ne jamais perdre vos données.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Bell className="w-5 h-5 text-purple-400 shrink-0" />
+                            <div>
+                                <h4 className="text-white text-sm font-bold">Radar Tactique (Notifications)</h4>
+                                <p className="text-gray-500 text-xs">Le QG peut désormais vous envoyer des alertes et des rappels de discipline directement sur votre terminal.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Wallet className="w-5 h-5 text-orange-400 shrink-0" />
+                            <div>
+                                <h4 className="text-white text-sm font-bold">Économie Personnalisée</h4>
+                                <p className="text-gray-500 text-xs">Vous pouvez maintenant changer la devise (FCFA, €, $, etc.) et votre zone économique depuis les paramètres.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Award className="w-5 h-5 text-yellow-500 shrink-0" />
+                            <div>
+                                <h4 className="text-white text-sm font-bold">Bureau de Recrutement</h4>
+                                <p className="text-gray-500 text-xs">Le bâtiment est en place. Le système de grades de l'Empire sera activé dans la prochaine directive.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <button 
+                        onClick={onAck}
+                        className="w-full bg-gold text-black font-bold py-4 rounded-xl uppercase tracking-widest text-xs hover:bg-yellow-400 transition-all shadow-lg shadow-gold/20 flex items-center justify-center gap-2"
+                    >
+                        <CheckCircle className="w-4 h-4" /> Prendre connaissance
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
@@ -4232,11 +4285,11 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                  </p>
                  </div>
                  <button 
-                    onClick={() => setShowUpgrade(true)}
-                   className="bg-yellow-500 text-black text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10"
-                   >
-                   AMÉLIORER
-                 </button>
+                  onClick={() => showAlert("MODULE EN CONSTRUCTION", "Le Bureau de Recrutement n'est pas encore ouvert. Le QG prépare l'intégration sécurisée.", "warning")}
+                 className="bg-yellow-500 text-black text-xs font-bold px-5 py-2.5 rounded-lg hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10 uppercase tracking-widest"
+                 >           
+                 AMÉLIORER
+                   </button>
                  </div>
                 </div>
                     
