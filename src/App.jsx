@@ -868,16 +868,21 @@ const ackPatchNotes = () => {
 };
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
- // --- SYSTÈME CLOUD : GESTION DES NOUVEAUX (VERSION MODERNE) ---
+// --- SYSTÈME CLOUD : GESTION DES NOUVEAUX (HARCÈLEMENT TACTIQUE) ---
 useEffect(() => {
-    // On vérifie toujours le localStorage
-    if (!auth.currentUser && !localStorage.getItem('imperium_login_asked')) {
-        const timer = setTimeout(() => {
-            setShowLoginPrompt(true); // On affiche la belle fenêtre au lieu du vieux confirm()
-            // MARQUEUR PERMANENT
-            localStorage.setItem('imperium_login_asked', 'true');
-        }, 3000);
-        return () => clearTimeout(timer);
+    if (!auth.currentUser) {
+        // On compte le nombre de fois que le soldat a ouvert l'application
+        let sessionCount = parseInt(localStorage.getItem('imperium_session_count') || "0");
+        sessionCount += 1;
+        localStorage.setItem('imperium_session_count', sessionCount.toString());
+
+        // Si c'est sa 1ère ouverture, OU toutes les 3 ouvertures (4, 7, 10...)
+        if (sessionCount === 1 || sessionCount % 3 === 0) {
+            const timer = setTimeout(() => {
+                setShowLoginPrompt(true); 
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
     }
 }, []);
     return (
@@ -1516,6 +1521,9 @@ function Dashboard({ onNavigate }) {
     const [betaCodeInput, setBetaCodeInput] = useState("");
     const [isQuantumUnlocked, setIsQuantumUnlocked] = useState(() => localStorage.getItem('imperium_beta_quantum') === 'GRANTED');
     
+    // NOUVEAU : On vérifie les failles de sécurité
+    const [isCloudSecure, setIsCloudSecure] = useState(!!auth.currentUser);
+    const [isRadarActive, setIsRadarActive] = useState(localStorage.getItem('imperium_notif_enabled') === 'true');
    // ==========================================
     // 👁️ L'ŒIL DE JARVIS (AUTO-CATÉGORISATION INTELLIGENTE)
     // ==========================================
@@ -1907,7 +1915,52 @@ function Dashboard({ onNavigate }) {
               <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest">IMPERIUM</h1>
               <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">J-{daysRemaining} • {todayStr}</p>
            </div>
-           
+        
+        {/* EN-TÊTE EXISTANT */}
+        <div className="flex justify-between items-center px-5 py-4 bg-[#151515] border-b border-white/5 sticky top-0 z-20 pt-12">
+                    {/* ... votre code de l'en-tête (Avatar, Titre, Bouton Settings) ... */}
+                </div>
+
+              {/* 🛡️ MISSION TACTIQUE : SÉCURITÉ (Design Élégant) */}
+              {(!isCloudSecure || !isRadarActive) && (
+                    <div className="mx-5 mt-4 group cursor-pointer" onClick={() => onNavigate('settings')}>
+                        <div className="relative p-[1px] rounded-2xl bg-gradient-to-r from-blue-500/30 via-transparent to-transparent">
+                            <div className="bg-[#111] rounded-[15px] p-4 flex items-center justify-between relative overflow-hidden">
+                                
+                                {/* Effet de fond subtil */}
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-5 transition-opacity group-hover:opacity-10">
+                                    <Shield className="w-20 h-20 text-blue-500" />
+                                </div>
+                                
+                                <div className="flex items-center gap-4 relative z-10">
+                                    {/* Petit point lumineux bleu au lieu d'une grosse alerte */}
+                                    <div className="flex h-2 w-2 relative">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
+                                    </div>
+                                    
+                                    <div>
+                                        <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-0.5">
+                                            Mission : Sécuriser le QG
+                                        </h4>
+                                        <p className="text-gray-500 text-[10px]">
+                                            {!isCloudSecure && !isRadarActive 
+                                                ? "Liaison Cloud et Radar hors ligne." 
+                                                : !isCloudSecure 
+                                                    ? "Liaison Cloud requise." 
+                                                    : "Radar tactique inactif."}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="relative z-10 text-gray-600 group-hover:text-blue-400 transition-colors">
+                                    <ChevronRight className="w-5 h-5" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
            <div className="flex gap-2">
                {/* FLAMME */}
                <div className={`flex items-center gap-1.5 bg-[#1a2333] border ${streak > 0 ? 'border-orange-500/30' : 'border-white/5'} px-3 py-1.5 rounded-full`}>
