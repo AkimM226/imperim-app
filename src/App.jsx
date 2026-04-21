@@ -112,7 +112,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.4.5-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.4.6-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -1472,6 +1472,9 @@ function Dashboard({ onNavigate }) {
         }
     };
 
+    // 🧠 PENSÉES DE JARVIS (OMNISCIENCE)
+    const [jarvisInsights, setJarvisInsights] = useState([]);
+
     // 1. ÉTATS (STATES) - Avec lecture sécurisée locale
     const [balance, setBalance] = useState(() => safeParse(localStorage.getItem('imperium_balance'), 0));
     const [bunker, setBunker] = useState(() => safeParse(localStorage.getItem('imperium_bunker'), 0));
@@ -1897,6 +1900,74 @@ function Dashboard({ onNavigate }) {
         if(tx.type === 'expense') setBalance(balance + tx.amount); else setBalance(balance - tx.amount);
         setTransactions(transactions.filter(t => t.id !== txId));
     };
+
+    // ==========================================
+    // 🧠 LE CERVEAU OMNISCIENT DE JARVIS
+    // ==========================================
+    useEffect(() => {
+        if (!isDataLoaded) return; // Jarvis attend d'avoir les données pour réfléchir
+
+        const newInsights = [];
+        const futilities = transactions.filter(t => t.type === 'expense' && t.category === 'want');
+        const futilitiesTotal = futilities.reduce((sum, t) => sum + t.amount, 0);
+
+        // 1. ANALYSE DU TEMPS ET DE LA SURVIE (Fin de mois)
+        const currentCash = balance - goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
+        const minSurvivalCash = 1000 * daysRemaining; // Exemple : 1000 FCFA min/jour pour survivre
+        
+        if (daysRemaining <= 7 && currentCash < minSurvivalCash) {
+            newInsights.push({
+                type: 'danger',
+                icon: <Skull className="w-4 h-4 text-red-500" />,
+                text: `Fin de mois critique. Vos liquidités (${currentCash}) sont sous le seuil de survie pour les ${daysRemaining} prochains jours.`
+            });
+        }
+
+        // 2. ANALYSE DE LA LIGNE MAGINOT (Le Bunker)
+        if (bunker === 0 && currentCash > 0) {
+            newInsights.push({
+                type: 'warning',
+                icon: <Shield className="w-4 h-4 text-orange-500" />,
+                text: "Votre Bunker est vide. Vous n'avez aucun filet de sécurité. Je recommande d'y transférer 10% de vos liquidités actuelles."
+            });
+        }
+
+        // 3. ANALYSE DU COMPORTEMENT (La Discipline)
+        const currentStreak = calculateStreak();
+        if (currentStreak >= 7) {
+            newInsights.push({
+                type: 'success',
+                icon: <Award className="w-4 h-4 text-green-500" />,
+                text: `Discipline de fer. ${currentStreak} jours consécutifs sans futilité. Continuez sur cette lancée, Commandant.`
+            });
+        } else if (currentStreak === 0 && futilities.length > 0) {
+            newInsights.push({
+                type: 'danger',
+                icon: <AlertTriangle className="w-4 h-4 text-red-500" />,
+                text: "L'ennemi a percé nos défenses hier (dépense futile détectée). Reprenez le contrôle aujourd'hui."
+            });
+        }
+
+        // 4. ANALYSE DES FUITES (Hémorragie financière)
+        if (futilitiesTotal > (currentCash * 0.3) && currentCash > 0) {
+            newInsights.push({
+                type: 'warning',
+                icon: <TrendingDown className="w-4 h-4 text-orange-500" />,
+                text: `Hémorragie détectée : Vos futilités (${futilitiesTotal}) représentent une part dangereuse de vos réserves. Stoppez les achats non-essentiels.`
+            });
+        }
+
+        // S'il n'y a pas d'alerte, message neutre
+        if (newInsights.length === 0) {
+            newInsights.push({
+                type: 'neutral',
+                icon: <Activity className="w-4 h-4 text-blue-400" />,
+                text: `Secteur calme. Paramètres vitaux de l'Empire stables. Prêt pour vos ordres.`
+            });
+        }
+
+        setJarvisInsights(newInsights);
+    }, [balance, bunker, transactions, daysRemaining, goals, isDataLoaded]);
   
     return (
       <PageTransition>
@@ -1941,7 +2012,7 @@ function Dashboard({ onNavigate }) {
         {/* 2. MISSION TACTIQUE (Sur la ligne en dessous) */}
         {/* ========================================== */}
        {/* 🛡️ MISSION TACTIQUE INTELLIGENTE */}
-{!isAuthChecking && (!isCloudSecure || !isRadarActive) && (
+      {!isAuthChecking && (!isCloudSecure || !isRadarActive) && (
     <div 
         onClick={() => {
             // 1. On lance la navigation vers les paramètres
@@ -1988,10 +2059,34 @@ function Dashboard({ onNavigate }) {
         <ChevronRight className="w-4 h-4 text-blue-500/50 group-hover:text-blue-400 shrink-0 ml-2" />
     </div>
 )}
-          
+
         {/* 2. CONTENU SCROLLABLE */}
         <div className="flex-1 overflow-y-auto px-4 pt-6 pb-48 custom-scrollbar space-y-4">
           
+          {/* 🧠 RAPPORT OMNISCIENT DE JARVIS */}
+          {jarvisInsights.length > 0 && (
+                    <div className="mx-5 mt-4 p-4 bg-[#0a0a0a] border border-white/5 rounded-2xl relative overflow-hidden">
+                        {/* Effet d'arrière-plan technique */}
+                        <div className="absolute -right-4 -top-4 opacity-[0.03]">
+                            <Cpu className="w-24 h-24 text-white" />
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-3">
+                            <Cpu className="w-4 h-4 text-blue-500 animate-pulse" />
+                            <h3 className="text-white text-xs font-bold uppercase tracking-widest">Analyse Jarvis</h3>
+                        </div>
+
+                        <div className="space-y-2 relative z-10">
+                            {jarvisInsights.slice(0, 2).map((insight, index) => ( // On n'affiche que les 2 plus importants pour ne pas saturer l'écran
+                                <div key={index} className="flex gap-3 bg-[#111] p-3 rounded-xl border border-white/5">
+                                    <div className="shrink-0 mt-0.5">{insight.icon}</div>
+                                    <p className="text-[10px] text-gray-400 leading-relaxed">{insight.text}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
           {/* CARTE PRINCIPALE */}
           <div className="bg-[#111] rounded-2xl border-t-2 border-[#F4D35E] p-5 relative shadow-lg overflow-hidden">
                <div className="absolute inset-0 bg-gradient-to-b from-[#F4D35E]/5 to-transparent rounded-2xl pointer-events-none"></div>
