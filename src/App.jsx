@@ -112,7 +112,7 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.4.3-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.4.5-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
@@ -282,8 +282,7 @@ const PowerChart = ({ data, color = "#D4AF37" }) => {
 // SYSTÈME DE COMMUNICATION JARVIS (HUD TACTIQUE)
 // ==========================================
 const JarvisContext = React.createContext();
-
-export const useJarvis = () => React.useContext(JarvisContext);
+ const useJarvis = () => React.useContext(JarvisContext);
 
 export const JarvisProvider = ({ children }) => {
     const [dialog, setDialog] = useState({ 
@@ -1522,8 +1521,9 @@ function Dashboard({ onNavigate }) {
     const [isQuantumUnlocked, setIsQuantumUnlocked] = useState(() => localStorage.getItem('imperium_beta_quantum') === 'GRANTED');
     
     // NOUVEAU : On vérifie les failles de sécurité
-    const [isCloudSecure, setIsCloudSecure] = useState(!!auth.currentUser);
+    const [isCloudSecure, setIsCloudSecure] = useState(true); // On suppose 'vrai' par défaut
     const [isRadarActive, setIsRadarActive] = useState(localStorage.getItem('imperium_notif_enabled') === 'true');
+    const [isAuthChecking, setIsAuthChecking] = useState(true); // LE VERROU
    // ==========================================
     // 👁️ L'ŒIL DE JARVIS (AUTO-CATÉGORISATION INTELLIGENTE)
     // ==========================================
@@ -1559,6 +1559,8 @@ function Dashboard({ onNavigate }) {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
+            setIsCloudSecure(!!currentUser); // Met à jour selon la réalité
+            setIsAuthChecking(false);        // Libère le verrou : la liaison est prête
             if (currentUser && !isDataLoaded) {
                 console.log("📥 Dashboard : Récupération Cloud...");
                 try {
@@ -1708,15 +1710,6 @@ function Dashboard({ onNavigate }) {
     const dailySurvivalCost = Math.max(availableCash / 30, 1);
     const daysLost = amount ? (parseFloat(amount) / dailySurvivalCost).toFixed(1) : 0;
   
-    // EFFETS DE SAUVEGARDE
-   useEffect(() => {
-    localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
-    localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); 
-    localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-    localStorage.setItem('imperium_goals', JSON.stringify(goals)); 
-  }, [balance, bunker, transactions, goals]);
-  
-    
 // =======================================================
     // FONCTION DE VALIDATION (AVEC INTERCEPTEUR JARVIS HUD)
     // =======================================================
