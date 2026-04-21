@@ -1940,35 +1940,54 @@ function Dashboard({ onNavigate }) {
         {/* ========================================== */}
         {/* 2. MISSION TACTIQUE (Sur la ligne en dessous) */}
         {/* ========================================== */}
-        {(!isCloudSecure || !isRadarActive) && (
-            <div 
-                onClick={() => onNavigate('settings')}
-                className="mx-5 mt-4 p-3 bg-blue-900/10 border border-blue-500/20 rounded-xl cursor-pointer flex items-center justify-between group hover:bg-blue-900/20 transition-all shrink-0"
-            >
-                <div className="flex items-center gap-3 min-w-0">
-                    {/* Diode bleue */}
-                    <div className="relative flex h-2 w-2 shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                    </div>
-                    
-                    <div className="truncate">
-                        <h4 className="text-white font-bold text-[10px] uppercase tracking-widest leading-tight truncate">
-                            Mission de Sécurité
-                        </h4>
-                        <p className="text-blue-200/50 text-[9px] mt-0.5 truncate">
-                            {!isCloudSecure && !isRadarActive 
-                                ? "Cloud et Radar hors ligne" 
-                                : !isCloudSecure 
-                                    ? "Liaison Cloud requise" 
-                                    : "Radar tactique inactif"}
-                        </p>
-                    </div>
-                </div>
+       {/* 🛡️ MISSION TACTIQUE INTELLIGENTE */}
+{!isAuthChecking && (!isCloudSecure || !isRadarActive) && (
+    <div 
+        onClick={() => {
+            // 1. On lance la navigation vers les paramètres
+            onNavigate('settings'); 
+            
+            // 2. On attend que l'écran soit chargé pour scroller
+            setTimeout(() => {
+                // Si le Cloud n'est pas sécurisé, c'est la priorité. Sinon, on va vers le Radar.
+                const targetId = !isCloudSecure ? 'zone-liaison-compte' : 'zone-radar-tactique';
+                const section = document.getElementById(targetId);
                 
-                <ChevronRight className="w-4 h-4 text-blue-500/50 group-hover:text-blue-400 shrink-0 ml-2" />
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Effet visuel : Lueur bleue pour le Cloud, Violette pour le Radar
+                    section.style.transition = "box-shadow 0.5s ease-in-out";
+                    const glowColor = !isCloudSecure ? "rgba(59, 130, 246, 0.8)" : "rgba(168, 85, 247, 0.8)";
+                    section.style.boxShadow = `0 0 25px ${glowColor}`;
+                    
+                    setTimeout(() => {
+                        section.style.boxShadow = "none";
+                    }, 2000);
+                }
+            }, 300);
+        }}
+        className="mx-5 mt-4 p-3 bg-blue-900/10 border border-blue-500/20 rounded-xl cursor-pointer flex items-center justify-between group hover:bg-blue-900/20 transition-all shrink-0"
+    >
+        <div className="flex items-center gap-3">
+            <div className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
             </div>
-        )}
+            
+            <div>
+                <h4 className="text-white font-bold text-[10px] uppercase tracking-widest leading-tight">
+                    Mission de Sécurité
+                </h4>
+                <p className="text-blue-200/50 text-[9px] mt-0.5">
+                    {!isCloudSecure ? "Liaison Cloud requise" : "Radar tactique inactif"}
+                </p>
+            </div>
+        </div>
+        
+        <ChevronRight className="w-4 h-4 text-blue-500/50 group-hover:text-blue-400 shrink-0 ml-2" />
+    </div>
+)}
           
         {/* 2. CONTENU SCROLLABLE */}
         <div className="flex-1 overflow-y-auto px-4 pt-6 pb-48 custom-scrollbar space-y-4">
@@ -4222,7 +4241,8 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                     </div>
 
                     {/* RAPPELS TACTIQUES */}
-                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
+                    {/* 👇 L'ID est ajouté juste ici, sur cette ligne : */}
+                    <div id="zone-radar-tactique" className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
                          <div className="flex items-center gap-3 mb-4">
                             <div className="p-2 bg-purple-900/20 text-purple-400 rounded-lg"><Bell className="w-5 h-5"/></div>
                             <div><h3 className="text-sm font-bold text-gray-200">Rappels Tactiques</h3><p className="text-[10px] text-gray-500">Ne laissez pas l'ennemi gagner par oubli.</p></div>
