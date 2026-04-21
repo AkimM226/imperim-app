@@ -4071,11 +4071,27 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         showConfirm(
             "RECALIBRAGE DU SYSTÈME",
             "Confirmer le recalibrage manuel des soldes ?",
-            () => {
+            async () => { // ⚠️ NOUVEAU : Ajout de 'async' ici pour attendre le Cloud
                 const newTotalBalance = (parseFloat(calibBalance) || 0) + lockedCash;
+                const newBunker = parseFloat(calibBunker) || 0;
+
+                // 1. Sauvegarde Locale
                 localStorage.setItem('imperium_balance', JSON.stringify(newTotalBalance));
-                localStorage.setItem('imperium_bunker', JSON.stringify(parseFloat(calibBunker) || 0));
+                localStorage.setItem('imperium_bunker', JSON.stringify(newBunker));
                 
+                // 2. ☁️ MISE À JOUR SATELLITAIRE (Le correctif est ici)
+                if (auth.currentUser) {
+                    try {
+                        await saveEmpireToCloud(auth.currentUser.uid, {
+                            balance: JSON.stringify(newTotalBalance),
+                            bunker: JSON.stringify(newBunker)
+                        });
+                        console.log("☁️ Recalibrage synchronisé avec le QG.");
+                    } catch (error) {
+                        console.error("Erreur de synchronisation :", error);
+                    }
+                }
+
                 showAlert("SYSTÈME RECALIBRÉ", "Les nouvelles coordonnées financières sont enregistrées. Redémarrage...", "success");
                 setTimeout(() => window.location.reload(), 2000);
             },
@@ -4083,16 +4099,32 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
         );
     };
     
-    // --- NOUVEAU : SAUVEGARDE RÉGION ---
-    const handleSaveRegion = () => {
-        localStorage.setItem('imperium_currency', empireCurrency);
-        const selectedZoneInfo = ZONES.find(z => z.id === empireZone);
-        if (selectedZoneInfo) {
-            localStorage.setItem('imperium_zone', JSON.stringify(selectedZoneInfo));
+   // --- SAUVEGARDE RÉGION ---
+   const handleSaveRegion = async () => { // ⚠️ Ajout de 'async'
+    localStorage.setItem('imperium_currency', empireCurrency);
+    const selectedZoneInfo = ZONES.find(z => z.id === empireZone);
+    
+    let zoneString = null;
+    if (selectedZoneInfo) {
+        zoneString = JSON.stringify(selectedZoneInfo);
+        localStorage.setItem('imperium_zone', zoneString);
+    }
+
+    // ☁️ MISE À JOUR SATELLITAIRE
+    if (auth.currentUser) {
+        try {
+            await saveEmpireToCloud(auth.currentUser.uid, {
+                currency: empireCurrency,
+                zone: zoneString
+            });
+        } catch (error) {
+            console.error("Erreur sync région :", error);
         }
-        showAlert("PARAMÈTRES APPLIQUÉS", "Localisation et Devise mises à jour. Redémarrage du système...", "success");
-        setTimeout(() => window.location.reload(), 2000);
-    };
+    }
+
+    showAlert("PARAMÈTRES APPLIQUÉS", "Localisation et Devise mises à jour. Redémarrage du système...", "success");
+    setTimeout(() => window.location.reload(), 2000);
+};
 
     const resetEmpire = () => { 
         showConfirm(
