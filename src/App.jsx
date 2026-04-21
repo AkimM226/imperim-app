@@ -112,11 +112,11 @@ const playSound = (type) => {
 // ==========================================
 // CONFIGURATION & DONNÉES
 // ==========================================
-const APP_VERSION = "17.4.2-Architect"; // Changement de version pour déclencher l'affichage
+const APP_VERSION = "17.4.3-Architect"; // Changement de version pour déclencher l'affichage
 
 const RELEASE_NOTES = [
     {
-        version: "17.4.2", // Assurez-vous que ce numéro correspond à APP_VERSION
+        version: "17.4.3", // Assurez-vous que ce numéro correspond à APP_VERSION
         title: "Déploiement Stratégique",
         desc: "Le QG renforce la sécurité et les communications de l'Empire.",
         changes: [
