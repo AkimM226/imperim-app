@@ -33,6 +33,12 @@ import { doc, updateDoc } from 'firebase/firestore';
 const ADMIN_UID = "Jjr1WeX1euRxOHLcqT5QUTNC50K3";
 
 // ==========================================
+// 🧠 CLÉ API GEMINI (LE CERVEAU DE PÉGAZUS)
+// ==========================================
+const GEMINI_API_KEY = "AIzaSyBg8hXQV3_9pYLnUpXpI1wRUctsvU16haY"; // Nous la remplacerons par la vraie
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+// ==========================================
 // MOTEUR HAPTIQUE (VIBRATIONS)
 // ==========================================
  const triggerVibration = (type = 'light') => {
@@ -822,27 +828,27 @@ function QuantumScreen({ onBack }) {
 // ==========================================
 
 // ==========================================
-// 🧠 COMPOSANT : CHAMBRE HOLOGRAPHIQUE PÉGAZUS (V18.0.0 - CORRECTIF AFFICHAGE)
+// 🧠 COMPOSANT : CHAMBRE HOLOGRAPHIQUE PÉGAZUS (V18.0.0 - FINALE)
 // ==========================================
 function PegazusCore({ onNavigate }) {
-    // 1. ÉTATS ET RÉFÉRENCES (Indispensables pour que l'écran ne soit pas noir)
     const [isListening, setIsListening] = useState(false);
     const [logs, setLogs] = useState([
         "> Initialisation du noyau PÉGAZUS...",
         "> Vérification de l'ADN biométrique : OMEGA reconnu.",
         "> Connexion au processeur vocal : ÉTABLIE.",
+        "> Cerveau IA (Gemini Flash) : CONNECTÉ.",
         "> Prêt pour vos ordres vocaux, Commandant."
     ]);
     const terminalEndRef = useRef(null);
 
-    // 2. AUTO-SCROLL DU TERMINAL
+    // AUTO-SCROLL DU TERMINAL
     useEffect(() => {
         if (terminalEndRef.current) {
             terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
     }, [logs]);
 
-    // 3. LOGIQUE VOCALE (Synthèse)
+    // SYNTHÈSE VOCALE
     const speak = (text) => {
         if (!window.speechSynthesis) return;
         window.speechSynthesis.cancel(); 
@@ -853,11 +859,34 @@ function PegazusCore({ onNavigate }) {
         window.speechSynthesis.speak(utterance);
     };
 
-    // 4. LOGIQUE MICROPHONE (Reconnaissance)
+    // LE CERVEAU IA (Gemini Flash Latest)
+    const askPegazus = async (userText) => {
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" }); 
+            
+            const systemPrompt = `Tu es PÉGAZUS, l'intelligence artificielle d'administration du système IMPERIUM. Ton créateur et commandant est l'Architecte. 
+            Tes réponses doivent être extrêmement concises (2 ou 3 phrases maximum), militaires, et légèrement sarcastiques (façon J.A.R.V.I.S). 
+            Tu ne dois utiliser aucune mise en forme Markdown complexe (pas d'étoiles, pas de gras) car ta réponse sera lue par un synthétiseur vocal.
+            Voici l'ordre ou la question du Commandant : "${userText}"`;
+
+            const result = await model.generateContent(systemPrompt);
+            const responseText = result.response.text();
+            
+            setLogs(prev => [...prev, `PÉGAZUS : ${responseText}`]);
+            speak(responseText);
+        } catch (error) {
+            console.error("Erreur Gemini:", error);
+            const errorMsg = "Erreur de connexion au noyau quantique. Vérifiez la clé API ou votre connexion.";
+            setLogs(prev => [...prev, `PÉGAZUS : ${errorMsg}`]);
+            speak(errorMsg);
+        }
+    };
+
+    // MICROPHONE ET ÉCOUTE (Une seule fonction !)
     const startListening = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            setLogs(prev => [...prev, "> Erreur : Navigateur non compatible."]);
+            setLogs(prev => [...prev, "> Erreur : Navigateur non compatible pour la voix."]);
             return;
         }
 
@@ -873,12 +902,8 @@ function PegazusCore({ onNavigate }) {
             const transcript = event.results[0][0].transcript;
             setLogs(prev => [...prev, `VOUS : ${transcript}`]);
             
-            // Réponse automatique de Pégazus
-            setTimeout(() => {
-                const response = "Ordre reçu. Analyse en cours sur le serveur impérial.";
-                setLogs(prev => [...prev, `PÉGAZUS : ${response}`]);
-                speak(response);
-            }, 1000);
+            // Envoi de la phrase à l'IA
+            askPegazus(transcript);
         };
 
         recognition.onend = () => setIsListening(false);
@@ -897,7 +922,7 @@ function PegazusCore({ onNavigate }) {
 
                 {/* HEADER */}
                 <div className="px-5 pt-safe-top mt-4 flex justify-between items-center relative z-10 shrink-0">
-                    <button onClick={() => { window.speechSynthesis.cancel(); onNavigate('settings'); }} className="p-2 bg-white/5 rounded-full text-cyan-400">
+                    <button onClick={() => { window.speechSynthesis.cancel(); onNavigate('settings'); }} className="p-2 bg-white/5 rounded-full text-cyan-400 hover:bg-white/10 transition-colors">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="flex flex-col items-end">
@@ -906,7 +931,7 @@ function PegazusCore({ onNavigate }) {
                     </div>
                 </div>
 
-                {/* ORBE (CENTRE) */}
+                {/* ORBE */}
                 <div className="flex-1 flex flex-col items-center justify-center relative z-10 shrink-0 min-h-[250px]">
                     <div className="relative w-48 h-48 flex items-center justify-center">
                         <div className={`absolute inset-0 border-2 border-cyan-900/30 rounded-full ${isListening ? 'animate-ping border-cyan-500' : 'animate-[spin_10s_linear_infinite]'}`}></div>
@@ -919,7 +944,7 @@ function PegazusCore({ onNavigate }) {
                     </p>
                 </div>
 
-                {/* TERMINAL (BAS) - CORRIGÉ POUR NE PAS ÊTRE CACHÉ */}
+                {/* TERMINAL DE COMMANDE */}
                 <div className="h-56 w-full bg-cyan-950/20 border-t border-cyan-900/50 p-4 pb-28 overflow-y-auto relative z-10 backdrop-blur-sm custom-scrollbar shrink-0 mt-auto">
                     <div className="space-y-3 text-[10px]">
                         {logs.map((log, index) => (
@@ -931,11 +956,11 @@ function PegazusCore({ onNavigate }) {
                                 {log}
                             </p>
                         ))}
-                        <div ref={terminalEndRef} />
+                        <div ref={terminalEndRef} className="h-4" />
                     </div>
                 </div>
 
-                {/* BOUTON MICROPHONE */}
+                {/* BOUTON D'ACTIVATION VOCALE */}
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
                     <button 
                         onClick={startListening}
@@ -952,7 +977,6 @@ function PegazusCore({ onNavigate }) {
         </PageTransition>
     );
 }
-
 export default function App() {
     return (
         <JarvisProvider>
