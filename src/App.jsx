@@ -848,14 +848,26 @@ function PegazusCore({ onNavigate }) {
         }
     }, [logs]);
 
-    // SYNTHÈSE VOCALE
+    // SYNTHÈSE VOCALE AMÉLIORÉE
     const speak = (text) => {
         if (!window.speechSynthesis) return;
+        
+        // On nettoie les anciennes requêtes
         window.speechSynthesis.cancel(); 
+
         const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Configuration de la voix
         utterance.lang = 'fr-FR';
-        utterance.pitch = 0.8;
-        utterance.rate = 1.1;
+        utterance.pitch = 0.9; 
+        utterance.rate = 1.0;
+        utterance.volume = 1.0; // Force le volume au maximum
+
+        // Petit fix pour Chrome/Safari : On récupère les voix dispo
+        const voices = window.speechSynthesis.getVoices();
+        const frenchVoice = voices.find(v => v.lang.includes('fr'));
+        if (frenchVoice) utterance.voice = frenchVoice;
+
         window.speechSynthesis.speak(utterance);
     };
 
@@ -882,13 +894,18 @@ function PegazusCore({ onNavigate }) {
         }
     };
 
-    // MICROPHONE ET ÉCOUTE (Une seule fonction !)
+    // MICROPHONE ET ÉCOUTE AVEC DÉVERROUILLAGE AUDIO
     const startListening = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            setLogs(prev => [...prev, "> Erreur : Navigateur non compatible pour la voix."]);
+            setLogs(prev => [...prev, "> Erreur : Navigateur non compatible."]);
             return;
         }
+
+        // --- ⚡️ ASTUCE DE L'ARCHITECTE : DÉVERROUILLAGE AUDIO ⚡️ ---
+        // On joue un son vide pour "déverrouiller" le haut-parleur sur Mobile
+        const silentUtterance = new SpeechSynthesisUtterance("");
+        window.speechSynthesis.speak(silentUtterance);
 
         const recognition = new SpeechRecognition();
         recognition.lang = 'fr-FR';
@@ -901,8 +918,6 @@ function PegazusCore({ onNavigate }) {
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             setLogs(prev => [...prev, `VOUS : ${transcript}`]);
-            
-            // Envoi de la phrase à l'IA
             askPegazus(transcript);
         };
 
