@@ -848,25 +848,29 @@ function PegazusCore({ onNavigate }) {
         }
     }, [logs]);
 
-    // SYNTHÈSE VOCALE AMÉLIORÉE
+    // SYNTHÈSE VOCALE OPTIMISÉE (Recherche de voix Premium locales)
     const speak = (text) => {
         if (!window.speechSynthesis) return;
-        
-        // On nettoie les anciennes requêtes
         window.speechSynthesis.cancel(); 
-
-        const utterance = new SpeechSynthesisUtterance(text);
         
-        // Configuration de la voix
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'fr-FR';
-        utterance.pitch = 0.9; 
-        utterance.rate = 1.0;
-        utterance.volume = 1.0; // Force le volume au maximum
+        utterance.pitch = 1.0; // On remet à 1 pour éviter l'effet "voix modifiée"
+        utterance.rate = 1.05; // Très légère accélération pour plus de naturel
 
-        // Petit fix pour Chrome/Safari : On récupère les voix dispo
         const voices = window.speechSynthesis.getVoices();
-        const frenchVoice = voices.find(v => v.lang.includes('fr'));
-        if (frenchVoice) utterance.voice = frenchVoice;
+        
+        // 1. On cherche d'abord les voix de Haute Qualité (Thomas/Aurélie Premium sur iOS, Google réseau sur Android)
+        const premiumVoice = voices.find(v => v.lang.includes('fr') && (v.name.includes('Premium') || v.name.includes('Enhanced') || v.name.includes('Network') || v.name.includes('Google')));
+        
+        // 2. Sinon on prend la première voix française qu'on trouve
+        const fallbackVoice = voices.find(v => v.lang.includes('fr'));
+
+        if (premiumVoice) {
+            utterance.voice = premiumVoice;
+        } else if (fallbackVoice) {
+            utterance.voice = fallbackVoice;
+        }
 
         window.speechSynthesis.speak(utterance);
     };
