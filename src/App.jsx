@@ -822,22 +822,82 @@ function QuantumScreen({ onBack }) {
 // ==========================================
 
 // ==========================================
-// 🧠 COMPOSANT : CHAMBRE HOLOGRAPHIQUE PÉGAZUS
+// 🧠 COMPOSANT : CHAMBRE HOLOGRAPHIQUE PÉGAZUS (V18.0.0 - CORRECTIF AFFICHAGE)
 // ==========================================
 function PegazusCore({ onNavigate }) {
+    // 1. ÉTATS ET RÉFÉRENCES (Indispensables pour que l'écran ne soit pas noir)
+    const [isListening, setIsListening] = useState(false);
+    const [logs, setLogs] = useState([
+        "> Initialisation du noyau PÉGAZUS...",
+        "> Vérification de l'ADN biométrique : OMEGA reconnu.",
+        "> Connexion au processeur vocal : ÉTABLIE.",
+        "> Prêt pour vos ordres vocaux, Commandant."
+    ]);
+    const terminalEndRef = useRef(null);
+
+    // 2. AUTO-SCROLL DU TERMINAL
+    useEffect(() => {
+        if (terminalEndRef.current) {
+            terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [logs]);
+
+    // 3. LOGIQUE VOCALE (Synthèse)
+    const speak = (text) => {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel(); 
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.pitch = 0.8;
+        utterance.rate = 1.1;
+        window.speechSynthesis.speak(utterance);
+    };
+
+    // 4. LOGIQUE MICROPHONE (Reconnaissance)
+    const startListening = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            setLogs(prev => [...prev, "> Erreur : Navigateur non compatible."]);
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'fr-FR';
+        
+        recognition.onstart = () => {
+            setIsListening(true);
+            if(window.triggerVibration) triggerVibration('light');
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            setLogs(prev => [...prev, `VOUS : ${transcript}`]);
+            
+            // Réponse automatique de Pégazus
+            setTimeout(() => {
+                const response = "Ordre reçu. Analyse en cours sur le serveur impérial.";
+                setLogs(prev => [...prev, `PÉGAZUS : ${response}`]);
+                speak(response);
+            }, 1000);
+        };
+
+        recognition.onend = () => setIsListening(false);
+        recognition.start();
+    };
+
     return (
         <PageTransition>
             <div className="h-[100dvh] w-full max-w-md mx-auto bg-black flex flex-col relative overflow-hidden font-mono">
                 
-                {/* EFFETS HOLOGRAPHIQUES D'ARRIÈRE-PLAN */}
+                {/* EFFETS HOLOGRAPHIQUES */}
                 <div className="absolute inset-0 opacity-20 pointer-events-none">
                     <div className="absolute top-10 left-10 w-64 h-64 bg-cyan-600 rounded-full mix-blend-screen filter blur-[100px] animate-pulse"></div>
                     <div className="absolute bottom-10 right-10 w-64 h-64 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
                 </div>
 
-                {/* HEADER TACTIQUE */}
-                <div className="px-5 pt-safe-top mt-4 flex justify-between items-center relative z-10">
-                    <button onClick={() => onNavigate('settings')} className="p-2 bg-white/5 rounded-full text-cyan-400 hover:bg-white/10 transition-colors">
+                {/* HEADER */}
+                <div className="px-5 pt-safe-top mt-4 flex justify-between items-center relative z-10 shrink-0">
+                    <button onClick={() => { window.speechSynthesis.cancel(); onNavigate('settings'); }} className="p-2 bg-white/5 rounded-full text-cyan-400">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="flex flex-col items-end">
@@ -846,27 +906,20 @@ function PegazusCore({ onNavigate }) {
                     </div>
                 </div>
 
-                {/* L'ORBE CENTRAL (VISUALISEUR) */}
-                <div className="flex-1 flex flex-col items-center justify-center relative z-10">
+                {/* ORBE (CENTRE) */}
+                <div className="flex-1 flex flex-col items-center justify-center relative z-10 shrink-0 min-h-[250px]">
                     <div className="relative w-48 h-48 flex items-center justify-center">
-                        <div className="absolute inset-0 border-2 border-cyan-900/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
-                        <div className="absolute inset-4 border border-cyan-800/50 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
-                        <div className="absolute inset-8 border border-dashed border-cyan-700/50 rounded-full animate-[spin_20s_linear_infinite]"></div>
-                        
-                        <div className="w-24 h-24 bg-cyan-500 rounded-full shadow-[0_0_50px_rgba(6,182,212,0.6)] animate-pulse flex items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-white/20 animate-ping"></div>
-                            <Cpu className="w-10 h-10 text-white relative z-10" />
+                        <div className={`absolute inset-0 border-2 border-cyan-900/30 rounded-full ${isListening ? 'animate-ping border-cyan-500' : 'animate-[spin_10s_linear_infinite]'}`}></div>
+                        <div className={`w-24 h-24 rounded-full flex items-center justify-center relative overflow-hidden transition-all duration-300 ${isListening ? 'bg-cyan-400 shadow-[0_0_80px_rgba(34,211,238,0.8)] scale-110' : 'bg-cyan-600 shadow-[0_0_50px_rgba(6,182,212,0.4)]'}`}>
+                            <Cpu className={`w-10 h-10 text-white relative z-10 ${isListening ? 'animate-bounce' : ''}`} />
                         </div>
                     </div>
-
-                    <div className="mt-12 text-center space-y-2">
-                        <p className="text-cyan-400 text-sm tracking-widest uppercase">Système en attente</p>
-                        <p className="text-gray-500 text-[10px] tracking-widest">Microphone désactivé</p>
-                    </div>
+                    <p className={`mt-8 text-sm tracking-widest uppercase font-bold ${isListening ? 'text-white' : 'text-cyan-400'}`}>
+                        {isListening ? "Écoute en cours..." : "Système en attente"}
+                    </p>
                 </div>
 
-                {/* TERMINAL DE COMMANDE (Log) */}
-                {/* 🔧 Correction : Le terminal prend maintenant tout le bas (mt-auto) et a un padding interne (pb-28) */}
+                {/* TERMINAL (BAS) - CORRIGÉ POUR NE PAS ÊTRE CACHÉ */}
                 <div className="h-56 w-full bg-cyan-950/20 border-t border-cyan-900/50 p-4 pb-28 overflow-y-auto relative z-10 backdrop-blur-sm custom-scrollbar shrink-0 mt-auto">
                     <div className="space-y-3 text-[10px]">
                         {logs.map((log, index) => (
@@ -878,29 +931,24 @@ function PegazusCore({ onNavigate }) {
                                 {log}
                             </p>
                         ))}
-                        {/* L'ancre de défilement */}
-                        <div ref={terminalEndRef} /> 
+                        <div ref={terminalEndRef} />
                     </div>
                 </div>
 
-                {/* BOUTON D'ACTIVATION VOCALE */}
+                {/* BOUTON MICROPHONE */}
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
                     <button 
                         onClick={startListening}
                         disabled={isListening}
                         className={`w-16 h-16 rounded-full flex items-center justify-center transition-all border-4 border-black ${
-                            isListening 
-                            ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] scale-90' 
-                            : 'bg-cyan-600 text-white shadow-[0_0_30px_rgba(6,182,212,0.5)] hover:bg-cyan-500 hover:scale-105 active:scale-95'
+                            isListening ? 'bg-red-500 text-white' : 'bg-cyan-600 text-white shadow-[0_0_30px_rgba(6,182,212,0.5)]'
                         }`}
                     >
-                        <Radio className={`w-6 h-6 ${isListening ? 'animate-pulse' : ''}`} />
+                        <Radio className="w-6 h-6" />
                     </button>
                 </div>
             </div>
-            <style>{`
-                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-            `}</style>
+            <style>{` @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } `}</style>
         </PageTransition>
     );
 }
