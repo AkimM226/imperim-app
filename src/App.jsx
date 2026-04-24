@@ -30,7 +30,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 // ==========================================
 // 👑 CLÉ DE L'EMPEREUR (ACCÈS PÉGAZUS)
 // ==========================================
-const ADMIN_UID = "xUZ09rwJlcMbEcJV7OkYsYKev7Q2";
+const ADMIN_UID = "Jjr1WeX1euRxOHLcqT5QUTNC50K3";
 
 // ==========================================
 // MOTEUR HAPTIQUE (VIBRATIONS)
