@@ -865,20 +865,36 @@ function PegazusCore({ onNavigate }) {
                     </div>
                 </div>
 
-                {/* TERMINAL DE COMMANDE (Log) */}
-                <div className="h-40 bg-cyan-950/20 border-t border-cyan-900/50 p-4 overflow-y-auto relative z-10 backdrop-blur-sm">
-                    <div className="space-y-2 text-[10px] text-cyan-600/80">
-                        <p>{'>'} Initialisation du noyau...</p>
-                        <p>{'>'} Vérification de l'ADN biométrique : OMEGA reconnu.</p>
-                        <p>{'>'} Connexion à la base de données : SÉCURISÉE.</p>
-                        <p className="text-cyan-400">{'>'} Prêt pour vos ordres, Commandant.</p>
+               {/* TERMINAL DE COMMANDE (Log) */}
+                {/* 🔧 Correction : hauteur ajustée (h-56), marges supprimées et padding bas (pb-28) ajouté */}
+                <div className="h-56 w-full bg-cyan-950/20 border-t border-cyan-900/50 p-4 pb-28 overflow-y-auto relative z-10 backdrop-blur-sm custom-scrollbar shrink-0 mt-auto">
+                    <div className="space-y-3 text-[10px]">
+                        {logs.map((log, index) => (
+                            <p key={index} className={
+                                log.startsWith("VOUS") ? "text-white" : 
+                                log.startsWith("PÉGAZUS") ? "text-cyan-300 font-bold" : 
+                                "text-cyan-600/80"
+                            }>
+                                {log}
+                            </p>
+                        ))}
+                        {/* 🔧 L'ancre de défilement a maintenant un petit espace pour ne pas coller sous le bouton */}
+                        <div ref={terminalEndRef} className="h-4" /> 
                     </div>
                 </div>
 
                 {/* BOUTON D'ACTIVATION VOCALE */}
-                <div className="absolute bottom-8 left-0 right-0 flex justify-center z-20">
-                    <button className="w-16 h-16 rounded-full bg-cyan-600 text-white shadow-[0_0_30px_rgba(6,182,212,0.5)] flex items-center justify-center active:scale-90 transition-transform border-4 border-black">
-                        <MessageSquare className="w-6 h-6" />
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
+                    <button 
+                        onClick={startListening}
+                        disabled={isListening}
+                        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all border-4 border-black ${
+                            isListening 
+                            ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] scale-90' 
+                            : 'bg-cyan-600 text-white shadow-[0_0_30px_rgba(6,182,212,0.5)] hover:bg-cyan-500 hover:scale-105 active:scale-95'
+                        }`}
+                    >
+                        <Radio className={`w-6 h-6 ${isListening ? 'animate-pulse' : ''}`} />
                     </button>
                 </div>
             </div>
