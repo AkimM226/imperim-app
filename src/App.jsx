@@ -28,6 +28,11 @@ import { getToken } from 'firebase/messaging';
 import { doc, updateDoc } from 'firebase/firestore';
 
 // ==========================================
+// 👑 CLÉ DE L'EMPEREUR (ACCÈS PÉGAZUS)
+// ==========================================
+const ADMIN_UID = "xUZ09rwJlcMbEcJV7OkYsYKev7Q2";
+
+// ==========================================
 // MOTEUR HAPTIQUE (VIBRATIONS)
 // ==========================================
  const triggerVibration = (type = 'light') => {
@@ -815,6 +820,75 @@ function QuantumScreen({ onBack }) {
 // ==========================================
 // APP PRINCIPALE & NAVIGATION
 // ==========================================
+
+// ==========================================
+// 🧠 COMPOSANT : CHAMBRE HOLOGRAPHIQUE PÉGAZUS
+// ==========================================
+function PegazusCore({ onNavigate }) {
+    return (
+        <PageTransition>
+            <div className="h-[100dvh] w-full max-w-md mx-auto bg-black flex flex-col relative overflow-hidden font-mono">
+                
+                {/* EFFETS HOLOGRAPHIQUES D'ARRIÈRE-PLAN */}
+                <div className="absolute inset-0 opacity-20 pointer-events-none">
+                    <div className="absolute top-10 left-10 w-64 h-64 bg-cyan-600 rounded-full mix-blend-screen filter blur-[100px] animate-pulse"></div>
+                    <div className="absolute bottom-10 right-10 w-64 h-64 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+                </div>
+
+                {/* HEADER TACTIQUE */}
+                <div className="px-5 pt-safe-top mt-4 flex justify-between items-center relative z-10">
+                    <button onClick={() => onNavigate('settings')} className="p-2 bg-white/5 rounded-full text-cyan-400 hover:bg-white/10 transition-colors">
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="flex flex-col items-end">
+                        <span className="text-cyan-400 font-black tracking-[0.3em] text-xs">P.E.G.A.Z.U.S</span>
+                        <span className="text-[8px] text-cyan-700 uppercase tracking-widest">Noyau v18.0.0</span>
+                    </div>
+                </div>
+
+                {/* L'ORBE CENTRAL (VISUALISEUR) */}
+                <div className="flex-1 flex flex-col items-center justify-center relative z-10">
+                    <div className="relative w-48 h-48 flex items-center justify-center">
+                        <div className="absolute inset-0 border-2 border-cyan-900/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                        <div className="absolute inset-4 border border-cyan-800/50 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+                        <div className="absolute inset-8 border border-dashed border-cyan-700/50 rounded-full animate-[spin_20s_linear_infinite]"></div>
+                        
+                        <div className="w-24 h-24 bg-cyan-500 rounded-full shadow-[0_0_50px_rgba(6,182,212,0.6)] animate-pulse flex items-center justify-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white/20 animate-ping"></div>
+                            <Cpu className="w-10 h-10 text-white relative z-10" />
+                        </div>
+                    </div>
+
+                    <div className="mt-12 text-center space-y-2">
+                        <p className="text-cyan-400 text-sm tracking-widest uppercase">Système en attente</p>
+                        <p className="text-gray-500 text-[10px] tracking-widest">Microphone désactivé</p>
+                    </div>
+                </div>
+
+                {/* TERMINAL DE COMMANDE (Log) */}
+                <div className="h-40 bg-cyan-950/20 border-t border-cyan-900/50 p-4 overflow-y-auto relative z-10 backdrop-blur-sm">
+                    <div className="space-y-2 text-[10px] text-cyan-600/80">
+                        <p>{'>'} Initialisation du noyau...</p>
+                        <p>{'>'} Vérification de l'ADN biométrique : OMEGA reconnu.</p>
+                        <p>{'>'} Connexion à la base de données : SÉCURISÉE.</p>
+                        <p className="text-cyan-400">{'>'} Prêt pour vos ordres, Commandant.</p>
+                    </div>
+                </div>
+
+                {/* BOUTON D'ACTIVATION VOCALE */}
+                <div className="absolute bottom-8 left-0 right-0 flex justify-center z-20">
+                    <button className="w-16 h-16 rounded-full bg-cyan-600 text-white shadow-[0_0_30px_rgba(6,182,212,0.5)] flex items-center justify-center active:scale-90 transition-transform border-4 border-black">
+                        <MessageSquare className="w-6 h-6" />
+                    </button>
+                </div>
+            </div>
+            <style>{`
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            `}</style>
+        </PageTransition>
+    );
+}
+
 export default function App() {
     return (
         <JarvisProvider>
@@ -968,6 +1042,11 @@ useEffect(() => {
              currentTier={currentTier} 
              setShowUpgrade={setShowUpgrade} 
             />
+          )}
+          
+          {/* 👇 LA ROUTE PÉGAZUS EST AJOUTÉE ICI 👇 */}
+          {currentView === 'pegazus' && (
+              <PegazusCore onNavigate={navigate} />
           )}
       </>
     );
@@ -3990,6 +4069,7 @@ function AcademyScreen({ onBack }) {
 // 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC DEVISE/ZONE)
 // ==========================================
 function SettingsScreen({ onBack, onNavigate, currentTier, setShowUpgrade}) { 
+    const isAdmin = auth.currentUser && auth.currentUser.uid === ADMIN_UID;
     // 📡 APPEL AU QG : Récupération des outils du HUD
     const { showAlert, showConfirm } = useJarvis();
     // ÉTATS
@@ -4422,7 +4502,7 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                                 <p className="text-[10px] text-gray-500 italic mb-4">
                                     ✅ Sauvegarde automatique activée. Vos données sont en sécurité dans le bunker Google.
                                 </p>
-
+                                   
                                 <button 
                                     onClick={logoutUser}
                                     className="w-full border border-red-500/30 text-red-500 font-bold py-2 rounded-lg text-xs hover:bg-red-900/20 transition-colors uppercase tracking-widest"
@@ -4556,6 +4636,38 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                         </div>
                     </div>
                 )}
+                  {/* 👑 ACCÈS OMEGA : PÉGAZUS (INVISIBLE POUR LES SOLDATS) */}
+                  {isAdmin && (
+                        <div className="bg-[#050b1a] p-5 rounded-xl border-2 border-cyan-500/30 relative overflow-hidden mt-6 mb-4 shadow-[0_0_30px_rgba(6,182,212,0.15)] animate-in fade-in zoom-in duration-500">
+                            {/* Effet holographique d'arrière-plan */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                            
+                            <div className="flex items-center gap-3 mb-4 relative z-10">
+                                <div className="p-2 bg-cyan-900/40 text-cyan-400 rounded-lg border border-cyan-500/50">
+                                    <Cpu className="w-6 h-6 animate-pulse"/>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 tracking-widest uppercase">
+                                        Protocole Pégazus
+                                    </h3>
+                                    <p className="text-[9px] text-cyan-600 uppercase font-bold tracking-widest">
+                                        Niveau d'accréditation : OMEGA
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={() => {
+                                    if(window.triggerVibration) triggerVibration('heavy');
+                                    onNavigate('pegazus');
+                                }} 
+                                className="w-full bg-cyan-950/50 text-cyan-400 border border-cyan-500/50 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-cyan-900/60 transition-all active:scale-95 flex items-center justify-center gap-2 relative z-10"
+                            >
+                                <Zap className="w-4 h-4" />
+                                Initialiser le Cerveau
+                            </button>
+                        </div>
+                    )}
             </div>
         </PageTransition>
     ); 
