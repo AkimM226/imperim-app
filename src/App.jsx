@@ -865,8 +865,8 @@ function PegazusCore({ onNavigate }) {
                     </div>
                 </div>
 
-               {/* TERMINAL DE COMMANDE (Log) */}
-                {/* 🔧 Correction : hauteur ajustée (h-56), marges supprimées et padding bas (pb-28) ajouté */}
+                {/* TERMINAL DE COMMANDE (Log) */}
+                {/* 🔧 Correction : Le terminal prend maintenant tout le bas (mt-auto) et a un padding interne (pb-28) */}
                 <div className="h-56 w-full bg-cyan-950/20 border-t border-cyan-900/50 p-4 pb-28 overflow-y-auto relative z-10 backdrop-blur-sm custom-scrollbar shrink-0 mt-auto">
                     <div className="space-y-3 text-[10px]">
                         {logs.map((log, index) => (
@@ -878,8 +878,8 @@ function PegazusCore({ onNavigate }) {
                                 {log}
                             </p>
                         ))}
-                        {/* 🔧 L'ancre de défilement a maintenant un petit espace pour ne pas coller sous le bouton */}
-                        <div ref={terminalEndRef} className="h-4" /> 
+                        {/* L'ancre de défilement */}
+                        <div ref={terminalEndRef} /> 
                     </div>
                 </div>
 
