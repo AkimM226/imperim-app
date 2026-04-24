@@ -878,7 +878,7 @@ function PegazusCore({ onNavigate }) {
     // LE CERVEAU IA (Gemini Flash Latest)
     const askPegazus = async (userText) => {
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
             
             const systemPrompt = `Tu es PÉGAZUS, l'intelligence artificielle d'administration du système IMPERIUM. Ton créateur et commandant est l'Architecte. 
             Tes réponses doivent être extrêmement concises (2 ou 3 phrases maximum), militaires, et légèrement sarcastiques (façon J.A.R.V.I.S). 
