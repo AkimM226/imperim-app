@@ -33,10 +33,14 @@ import { doc, updateDoc } from 'firebase/firestore';
 const ADMIN_UID = "Jjr1WeX1euRxOHLcqT5QUTNC50K3";
 
 // ==========================================
-// 🧠 CLÉ API GEMINI (LE CERVEAU DE PÉGAZUS)
+// 🧠 CLÉ API GEMINI (DÉDIÉE À PÉGAZUS)
 // ==========================================
-const GEMINI_API_KEY = "AIzaSyBg8hXQV3_9pYLnUpXpI1wRUctsvU16haY"; // Nous la remplacerons par la vraie
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const PEGAZUS_API_KEY = import.meta.env.VITE_PEGAZUS_API_KEY; 
+
+// 🔍 LE MOUCHARD : Regardez la console de votre navigateur !
+console.log("🔍 DIAGNOSTIC CLÉ PEGAZUS :", PEGAZUS_API_KEY ? "Clé détectée (Ok)" : "UNDEFINED (Le fichier .env n'est pas lu !)");
+
+const pegazusGenAI = new GoogleGenerativeAI(PEGAZUS_API_KEY);
 
 // ==========================================
 // MOTEUR HAPTIQUE (VIBRATIONS)
@@ -878,10 +882,10 @@ function PegazusCore({ onNavigate }) {
     // LE CERVEAU IA (Gemini Flash Latest)
     const askPegazus = async (userText) => {
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-            
+            const model = pegazusGenAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
             const systemPrompt = `Tu es PÉGAZUS, l'intelligence artificielle d'administration du système IMPERIUM. Ton créateur et commandant est l'Architecte. 
-            Tes réponses doivent être extrêmement concises (2 ou 3 phrases maximum), militaires, et légèrement sarcastiques (façon J.A.R.V.I.S). 
+            Tes réponses doivent être extrêmement concises (2 ou 3 phrases maximum), militaires, et légèrement sarcastiques (façon J.A.R.V.I.S de Iron Man). 
             Tu ne dois utiliser aucune mise en forme Markdown complexe (pas d'étoiles, pas de gras) car ta réponse sera lue par un synthétiseur vocal.
             Voici l'ordre ou la question du Commandant : "${userText}"`;
 
