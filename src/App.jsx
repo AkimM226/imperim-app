@@ -3990,7 +3990,8 @@ function AcademyScreen({ onBack }) {
 // 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC DEVISE/ZONE)
 // ==========================================
 function SettingsScreen({ onBack, onNavigate, currentTier, setShowUpgrade}) { 
-    const isAdmin = auth.currentUser && auth.currentUser.uid === ADMIN_UID;
+    // const isAdmin = auth.currentUser && auth.currentUser.uid === ADMIN_UID;
+    const isAdmin = false; // Désactivé temporairement car ADMIN_UID n'est pas défini (module PEGAZUS retiré)
     // 📡 APPEL AU QG : Récupération des outils du HUD
     const { showAlert, showConfirm } = useJarvis();
     // ÉTATS
