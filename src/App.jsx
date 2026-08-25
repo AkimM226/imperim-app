@@ -18,7 +18,6 @@ import {
     Infinity, Unlock, Key, Fingerprint, FileText, Info, 
     Search, RefreshCw, Download, Upload, Copy, Castle
   } from 'lucide-react';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 // Remplacez : import { auth, saveEmpireToCloud, loadEmpireFromCloud } from './firebase';
 // PAR CECI :
 import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser, messaging, updateRadarConfig, db } from './firebase';
@@ -26,21 +25,6 @@ import { onAuthStateChanged } from "firebase/auth";
 // On importe l'outil pour générer le jeton depuis la bibliothèque Firebase
 import { getToken } from 'firebase/messaging';
 import { doc, updateDoc } from 'firebase/firestore';
-
-// ==========================================
-// 👑 CLÉ DE L'EMPEREUR (ACCÈS PÉGAZUS)
-// ==========================================
-const ADMIN_UID = "Jjr1WeX1euRxOHLcqT5QUTNC50K3";
-
-// ==========================================
-// 🧠 CLÉ API GEMINI (DÉDIÉE À PÉGAZUS)
-// ==========================================
-const PEGAZUS_API_KEY = import.meta.env.VITE_PEGAZUS_API_KEY; 
-
-// 🔍 LE MOUCHARD : Regardez la console de votre navigateur !
-console.log("🔍 DIAGNOSTIC CLÉ PEGAZUS :", PEGAZUS_API_KEY ? "Clé détectée (Ok)" : "UNDEFINED (Le fichier .env n'est pas lu !)");
-
-const pegazusGenAI = new GoogleGenerativeAI(PEGAZUS_API_KEY);
 
 // ==========================================
 // MOTEUR HAPTIQUE (VIBRATIONS)
@@ -831,175 +815,6 @@ function QuantumScreen({ onBack }) {
 // APP PRINCIPALE & NAVIGATION
 // ==========================================
 
-// ==========================================
-// 🧠 COMPOSANT : CHAMBRE HOLOGRAPHIQUE PÉGAZUS (V18.0.0 - FINALE)
-// ==========================================
-function PegazusCore({ onNavigate }) {
-    const [isListening, setIsListening] = useState(false);
-    const [logs, setLogs] = useState([
-        "> Initialisation du noyau PÉGAZUS...",
-        "> Vérification de l'ADN biométrique : OMEGA reconnu.",
-        "> Connexion au processeur vocal : ÉTABLIE.",
-        "> Cerveau IA (Gemini Flash) : CONNECTÉ.",
-        "> Prêt pour vos ordres vocaux, Commandant."
-    ]);
-    const terminalEndRef = useRef(null);
-
-    // AUTO-SCROLL DU TERMINAL
-    useEffect(() => {
-        if (terminalEndRef.current) {
-            terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [logs]);
-
-    // SYNTHÈSE VOCALE OPTIMISÉE (Recherche de voix Premium locales)
-    const speak = (text) => {
-        if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel(); 
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'fr-FR';
-        utterance.pitch = 1.0; // On remet à 1 pour éviter l'effet "voix modifiée"
-        utterance.rate = 1.05; // Très légère accélération pour plus de naturel
-
-        const voices = window.speechSynthesis.getVoices();
-        
-        // 1. On cherche d'abord les voix de Haute Qualité (Thomas/Aurélie Premium sur iOS, Google réseau sur Android)
-        const premiumVoice = voices.find(v => v.lang.includes('fr') && (v.name.includes('Premium') || v.name.includes('Enhanced') || v.name.includes('Network') || v.name.includes('Google')));
-        
-        // 2. Sinon on prend la première voix française qu'on trouve
-        const fallbackVoice = voices.find(v => v.lang.includes('fr'));
-
-        if (premiumVoice) {
-            utterance.voice = premiumVoice;
-        } else if (fallbackVoice) {
-            utterance.voice = fallbackVoice;
-        }
-
-        window.speechSynthesis.speak(utterance);
-    };
-
-    // LE CERVEAU IA (Gemini Flash Latest)
-    const askPegazus = async (userText) => {
-        try {
-            const model = pegazusGenAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
-            const systemPrompt = `Tu es PÉGAZUS, l'intelligence artificielle d'administration du système IMPERIUM. Ton créateur et commandant est l'Architecte. 
-            Tes réponses doivent être extrêmement concises (2 ou 3 phrases maximum), militaires, et légèrement sarcastiques (façon J.A.R.V.I.S de Iron Man). 
-            Tu ne dois utiliser aucune mise en forme Markdown complexe (pas d'étoiles, pas de gras) car ta réponse sera lue par un synthétiseur vocal.
-            Voici l'ordre ou la question du Commandant : "${userText}"`;
-
-            const result = await model.generateContent(systemPrompt);
-            const responseText = result.response.text();
-            
-            setLogs(prev => [...prev, `PÉGAZUS : ${responseText}`]);
-            speak(responseText);
-        } catch (error) {
-            console.error("Erreur Gemini:", error);
-            const errorMsg = "Erreur de connexion au noyau quantique. Vérifiez la clé API ou votre connexion.";
-            setLogs(prev => [...prev, `PÉGAZUS : ${errorMsg}`]);
-            speak(errorMsg);
-        }
-    };
-
-    // MICROPHONE ET ÉCOUTE AVEC DÉVERROUILLAGE AUDIO
-    const startListening = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            setLogs(prev => [...prev, "> Erreur : Navigateur non compatible."]);
-            return;
-        }
-
-        // --- ⚡️ ASTUCE DE L'ARCHITECTE : DÉVERROUILLAGE AUDIO ⚡️ ---
-        // On joue un son vide pour "déverrouiller" le haut-parleur sur Mobile
-        const silentUtterance = new SpeechSynthesisUtterance("");
-        window.speechSynthesis.speak(silentUtterance);
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'fr-FR';
-        
-        recognition.onstart = () => {
-            setIsListening(true);
-            if(window.triggerVibration) triggerVibration('light');
-        };
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            setLogs(prev => [...prev, `VOUS : ${transcript}`]);
-            askPegazus(transcript);
-        };
-
-        recognition.onend = () => setIsListening(false);
-        recognition.start();
-    };
-
-    return (
-        <PageTransition>
-            <div className="h-[100dvh] w-full max-w-md mx-auto bg-black flex flex-col relative overflow-hidden font-mono">
-                
-                {/* EFFETS HOLOGRAPHIQUES */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none">
-                    <div className="absolute top-10 left-10 w-64 h-64 bg-cyan-600 rounded-full mix-blend-screen filter blur-[100px] animate-pulse"></div>
-                    <div className="absolute bottom-10 right-10 w-64 h-64 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-                </div>
-
-                {/* HEADER */}
-                <div className="px-5 pt-safe-top mt-4 flex justify-between items-center relative z-10 shrink-0">
-                    <button onClick={() => { window.speechSynthesis.cancel(); onNavigate('settings'); }} className="p-2 bg-white/5 rounded-full text-cyan-400 hover:bg-white/10 transition-colors">
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <div className="flex flex-col items-end">
-                        <span className="text-cyan-400 font-black tracking-[0.3em] text-xs">P.E.G.A.Z.U.S</span>
-                        <span className="text-[8px] text-cyan-700 uppercase tracking-widest">Noyau v18.0.0</span>
-                    </div>
-                </div>
-
-                {/* ORBE */}
-                <div className="flex-1 flex flex-col items-center justify-center relative z-10 shrink-0 min-h-[250px]">
-                    <div className="relative w-48 h-48 flex items-center justify-center">
-                        <div className={`absolute inset-0 border-2 border-cyan-900/30 rounded-full ${isListening ? 'animate-ping border-cyan-500' : 'animate-[spin_10s_linear_infinite]'}`}></div>
-                        <div className={`w-24 h-24 rounded-full flex items-center justify-center relative overflow-hidden transition-all duration-300 ${isListening ? 'bg-cyan-400 shadow-[0_0_80px_rgba(34,211,238,0.8)] scale-110' : 'bg-cyan-600 shadow-[0_0_50px_rgba(6,182,212,0.4)]'}`}>
-                            <Cpu className={`w-10 h-10 text-white relative z-10 ${isListening ? 'animate-bounce' : ''}`} />
-                        </div>
-                    </div>
-                    <p className={`mt-8 text-sm tracking-widest uppercase font-bold ${isListening ? 'text-white' : 'text-cyan-400'}`}>
-                        {isListening ? "Écoute en cours..." : "Système en attente"}
-                    </p>
-                </div>
-
-                {/* TERMINAL DE COMMANDE */}
-                <div className="h-56 w-full bg-cyan-950/20 border-t border-cyan-900/50 p-4 pb-28 overflow-y-auto relative z-10 backdrop-blur-sm custom-scrollbar shrink-0 mt-auto">
-                    <div className="space-y-3 text-[10px]">
-                        {logs.map((log, index) => (
-                            <p key={index} className={
-                                log.startsWith("VOUS") ? "text-white" : 
-                                log.startsWith("PÉGAZUS") ? "text-cyan-300 font-bold" : 
-                                "text-cyan-600/80"
-                            }>
-                                {log}
-                            </p>
-                        ))}
-                        <div ref={terminalEndRef} className="h-4" />
-                    </div>
-                </div>
-
-                {/* BOUTON D'ACTIVATION VOCALE */}
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
-                    <button 
-                        onClick={startListening}
-                        disabled={isListening}
-                        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all border-4 border-black ${
-                            isListening ? 'bg-red-500 text-white' : 'bg-cyan-600 text-white shadow-[0_0_30px_rgba(6,182,212,0.5)]'
-                        }`}
-                    >
-                        <Radio className="w-6 h-6" />
-                    </button>
-                </div>
-            </div>
-            <style>{` @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } `}</style>
-        </PageTransition>
-    );
-}
 export default function App() {
     return (
         <JarvisProvider>
@@ -1153,11 +968,6 @@ useEffect(() => {
              currentTier={currentTier} 
              setShowUpgrade={setShowUpgrade} 
             />
-          )}
-          
-          {/* 👇 LA ROUTE PÉGAZUS EST AJOUTÉE ICI 👇 */}
-          {currentView === 'pegazus' && (
-              <PegazusCore onNavigate={navigate} />
           )}
       </>
     );
@@ -4766,17 +4576,6 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
                                     </p>
                                 </div>
                             </div>
-                            
-                            <button 
-                                onClick={() => {
-                                    if(window.triggerVibration) triggerVibration('heavy');
-                                    onNavigate('pegazus');
-                                }} 
-                                className="w-full bg-cyan-950/50 text-cyan-400 border border-cyan-500/50 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-cyan-900/60 transition-all active:scale-95 flex items-center justify-center gap-2 relative z-10"
-                            >
-                                <Zap className="w-4 h-4" />
-                                Initialiser le Cerveau
-                            </button>
                         </div>
                     )}
             </div>
