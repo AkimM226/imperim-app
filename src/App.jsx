@@ -61,15 +61,39 @@ import { doc, updateDoc } from 'firebase/firestore';
 // MOTEUR SONORE TACTIQUE (MODE SILENCE RADIO)
 // ==========================================
 let audioContext = null;
+let audioInitialized = false;
+
+const initAudio = () => {
+    if (audioInitialized) return;
+    
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        
+        audioContext = new AudioContext();
+        
+        // Force resume si suspendu (nécessite interaction utilisateur)
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+                console.log("AudioContext activé");
+                audioInitialized = true;
+            }).catch(err => {
+                console.error("Erreur activation AudioContext:", err);
+            });
+        } else {
+            audioInitialized = true;
+        }
+    } catch (e) {
+        console.error("Erreur initialisation audio:", e);
+    }
+};
 
 const playSound = (type) => {
     try {
-        // Initialisation de l'AudioContext
-        if (!audioContext) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            audioContext = new AudioContext();
-        }
+        // Initialisation forcée de l'audio
+        initAudio();
+        
+        if (!audioContext) return;
 
         // Réveil du moteur (pour iPhone/Chrome)
         if (audioContext.state === 'suspended') {
@@ -161,6 +185,36 @@ const playSound = (type) => {
                 osc.start(now + delay);
                 osc.stop(now + delay + 0.1);
             });
+        }
+        else if (type === 'success') {
+            // Son de succès simple (ding positif)
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.frequency.setValueAtTime(880, now); // La5
+            osc.frequency.exponentialRampToValueAtTime(1760, now + 0.1); // La6
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            
+            osc.start(now);
+            osc.stop(now + 0.15);
+        }
+        else if (type === 'error') {
+            // Son d'erreur (buzz grave)
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.frequency.setValueAtTime(100, now);
+            osc.type = 'sawtooth';
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            
+            osc.start(now);
+            osc.stop(now + 0.2);
         }
 
     } catch (e) { console.error("Audio error", e); }
