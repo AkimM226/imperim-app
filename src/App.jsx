@@ -63,11 +63,8 @@ import { doc, updateDoc } from 'firebase/firestore';
 let audioContext = null;
 
 const playSound = (type) => {
-    // 🛑 FILTRE ABSOLU : Si ce n'est pas la radio, on ne fait rien.
-    if (type !== 'radio') return;
-
     try {
-        // Initialisation (seulement si c'est la radio)
+        // Initialisation de l'AudioContext
         if (!audioContext) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!AudioContext) return;
@@ -103,6 +100,67 @@ const playSound = (type) => {
             noise.connect(noiseGain);
             noiseGain.connect(ctx.destination);
             noise.start(now);
+        }
+        
+        // SONS D'INTERFACE (Clicks et feedbacks)
+        else if (type === 'click') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            
+            osc.start(now);
+            osc.stop(now + 0.05);
+        }
+        else if (type === 'citadel') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.2);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            
+            osc.start(now);
+            osc.stop(now + 0.2);
+        }
+        else if (type === 'debts') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.frequency.setValueAtTime(150, now);
+            osc.type = 'sawtooth';
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            
+            osc.start(now);
+            osc.stop(now + 0.15);
+        }
+        else if (type === 'trophies') {
+            // Son de succès (arpège rapide)
+            [0, 0.1, 0.2].forEach((delay, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                const freq = 523.25 + (i * 100); // Do, Ré, Mi
+                osc.frequency.setValueAtTime(freq, now + delay);
+                gain.gain.setValueAtTime(0.05, now + delay);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.1);
+                
+                osc.start(now + delay);
+                osc.stop(now + delay + 0.1);
+            });
         }
 
     } catch (e) { console.error("Audio error", e); }
