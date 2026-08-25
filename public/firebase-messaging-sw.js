@@ -5,7 +5,8 @@
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js');
 
-// 2. ⚠️ REMPLACEZ CECI PAR VOTRE VRAIE CONFIGURATION FIREBASE
+// 2. ⚠️ CONFIGURATION FIREBASE (en production, utilisez importScripts pour charger depuis env)
+// Pour le développement local, les valeurs par défaut sont utilisées
 const firebaseConfig = {
     apiKey: "AIzaSyC_gXxWHFBnIl6z2U26cNp0gzgY5DkiRcs",
     authDomain: "imperium-v2-a2ba1.firebaseapp.com",

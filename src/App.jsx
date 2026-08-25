@@ -26,6 +26,12 @@ import { onAuthStateChanged } from "firebase/auth";
 import { getToken } from 'firebase/messaging';
 import { doc, updateDoc } from 'firebase/firestore';
 
+// Composants UI extraits
+import { JarvisProvider, useJarvis } from './components/hooks/JarvisProvider';
+import PowerChart from './components/ui/PowerChart';
+import SplashScreen from './components/ui/SplashScreen';
+import PageTransition from './components/ui/PageTransition';
+
 // ==========================================
 // MOTEUR HAPTIQUE (VIBRATIONS)
 // ==========================================
@@ -360,152 +366,6 @@ const getDaysLeft = (targetDate) => {
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
     return days;
 };
-
-// ==========================================
-// COMPOSANT GRAPHIQUE SVG
-// ==========================================
-const PowerChart = ({ data, color = "#D4AF37" }) => {
-    if (!data || data.length < 2) return <div className="h-32 flex items-center justify-center text-gray-600 text-xs">Données insuffisantes</div>;
-    const height = 100;
-    const width = 300;
-    const maxVal = Math.max(...data);
-    const minVal = Math.min(...data);
-    const range = maxVal - minVal || 1; 
-    const points = data.map((val, index) => {
-        const x = (index / (data.length - 1)) * width;
-        const y = height - ((val - minVal) / range) * height * 0.8 - 10; 
-        return `${x},${y}`;
-    }).join(' ');
-    const fillPoints = `${points} ${width},${height} 0,${height}`;
-    return (
-        <div className="w-full h-32 relative overflow-hidden rounded-lg bg-[#0a0a0a] border border-white/5">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full p-2">
-                <defs><linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-                <polygon points={fillPoints} fill="url(#chartGradient)" />
-                <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <div className="absolute top-2 right-2 text-[9px] text-gray-500 font-mono bg-black/50 px-1 rounded">30 Jours</div>
-        </div>
-    );
-};
-
-// ==========================================
-// SYSTÈME DE COMMUNICATION JARVIS (HUD TACTIQUE)
-// ==========================================
-const JarvisContext = React.createContext();
- const useJarvis = () => React.useContext(JarvisContext);
-
-export const JarvisProvider = ({ children }) => {
-    const [dialog, setDialog] = useState({ 
-        isOpen: false, type: 'alert', title: '', message: '', theme: 'info', onConfirm: null, onCancel: null 
-    });
-
-    const showAlert = React.useCallback((title, message, theme = 'info') => {
-        if(window.triggerVibration) triggerVibration(theme === 'error' ? 'error' : 'light');
-        setDialog({ 
-            isOpen: true, type: 'alert', title, message, theme, 
-            onConfirm: () => setDialog(prev => ({ ...prev, isOpen: false })) 
-        });
-    }, []);
-
-    const showConfirm = React.useCallback((title, message, onConfirm, theme = 'warning') => {
-        if(window.triggerVibration) triggerVibration('warning');
-        setDialog({ 
-            isOpen: true, type: 'confirm', title, message, theme, 
-            onConfirm: () => { setDialog(prev => ({ ...prev, isOpen: false })); onConfirm(); }, 
-            onCancel: () => setDialog(prev => ({ ...prev, isOpen: false })) 
-        });
-    }, []);
-
-    return (
-        <JarvisContext.Provider value={{ showAlert, showConfirm }}>
-            {children}
-            {dialog.isOpen && <JarvisModalUI {...dialog} />}
-        </JarvisContext.Provider>
-    );
-};
-
-function JarvisModalUI({ type, title, message, theme, onConfirm, onCancel }) {
-    // Thèmes visuels selon la situation
-    const themes = {
-        info: { border: 'border-blue-500/50', bg: 'bg-blue-900/10', text: 'text-blue-400', icon: Info },
-        warning: { border: 'border-orange-500/50', bg: 'bg-orange-900/10', text: 'text-orange-400', icon: AlertTriangle },
-        error: { border: 'border-red-500/50', bg: 'bg-red-900/10', text: 'text-red-500', icon: Skull },
-        success: { border: 'border-green-500/50', bg: 'bg-green-900/10', text: 'text-green-400', icon: CheckCircle },
-        jarvis: { border: 'border-gold/50', bg: 'bg-gold/5', text: 'text-gold', icon: Zap }
-    };
-
-    const currentTheme = themes[theme] || themes.info;
-    const Icon = currentTheme.icon;
-
-    return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in zoom-in-95 duration-200">
-            <div className={`bg-[#0a0a0a] border ${currentTheme.border} w-full max-w-sm rounded-xl p-6 shadow-2xl relative overflow-hidden`}>
-                
-                {/* Décoration d'arrière-plan */}
-                <div className={`absolute top-0 right-0 p-4 opacity-5 ${currentTheme.text}`}>
-                    <Icon className="w-24 h-24" />
-                </div>
-
-                <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className={`p-2 rounded-lg ${currentTheme.bg} ${currentTheme.text} border ${currentTheme.border}`}>
-                            <Icon className="w-6 h-6" />
-                        </div>
-                        <h3 className={`font-serif font-bold text-lg uppercase tracking-widest ${currentTheme.text}`}>
-                            {title}
-                        </h3>
-                    </div>
-                    
-                    <p className="text-sm text-gray-300 leading-relaxed mb-8 whitespace-pre-line">
-                        {message}
-                    </p>
-
-                    <div className="flex gap-3">
-                        {type === 'confirm' && (
-                            <button 
-                                onClick={onCancel} 
-                                className="flex-1 bg-transparent border border-white/10 text-gray-400 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-white/5 transition-colors"
-                            >
-                                Annuler
-                            </button>
-                        )}
-                        <button 
-                            onClick={onConfirm} 
-                            className={`flex-1 font-bold py-3 rounded-lg text-xs uppercase tracking-widest transition-colors ${
-                                theme === 'error' || theme === 'warning' 
-                                ? 'bg-red-600 text-white hover:bg-red-500' 
-                                : theme === 'success' ? 'bg-green-600 text-white hover:bg-green-500'
-                                : 'bg-gold text-black hover:bg-yellow-400'
-                            }`}
-                        >
-                            {type === 'confirm' ? 'Confirmer' : 'Reçu'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ==========================================
-// COMPOSANTS UX
-// ==========================================
-function SplashScreen() {
-    return (
-        <div className="fixed inset-0 bg-[#050505] z-[100] flex flex-col items-center justify-center animate-out fade-out duration-1000 fill-mode-forwards delay-[2500ms]">
-            <div className="relative mb-8"><div className="absolute inset-0 bg-gold/20 blur-xl rounded-full animate-pulse"></div><Fingerprint className="w-20 h-20 text-gold relative z-10 animate-bounce-slow" /></div>
-            <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-700 via-gold to-yellow-700 tracking-[0.3em] mb-6 animate-pulse">IMPERIUM</h1>
-            <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden"><div className="h-full bg-gold animate-loading-bar rounded-full"></div></div>
-            <p className="absolute bottom-10 text-[10px] text-gray-600 uppercase tracking-widest font-mono">Système Sécurisé v{APP_VERSION}</p>
-            <style>{`@keyframes loading-bar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } } .animate-loading-bar { animation: loading-bar 2.5s ease-in-out forwards; } .animate-bounce-slow { animation: bounce 3s infinite; }`}</style>
-        </div>
-    );
-}
-
-function PageTransition({ children }) {
-    return (<div className="animate-in slide-in-from-bottom-8 fade-in duration-500 w-full flex-1 flex flex-col overflow-hidden">{children}</div>);
-}
 
 // ==========================================
 // SYSTEME DE SECURITE
@@ -947,7 +807,7 @@ function AppContent() {
         return () => clearTimeout(timer); 
     }, []);
   
-    if (loading) return <SplashScreen />;
+    if (loading) return <SplashScreen APP_VERSION={APP_VERSION} />;
     if (!isAuthorized) return <SecurityGate onAccessGranted={() => setIsAuthorized(true)} />;
     if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
     

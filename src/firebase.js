@@ -3,14 +3,15 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { initializeFirestore, doc, setDoc, getDoc, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getMessaging } from "firebase/messaging";
-// 👇 COLLEZ VOTRE CONFIGURATION IMPERIUM-V2 ICI 👇
+
+// 👇 CONFIGURATION FIREBASE VIA VARIABLES D'ENVIRONNEMENT 👇
 const firebaseConfig = {
-  apiKey: "AIzaSyC_gXxWHFBnIl6z2U26cNp0gzgY5DkiRcs",
-  authDomain: "imperium-v2-a2ba1.firebaseapp.com",
-  projectId: "imperium-v2-a2ba1",
-  storageBucket: "imperium-v2-a2ba1.firebasestorage.app",
-  messagingSenderId: "688896103671",
-  appId: "1:688896103671:web:7a80ae9168765891d56ff2"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyC_gXxWHFBnIl6z2U26cNp0gzgY5DkiRcs",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "imperium-v2-a2ba1.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "imperium-v2-a2ba1",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "imperium-v2-a2ba1.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "688896103671",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:688896103671:web:7a80ae9168765891d56ff2"
 };
 
 // 1. Initialisation de l'App
