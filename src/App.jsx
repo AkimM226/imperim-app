@@ -1,23 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+// Imports optimisés pour le tree-shaking
 import { 
-    // Outils de base (Doublons supprimés)
-    ArrowLeft, ArrowDownRight, Wallet, Shield, Target, Award, Zap, 
-    TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
-    AlertTriangle, Lock, Clock, History, Radio, 
-    MessageSquare, Send, ChevronRight, Calculator,
-    Bell, UserCircle, Cpu, Sparkles, Crown, Check, 
-    
-    // Outils avancés & Arsenal
-    Sword, Loader2, Globe, PiggyBank, Skull, Flame, 
-    Star, Smartphone, Settings, LogOut,
-    
-    // Icônes additionnelles
-    CheckSquare, Square, CheckCircle2, BookOpen, Scroll, 
-    Trophy, BarChart3, Activity, TrendingDown, Lightbulb, 
-    PieChart, UserMinus, UserPlus, CalendarClock, Briefcase, 
-    Infinity, Unlock, Key, Fingerprint, FileText, Info, 
-    Search, RefreshCw, Download, Upload, Copy, Castle
-  } from 'lucide-react';
+  ArrowLeft, ArrowDownRight, Wallet, Shield, Target, Award, Zap, 
+  TrendingUp, Menu, X, Plus, Trash2, CheckCircle, 
+  AlertTriangle, Lock, Clock, History, Radio, 
+  MessageSquare, Send, ChevronRight, Calculator,
+  Bell, UserCircle, Cpu, Sparkles, Crown, Check, 
+  Sword, Loader2, Globe, PiggyBank, Skull, Flame, 
+  Star, Smartphone, Settings, LogOut,
+  CheckSquare, Square, CheckCircle2, BookOpen, Scroll, 
+  Trophy, BarChart3, Activity, TrendingDown, Lightbulb, 
+  PieChart, UserMinus, UserPlus, CalendarClock, Briefcase, 
+  Infinity, Unlock, Key, Fingerprint, FileText, Info, 
+  Search, RefreshCw, Download, Upload, Copy, Castle
+} from './components/ui/Icons';
 // Remplacez : import { auth, saveEmpireToCloud, loadEmpireFromCloud } from './firebase';
 // PAR CECI :
 import { auth, saveEmpireToCloud, loadEmpireFromCloud, loginWithGoogle, logoutUser, messaging, updateRadarConfig, db } from './firebase';

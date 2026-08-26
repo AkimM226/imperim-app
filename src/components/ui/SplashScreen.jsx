@@ -1,4 +1,5 @@
-import { Fingerprint } from 'lucide-react';
+import React from 'react';
+import { Fingerprint } from './Icons';
 
 function SplashScreen({ APP_VERSION }) {
     return (
@@ -12,4 +13,4 @@ function SplashScreen({ APP_VERSION }) {
     );
 }
 
-export default SplashScreen;
+export default React.memo(SplashScreen);

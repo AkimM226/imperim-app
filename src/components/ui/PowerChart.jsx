@@ -1,7 +1,9 @@
+import React from 'react';
+
 // ==========================================
 // COMPOSANT GRAPHIQUE SVG
 // ==========================================
-const PowerChart = ({ data, color = "#D4AF37" }) => {
+const PowerChart = React.memo(({ data, color = "#D4AF37" }) => {
     if (!data || data.length < 2) return <div className="h-32 flex items-center justify-center text-gray-600 text-xs">Données insuffisantes</div>;
     const height = 100;
     const width = 300;
@@ -24,6 +26,6 @@ const PowerChart = ({ data, color = "#D4AF37" }) => {
             <div className="absolute top-2 right-2 text-[9px] text-gray-500 font-mono bg-black/50 px-1 rounded">30 Jours</div>
         </div>
     );
-};
+});
 
 export default PowerChart;
