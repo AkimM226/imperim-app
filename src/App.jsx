@@ -4013,7 +4013,13 @@ const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 
 const initialTotal = JSON.parse(localStorage.getItem('imperium_balance') || "0");
 const [calibBalance, setCalibBalance] = useState(initialTotal - lockedCash);
 
-const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('imperium_bunker') || "0"));
+const [calibBunker, setCalibBunker] = useState(() => {
+    try {
+        return JSON.parse(localStorage.getItem('imperium_bunker') || "0");
+    } catch {
+        return 0;
+    }
+});
     // Feedback
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedbackText, setFeedbackText] = useState("");
