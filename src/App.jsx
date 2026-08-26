@@ -24,6 +24,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 // Composants UI extraits
 import { JarvisProvider, useJarvis } from './components/hooks/JarvisProvider';
+import InteractiveTutorial from './components/ui/InteractiveTutorial';
 import PowerChart from './components/ui/PowerChart';
 import SplashScreen from './components/ui/SplashScreen';
 import PageTransition from './components/ui/PageTransition';
@@ -238,14 +239,6 @@ const RELEASE_NOTES = [
             { icon: Award, text: "BUREAU DE RECRUTEMENT : Structure des grades en place (Phase 1)." }
         ]
     }
-];
-
-const TUTORIAL_STEPS = [
-    { title: "BIENVENUE, COMMANDANT", text: "Imperium est votre poste de commandement. Ici, la discipline est votre seule arme.", icon: Shield },
-    { title: "LE SOLDE VIRTUEL", text: "Le chiffre central est votre Cash réel. S'il est positif, vous survivez.", icon: PiggyBank },
-    { title: "LA STRATÉGIE WAVE", text: "Wave est votre Bunker (Épargne). Ne touchez jamais à cet argent sans raison vitale.", icon: Smartphone },
-    { title: "LES ORDRES", text: "Chaque matin, recevez 3 missions. Accomplissez-les pour renforcer votre discipline.", icon: Radio },
-    { title: "LA CITADELLE", text: "Vérifiez votre temps de survie estimé si tous vos revenus s'arrêtent.", icon: Castle },
 ];
 
 const VALID_HASHES = [
@@ -948,7 +941,6 @@ function OnboardingScreen({ onComplete }) {
     // On commence à l'étape 0 (Choix)
     const [step, setStep] = useState(0); 
     const [showTutorial, setShowTutorial] = useState(false);
-    const [slideIndex, setSlideIndex] = useState(0);
 
     // Formulaire
     const [initialBalance, setInitialBalance] = useState('');
@@ -1033,43 +1025,9 @@ function OnboardingScreen({ onComplete }) {
         window.location.reload(); 
     };
 
-    const nextSlide = () => {
-        if (slideIndex < TUTORIAL_STEPS.length - 1) {
-            setSlideIndex(slideIndex + 1);
-        } else {
-            finishComplete();
-        }
-    };
-
-    // --- RENDU TUTORIEL (SLIDES) ---
+    // --- RENDU TUTORIEL INTERACTIF ---
     if (showTutorial) {
-        const currentSlide = TUTORIAL_STEPS[slideIndex];
-        const Icon = currentSlide.icon;
-        
-        return (
-            <PageTransition>
-                <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 z-50 text-center">
-                    <div className="flex-1 flex flex-col items-center justify-center max-w-sm animate-in zoom-in duration-500">
-                        <div className="w-24 h-24 bg-[#111] rounded-full flex items-center justify-center mb-8 border border-gold/30 shadow-[0_0_30px_rgba(212,175,55,0.1)]">
-                            <Icon className="w-10 h-10 text-gold" />
-                        </div>
-                        <h2 className="text-2xl font-serif text-white font-bold mb-6 tracking-wide uppercase">{currentSlide.title}</h2>
-                        <p className="text-gray-400 text-sm leading-relaxed">{currentSlide.text}</p>
-                    </div>
-
-                    <div className="w-full max-w-xs mt-8">
-                        <div className="flex justify-center gap-1 mb-6">
-                            {TUTORIAL_STEPS.map((_, idx) => (
-                                <div key={idx} className={`h-1 rounded-full transition-all duration-300 ${idx === slideIndex ? 'w-8 bg-gold' : 'w-2 bg-gray-800'}`} />
-                            ))}
-                        </div>
-                        <button onClick={nextSlide} className="w-full bg-gold text-black font-bold py-4 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-colors">
-                            {slideIndex === TUTORIAL_STEPS.length - 1 ? "ACCÉDER AU QG" : "SUIVANT"}
-                        </button>
-                    </div>
-                </div>
-            </PageTransition>
-        );
+        return <InteractiveTutorial onComplete={finishComplete} currency={currency || "€"} />;
     }
 
     // --- RENDU CONFIGURATION ---
