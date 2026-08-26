@@ -1557,12 +1557,12 @@ function Dashboard({ onNavigate }) {
         return () => unsubscribe();
     }, []);
 
-    // 4. SAUVEGARDE AUTOMATIQUE (SAVE)
+    // 4. SAUVEGARDE AUTOMATIQUE (SAVE) - Uniquement Cloud
     useEffect(() => {
         if (user && isDataLoaded) {
             const timer = setTimeout(() => {
                 const dataToSave = {
-                    balance: balance, // On sauvegarde la valeur brute
+                    balance: balance,
                     bunker: bunker,
                     transactions: JSON.stringify(transactions),
                     goals: JSON.stringify(goals),
@@ -1573,13 +1573,7 @@ function Dashboard({ onNavigate }) {
                     quantum: localStorage.getItem('imperium_beta_quantum')
                 };
                 
-                // Sauvegarde locale
-                localStorage.setItem('imperium_balance', JSON.stringify(balance));
-                localStorage.setItem('imperium_bunker', JSON.stringify(bunker));
-                localStorage.setItem('imperium_transactions', JSON.stringify(transactions));
-                // ... les autres updates locales se font via les useEffects spécifiques que vous avez plus bas
-                
-                // Sauvegarde Cloud
+                // Sauvegarde Cloud uniquement (les écrans individuels gèrent le localStorage)
                 saveEmpireToCloud(user.uid, dataToSave);
             }, 2000);
             return () => clearTimeout(timer);
@@ -2454,7 +2448,24 @@ function ProtocolsScreen({ onBack }) {
     const [type, setType] = useState('expense');
     const [freq, setFreq] = useState('monthly'); 
 
-    useEffect(() => { localStorage.setItem('imperium_protocols', JSON.stringify(protocols)); }, [protocols]);
+    useEffect(() => { 
+        // Sauvegarde locale
+        localStorage.setItem('imperium_protocols', JSON.stringify(protocols));
+        
+        // Sauvegarde cloud
+        if (auth?.currentUser) {
+            const syncProtocolsToCloud = async () => {
+                try {
+                    await saveEmpireToCloud(auth.currentUser.uid, {
+                        protocols: JSON.stringify(protocols)
+                    });
+                } catch (error) {
+                    console.error("Erreur sync protocoles:", error);
+                }
+            };
+            syncProtocolsToCloud();
+        }
+    }, [protocols]);
 
     const addProtocol = (e) => {
         e.preventDefault();
@@ -3126,7 +3137,24 @@ function SkillsScreen({ onBack }) {
     const [analyzing, setAnalyzing] = useState(null); 
     const [tacticResult, setTacticResult] = useState(null); 
 
-    useEffect(() => { localStorage.setItem('imperium_skills', JSON.stringify(skills)); }, [skills]);
+    useEffect(() => { 
+        // Sauvegarde locale
+        localStorage.setItem('imperium_skills', JSON.stringify(skills));
+        
+        // Sauvegarde cloud
+        if (auth?.currentUser) {
+            const syncSkillsToCloud = async () => {
+                try {
+                    await saveEmpireToCloud(auth.currentUser.uid, {
+                        skills: JSON.stringify(skills)
+                    });
+                } catch (error) {
+                    console.error("Erreur sync compétences:", error);
+                }
+            };
+            syncSkillsToCloud();
+        }
+    }, [skills]);
 
     const addSkill = (e) => { 
         e.preventDefault(); 
@@ -4203,13 +4231,26 @@ const [calibBunker, setCalibBunker] = useState(JSON.parse(localStorage.getItem('
     setTimeout(() => window.location.reload(), 2000);
 };
 
-    const resetEmpire = () => { 
+    const resetEmpire = async () => { 
         showConfirm(
             "AUTODESTRUCTION", // Le Titre
-            "Commandant, voulez-vous vraiment détruire l'Empire ?\n\nToutes les données locales seront purgées. Cette action est irréversible.", // Le Message
-            () => { // L'ordre à exécuter SI vous confirmez
-                localStorage.clear(); 
-                window.location.reload(); 
+            "Commandant, voulez-vous vraiment détruire l'Empire ?\n\nToutes les données locales ET cloud seront purgées. Cette action est irréversible.", // Le Message
+            async () => { // L'ordre à exécuter SI vous confirmez
+                try {
+                    // 1. Déconnexion Firebase
+                    if (auth.currentUser) {
+                        await logoutUser();
+                    }
+                    
+                    // 2. Suppression des données locales
+                    localStorage.clear();
+                    
+                    // 3. Rechargement
+                    window.location.reload(); 
+                } catch (error) {
+                    console.error("Erreur lors de la suppression:", error);
+                    showAlert("ERREUR", "Échec de la suppression. Veuillez réessayer.", "error");
+                }
             },
             "error" // Le thème (rouge pour danger critique)
         );
