@@ -2442,7 +2442,13 @@ function Dashboard({ onNavigate }) {
 // ==========================================
 function ProtocolsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
-    const [protocols, setProtocols] = useState(JSON.parse(localStorage.getItem('imperium_protocols') || "[]"));
+    const [protocols, setProtocols] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('imperium_protocols') || "[]");
+        } catch {
+            return [];
+        }
+    });
     const [newName, setNewName] = useState("");
     const [newAmount, setNewAmount] = useState("");
     const [type, setType] = useState('expense');
@@ -2885,7 +2891,13 @@ function GoalsScreen({ onBack }) {
     // 📡 APPEL AU QG
     const { showAlert, showConfirm } = useJarvis();
     const currency = localStorage.getItem('imperium_currency') || "€";
-    const [goals, setGoals] = useState(JSON.parse(localStorage.getItem('imperium_goals') || "[]"));
+    const [goals, setGoals] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('imperium_goals') || "[]");
+        } catch {
+            return [];
+        }
+    });
     const [newGoalName, setNewGoalName] = useState("");
     const [newGoalTarget, setNewGoalTarget] = useState("");
     const [newGoalDeadline, setNewGoalDeadline] = useState("");
@@ -3043,6 +3055,23 @@ function StatsScreen({ onBack }) {
     const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
     const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
     const currency = localStorage.getItem('imperium_currency') || "€";
+    
+    // Vérification de sécurité après reset
+    if (!Array.isArray(transactions)) {
+        return (
+            <PageTransition>
+                <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
+                    <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
+                        <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                        <h1 className="text-2xl font-serif text-white font-bold">Salle des Cartes</h1>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                        <p className="text-gray-500 text-sm">Aucune donnée disponible. Veuillez d'abord configurer votre Empire.</p>
+                    </div>
+                </div>
+            </PageTransition>
+        );
+    }
     
     // CALCUL STATISTIQUES CLASSIQUES
     const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
@@ -3305,6 +3334,23 @@ function TrophiesScreen({ onBack }) {
     const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
     const projects = JSON.parse(localStorage.getItem('imperium_projects') || "[]");
     
+    // Vérification de sécurité après reset
+    if (!Array.isArray(transactions) || !Array.isArray(projects)) {
+        return (
+            <PageTransition>
+                <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col overflow-hidden">
+                    <div className="shrink-0 px-5 py-4 bg-[#151515] border-b border-white/5 pt-16 z-10">
+                        <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-white mb-4 mt-2"><ArrowLeft className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">Retour au QG</span></button>
+                        <h1 className="text-2xl font-serif text-white font-bold">Salle des Trophées</h1>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                        <p className="text-gray-500 text-sm">Aucune donnée disponible. Veuillez d'abord configurer votre Empire.</p>
+                    </div>
+                </div>
+            </PageTransition>
+        );
+    }
+    
     const calculateStreak = () => {
         if (transactions.length === 0) return 0;
         const lastSin = transactions.find(t => t.type === 'expense' && t.category === 'want');
@@ -3357,14 +3403,18 @@ function ProjectScreen({ onBack }) {
 
     // --- TOUS LES ÉTATS (En haut pour éviter les crashs) ---
     const [projects, setProjects] = useState(() => {
-        const saved = localStorage.getItem('imperium_projects');
-        if (saved) return JSON.parse(saved);
-        const oldName = localStorage.getItem('imperium_project_name');
-        const oldTasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
-        if (oldName) {
-            return [{ id: Date.now(), title: oldName, deadline: "", roi: 0, roiType: "once", tasks: oldTasks, answers: {} }];
+        try {
+            const saved = localStorage.getItem('imperium_projects');
+            if (saved) return JSON.parse(saved);
+            const oldName = localStorage.getItem('imperium_project_name');
+            const oldTasks = JSON.parse(localStorage.getItem('imperium_tasks') || "[]");
+            if (oldName) {
+                return [{ id: Date.now(), title: oldName, deadline: "", roi: 0, roiType: "once", tasks: oldTasks, answers: {} }];
+            }
+            return [];
+        } catch {
+            return [];
         }
-        return [];
     });
     
     const [activeProject, setActiveProject] = useState(null); 
