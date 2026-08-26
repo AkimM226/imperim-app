@@ -1016,7 +1016,9 @@ function OnboardingScreen({ onComplete }) {
 
     // Transition Config -> Tuto
     const startTutorial = () => {
-        localStorage.setItem('imperium_balance', initialBalance || 0);
+        // Conversion explicite en nombre pour accepter 0
+        const balanceValue = parseFloat(initialBalance) || 0;
+        localStorage.setItem('imperium_balance', JSON.stringify(balanceValue));
         const firstProject = { id: Date.now(), title: mainProject || "Empire Naissant", deadline: "", tasks: [], answers: {} };
         localStorage.setItem('imperium_projects', JSON.stringify([firstProject]));
         localStorage.setItem('imperium_currency', currency || "€");
@@ -1636,7 +1638,7 @@ function Dashboard({ onNavigate }) {
     // RATION DU JOUR
     const realDailyAllocation = Math.floor((availableCash + spentToday) / daysRemaining);
     const remainingDaily = realDailyAllocation - spentToday;
-    const dailyProgress = Math.min(100, (spentToday / realDailyAllocation) * 100);
+    const dailyProgress = realDailyAllocation > 0 ? Math.min(100, (spentToday / realDailyAllocation) * 100) : 0;
   
     // PROJECTION DEMAIN
     const projectedRationTomorrow = Math.floor(availableCash / daysRemainingTomorrow);
