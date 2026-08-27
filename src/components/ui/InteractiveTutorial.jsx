@@ -3,7 +3,7 @@ import {
   Shield, PiggyBank, Smartphone, Radio, Castle, 
   Target, Wallet, BookOpen, Cpu, BarChart3, 
   ArrowRight, CheckCircle, X, Sparkles
-} from './Icons';
+} from 'lucide-react';
 
 // ==========================================
 // TUTORIEL INTERACTIF - FORMATION DU COMMANDANT
