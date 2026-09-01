@@ -1387,6 +1387,19 @@ function Dashboard({ onNavigate }) {
     // 📡 APPEL AU QG
     const { showAlert, showConfirm } = useJarvis();
     
+    // 🎯 TUTORIEL GUIDÉ
+    const [showTutorial, setShowTutorial] = useState(() => {
+        // Lancer le tutoriel si c'est la première fois ou s'il n'est pas terminé
+        const tutorialCompleted = localStorage.getItem('imperium_tutorial_completed');
+        const isFirstTime = !localStorage.getItem('imperium_tutorial_launched');
+        return !tutorialCompleted && isFirstTime;
+    });
+
+    const handleTutorialComplete = () => {
+        setShowTutorial(false);
+        localStorage.setItem('imperium_tutorial_launched', 'true');
+    };
+    
     // 🛡️ FONCTION DE SÉCURITÉ : Empêche le crash si les données sont bizarres
     const safeParse = (data, fallback) => {
         try {
@@ -2391,6 +2404,9 @@ function Dashboard({ onNavigate }) {
                 </div>
              </div>
         )}
+
+      {/* 🎯 TUTORIEL GUIDÉ - OVERLAY SUR VRAIS ÉCRANS */}
+      {showTutorial && <InteractiveTutorial onComplete={handleTutorialComplete} currency={currency} />}
 
       </div>
       </PageTransition>
