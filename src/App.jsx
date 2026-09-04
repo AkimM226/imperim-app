@@ -1477,6 +1477,16 @@ function Dashboard({ onNavigate }) {
 
     // 3. CHARGEMENT INTELLIGENT (LOAD)
     useEffect(() => {
+        // Rafraîchir les états locaux depuis localStorage dès le montage
+        setBalance(safeParse(localStorage.getItem('imperium_balance'), 0));
+        setBunker(safeParse(localStorage.getItem('imperium_bunker'), 0));
+        setTransactions(safeParse(localStorage.getItem('imperium_transactions'), []));
+        setGoals(safeParse(localStorage.getItem('imperium_goals'), []));
+        setDebts(safeParse(localStorage.getItem('imperium_debts'), []));
+        setProjects(safeParse(localStorage.getItem('imperium_projects'), []));
+        setSkills(safeParse(localStorage.getItem('imperium_skills'), []));
+        setProtocols(safeParse(localStorage.getItem('imperium_protocols'), []));
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             setIsCloudSecure(!!currentUser); // Met à jour selon la réalité
@@ -1486,16 +1496,57 @@ function Dashboard({ onNavigate }) {
                 try {
                     const cloudData = await loadEmpireFromCloud(currentUser.uid);
                     if (cloudData) {
-                        // Mise à jour sécurisée des variables
-                        if (cloudData.balance !== undefined) setBalance(Number(cloudData.balance));
-                        if (cloudData.bunker !== undefined) setBunker(Number(cloudData.bunker));
-                        if (cloudData.transactions) setTransactions(safeParse(cloudData.transactions, []));
-                        if (cloudData.goals) setGoals(safeParse(cloudData.goals, []));
-                        if (cloudData.debts) setDebts(safeParse(cloudData.debts, []));
-                        if (cloudData.projects) setProjects(safeParse(cloudData.projects, []));
-                        if (cloudData.skills) setSkills(safeParse(cloudData.skills, []));
-                        if (cloudData.protocols) setProtocols(safeParse(cloudData.protocols, []));
-                        console.log("✅ Données chargées.");
+                        // Mise à jour sécurisée des variables et du localStorage
+                        if (cloudData.balance !== undefined) {
+                            const val = Number(cloudData.balance);
+                            setBalance(val);
+                            localStorage.setItem('imperium_balance', JSON.stringify(val));
+                        }
+                        if (cloudData.bunker !== undefined) {
+                            const val = Number(cloudData.bunker);
+                            setBunker(val);
+                            localStorage.setItem('imperium_bunker', JSON.stringify(val));
+                        }
+                        if (cloudData.transactions) {
+                            const parsed = safeParse(cloudData.transactions, []);
+                            setTransactions(parsed);
+                            localStorage.setItem('imperium_transactions', typeof cloudData.transactions === 'string' ? cloudData.transactions : JSON.stringify(parsed));
+                        }
+                        if (cloudData.goals) {
+                            const parsed = safeParse(cloudData.goals, []);
+                            setGoals(parsed);
+                            localStorage.setItem('imperium_goals', typeof cloudData.goals === 'string' ? cloudData.goals : JSON.stringify(parsed));
+                        }
+                        if (cloudData.debts) {
+                            const parsed = safeParse(cloudData.debts, []);
+                            setDebts(parsed);
+                            localStorage.setItem('imperium_debts', typeof cloudData.debts === 'string' ? cloudData.debts : JSON.stringify(parsed));
+                        }
+                        if (cloudData.projects) {
+                            const parsed = safeParse(cloudData.projects, []);
+                            setProjects(parsed);
+                            localStorage.setItem('imperium_projects', typeof cloudData.projects === 'string' ? cloudData.projects : JSON.stringify(parsed));
+                        }
+                        if (cloudData.skills) {
+                            const parsed = safeParse(cloudData.skills, []);
+                            setSkills(parsed);
+                            localStorage.setItem('imperium_skills', typeof cloudData.skills === 'string' ? cloudData.skills : JSON.stringify(parsed));
+                        }
+                        if (cloudData.protocols) {
+                            const parsed = safeParse(cloudData.protocols, []);
+                            setProtocols(parsed);
+                            localStorage.setItem('imperium_protocols', typeof cloudData.protocols === 'string' ? cloudData.protocols : JSON.stringify(parsed));
+                        }
+                        if (cloudData.currency) {
+                            localStorage.setItem('imperium_currency', cloudData.currency);
+                        }
+                        if (cloudData.zone) {
+                            localStorage.setItem('imperium_zone', typeof cloudData.zone === 'string' ? cloudData.zone : JSON.stringify(cloudData.zone));
+                        }
+                        if (cloudData.quantum) {
+                            localStorage.setItem('imperium_beta_quantum', cloudData.quantum);
+                        }
+                        console.log("✅ Données chargées et synchronisées.");
                     }
                 } catch (err) {
                     console.error("Erreur chargement cloud:", err);
@@ -1506,7 +1557,11 @@ function Dashboard({ onNavigate }) {
         return () => unsubscribe();
     }, []);
 
-    // 4. SAUVEGARDE AUTOMATIQUE (SAVE) - Uniquement Cloud
+    // 4. SAUVEGARDE AUTOMATIQUE DES FINANCES DU DASHBOARD
+    useEffect(() => { localStorage.setItem('imperium_balance', JSON.stringify(balance)); }, [balance]);
+    useEffect(() => { localStorage.setItem('imperium_bunker', JSON.stringify(bunker)); }, [bunker]);
+    useEffect(() => { localStorage.setItem('imperium_transactions', JSON.stringify(transactions)); }, [transactions]);
+
     useEffect(() => {
         if (user && isDataLoaded) {
             const timer = setTimeout(() => {
@@ -1514,20 +1569,20 @@ function Dashboard({ onNavigate }) {
                     balance: balance,
                     bunker: bunker,
                     transactions: JSON.stringify(transactions),
-                    goals: JSON.stringify(goals),
-                    debts: JSON.stringify(debts),
-                    projects: JSON.stringify(projects),
-                    skills: JSON.stringify(skills),
-                    protocols: JSON.stringify(protocols),
+                    goals: localStorage.getItem('imperium_goals') || JSON.stringify(goals),
+                    debts: localStorage.getItem('imperium_debts') || JSON.stringify(debts),
+                    projects: localStorage.getItem('imperium_projects') || JSON.stringify(projects),
+                    skills: localStorage.getItem('imperium_skills') || JSON.stringify(skills),
+                    protocols: localStorage.getItem('imperium_protocols') || JSON.stringify(protocols),
                     quantum: localStorage.getItem('imperium_beta_quantum')
                 };
                 
-                // Sauvegarde Cloud uniquement (les écrans individuels gèrent le localStorage)
+                // Sauvegarde Cloud globale sécurisée
                 saveEmpireToCloud(user.uid, dataToSave);
-            }, 2000);
+            }, 1500);
             return () => clearTimeout(timer);
         }
-    }, [balance, bunker, transactions, goals, debts, projects, skills, protocols, user, isDataLoaded]);
+    }, [balance, bunker, transactions, user, isDataLoaded]);
 
     const handleQuantumAccess = () => {
         if (isQuantumUnlocked) {
@@ -2518,51 +2573,24 @@ function DebtsScreen({ onBack }) {
     const [selectedDebt, setSelectedDebt] = useState(null);
     const [partialAmount, setPartialAmount] = useState("");
 
-    // ==========================================
-    // 🚀 FRAPPE DIRECTE SUR FIREBASE (VERSION OPTIMISÉE)
-    // ==========================================
-    const forceCloudSync = async (newDebts, newBalance) => {
-        try {
-            if (auth?.currentUser) {
-                // On utilise VOTRE arme personnalisée qui marche déjà ailleurs !
-                await saveEmpireToCloud(auth.currentUser.uid, { 
-                    debts: newDebts,
-                    balance: newBalance 
-                });
-                console.log("🔥 Firebase : Cible éliminée de la base de données avec succès !");
-            } else {
-                alert("❌ Erreur : L'application ne détecte pas votre connexion Firebase. Avez-vous été déconnecté ?");
-            }
-        } catch (error) {
-            alert("❌ Erreur de transmission Firebase : " + error.message);
-        }
-    };
-
-    // Synchronisation locale
-    // ==========================================
-    // 📡 SYNCHRONISATION ABSOLUE (LOCAL + FIREBASE)
-    // ==========================================
+    // Synchronisation absolue (Local + Firebase)
     useEffect(() => { 
-        // 1. Sauvegarde sur le téléphone (hors-ligne)
         localStorage.setItem('imperium_debts', JSON.stringify(debts)); 
-
-        // 2. Frappe Cloud : On met à jour la base de données Firebase
-        const syncDebtsToCloud = async () => {
-            try {
-                if (auth?.currentUser) {
-                    const userRef = doc(db, 'users', auth.currentUser.uid);
-                    await updateDoc(userRef, { 
-                        debts: debts 
-                    });
-                }
-            } catch (error) {
-                console.error("Erreur de transmission radio (Dettes) :", error);
-            }
-        };
-
-        syncDebtsToCloud();
+        if (auth?.currentUser) {
+            saveEmpireToCloud(auth.currentUser.uid, { 
+                debts: JSON.stringify(debts) 
+            });
+        }
     }, [debts]);
-    useEffect(() => { localStorage.setItem('imperium_balance', JSON.stringify(balance)); }, [balance]);
+
+    useEffect(() => { 
+        localStorage.setItem('imperium_balance', JSON.stringify(balance)); 
+        if (auth?.currentUser) {
+            saveEmpireToCloud(auth.currentUser.uid, { 
+                balance: balance 
+            });
+        }
+    }, [balance]);
 
     // Trésorerie
     const lockedCash = goals.reduce((acc, g) => acc + (parseFloat(g.current) || 0), 0);
@@ -2620,8 +2648,6 @@ function DebtsScreen({ onBack }) {
         if (newRest <= 0) {
             const newDebts = debts.filter(d => d.id !== selectedDebt.id);
             setDebts(newDebts);
-            localStorage.setItem('imperium_debts', JSON.stringify(newDebts));
-            forceCloudSync(newDebts, newBalance);
         } else {
             const updatedDebts = debts.map(d => {
                 if(d.id === selectedDebt.id) {
@@ -2630,8 +2656,6 @@ function DebtsScreen({ onBack }) {
                 return d;
             });
             setDebts(updatedDebts);
-            localStorage.setItem('imperium_debts', JSON.stringify(updatedDebts));
-            forceCloudSync(updatedDebts, newBalance);
         }
 
         setSelectedDebt(null);
@@ -2649,8 +2673,6 @@ function DebtsScreen({ onBack }) {
         () => {
             const newDebts = debts.filter(d => d.id !== id);
             setDebts(newDebts);
-            localStorage.setItem('imperium_debts', JSON.stringify(newDebts));
-            forceCloudSync(newDebts, balance);
             if(window.triggerVibration) triggerVibration('light');
             showAlert("LIGNE EFFACÉE", "L'entrée a été supprimée des archives.", "info");
         },
@@ -2856,7 +2878,14 @@ function GoalsScreen({ onBack }) {
     const [selectedGoal, setSelectedGoal] = useState(null);
     const [allocAmount, setAllocAmount] = useState("");
 
-    useEffect(() => { localStorage.setItem('imperium_goals', JSON.stringify(goals)); }, [goals]);
+    useEffect(() => { 
+        localStorage.setItem('imperium_goals', JSON.stringify(goals)); 
+        if (auth?.currentUser) {
+            saveEmpireToCloud(auth.currentUser.uid, {
+                goals: JSON.stringify(goals)
+            });
+        }
+    }, [goals]);
 
     const addGoal = (e) => {
         e.preventDefault();
@@ -3388,7 +3417,14 @@ function ProjectScreen({ onBack }) {
     const [jarvisPrompt, setJarvisPrompt] = useState("");
     const [isThinking, setIsThinking] = useState(false);
 
-    useEffect(() => { localStorage.setItem('imperium_projects', JSON.stringify(projects)); }, [projects]);
+    useEffect(() => { 
+        localStorage.setItem('imperium_projects', JSON.stringify(projects)); 
+        if (auth?.currentUser) {
+            saveEmpireToCloud(auth.currentUser.uid, {
+                projects: JSON.stringify(projects)
+            });
+        }
+    }, [projects]);
 
     // --- FONCTIONS DE BASE ---
     const addProject = (e) => {
