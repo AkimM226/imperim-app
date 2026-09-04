@@ -820,20 +820,7 @@ useEffect(() => {
           {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'quantum' && <QuantumScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'debts' && (
-    <DebtsScreen onBack={() => {
-        // 1. Le Dashboard relit silencieusement la nouvelle mémoire
-        if (typeof setDebts === 'function') {
-            setDebts(JSON.parse(localStorage.getItem('imperium_debts') || "[]"));
-        }
-        if (typeof setBalance === 'function') {
-            setBalance(JSON.parse(localStorage.getItem('imperium_balance') || "0"));
-        }
-        
-        // 2. On referme la porte et on affiche le Dashboard
-        navigate('dashboard');
-    }} />
-)}   {/* 🛡️ LE BUREAU DE RECRUTEMENT */}
+          {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}   {/* 🛡️ LE BUREAU DE RECRUTEMENT */}
        {showUpgrade && (
      <UpgradeScreen 
         currentTier={currentTier} 
@@ -1113,47 +1100,117 @@ function RadioLink({ onClose }) {
 }
 
 // ==========================================
-// SERVICE JARVIS PRIME - VISION TOTALE (MISE À JOUR V17.1)
+// SERVICE JARVIS PRIME - VISION TOTALE & TEMPS RÉEL (V18.0)
 // ==========================================
-const askJarvisChat = async (history, userMessage, contextData, userTitle = "Commandant") => {
-    try {
-       // 1. Préparation des données
-       const recentLogs = (contextData.transactions || []).slice(0, 15).map(t => 
-        `[${t.date}] ${t.type === 'expense' ? '-' : '+'}${t.amount} (${t.desc})`
-    ).join("\n");
+const getLiveEmpireContext = (contextData = {}) => {
+    const safeParse = (val, fallback) => {
+        if (!val) return fallback;
+        try { return JSON.parse(val); } catch { return fallback; }
+    };
 
-    const arsenal = (contextData.skills || []).map(s => `- ${s.name} (Niveau ${s.level})`).join("\n");
-    const citadelle = (contextData.debts || []).map(d => `- Dette: ${d.name} (${d.amount} restant)`).join("\n");
-    const protocoles = (contextData.protocols || []).map(p => `- Règle: ${p.text}`).join("\n");
-    const cibles = (contextData.projects || []).map(p => `- ${p.title} (${p.current}/${p.target})`).join("\n");
-        
-        // 2. Le contexte global (L'état de l'Empire)
-        // MODIFICATION ICI : On injecte userTitle (Commandant ou Commandante)
+    const currency = localStorage.getItem('imperium_currency') || contextData.currency || "€";
+    const balance = parseFloat(localStorage.getItem('imperium_balance') || contextData.balance || 0);
+    const bunker = parseFloat(localStorage.getItem('imperium_bunker') || contextData.bunker || 0);
+    const transactions = safeParse(localStorage.getItem('imperium_transactions'), contextData.transactions || []);
+    const goals = safeParse(localStorage.getItem('imperium_goals'), contextData.goals || []);
+    const projects = safeParse(localStorage.getItem('imperium_projects'), contextData.projects || []);
+    const debts = safeParse(localStorage.getItem('imperium_debts'), contextData.debts || []);
+    const skills = safeParse(localStorage.getItem('imperium_skills'), contextData.skills || []);
+    const protocols = safeParse(localStorage.getItem('imperium_protocols'), contextData.protocols || []);
+    const zone = safeParse(localStorage.getItem('imperium_zone'), { name: "Afrique (Marché Local)" });
+    const tier = localStorage.getItem('imperium_tier') || "FREE";
+
+    return {
+        currency,
+        balance,
+        bunker,
+        transactions,
+        goals,
+        projects,
+        debts,
+        skills,
+        protocols,
+        zone,
+        tier
+    };
+};
+
+const askJarvisChat = async (history, userMessage, contextData = {}, userTitle = "Commandant") => {
+    try {
+        // 1. Récupération en temps réel absolu de TOUTES les données de l'Empire
+        const live = getLiveEmpireContext(contextData);
+
+        // 2. Formatage précis des données
+        const recentLogs = (live.transactions || []).slice(0, 15).map(t => 
+            `[${t.date || 'Récemment'}] ${t.type === 'expense' ? '-' : '+'}${t.amount} ${live.currency} (${t.desc || 'Sans libellé'}${t.category ? ` - ${t.category === 'need' ? 'Nécessité' : 'Futilité'}` : ''})`
+        ).join("\n") || "Aucune transaction enregistrée.";
+
+        const arsenal = (live.skills || []).map(s => 
+            `- ${s.name} (Niveau: ${s.level || 'Apprenti'})`
+        ).join("\n") || "Aucune compétence enregistrée.";
+
+        const citadelle = (live.debts || []).map(d => {
+            if (d.type === 'owe') {
+                return `- Dette due à ${d.name}: ${d.amount} ${live.currency} restant (sur ${d.totalAmount || d.amount} ${live.currency} au total)`;
+            } else {
+                return `- Créance à récupérer auprès de ${d.name}: ${d.amount} ${live.currency} restant`;
+            }
+        }).join("\n") || "Aucune dette active enregistrée.";
+
+        const chantiers = (live.projects || []).map(p => {
+            const tasks = p.tasks || [];
+            const doneCount = tasks.filter(t => t.done).length;
+            const taskStr = tasks.length > 0 ? `[${doneCount}/${tasks.length} missions accomplies]` : "[Aucune tâche créée]";
+            const deadlineStr = p.deadline ? ` (Échéance: ${p.deadline})` : '';
+            const roiStr = p.roi ? ` (Gains prévus: +${p.roi} ${live.currency}${p.roiType === 'recurring' ? '/mois' : ' unique'})` : '';
+            return `- Conquête: "${p.title}" ${deadlineStr}${roiStr} ${taskStr}`;
+        }).join("\n") || "Aucun projet ou chantier en cours.";
+
+        const cibles = (live.goals || []).map(g => 
+            `- Cible d'épargne: "${g.title}" (${g.current || 0}/${g.target} ${live.currency} - ${Math.round(((g.current || 0) / (g.target || 1)) * 100)}% verrouillé)`
+        ).join("\n") || "Aucune cible d'épargne définie.";
+
+        const protocoles = (live.protocols || []).map(p => 
+            `- Règle: "${p.text}"`
+        ).join("\n") || "Aucune règle stricte enregistrée.";
+
+        // 3. Le prompt système omniscient
         const systemContext = `
-            Tu es JARVIS, l'IA centrale d'IMPERIUM.
+            Tu es JARVIS, l'IA tactique, stratégique et financière centrale d'IMPERIUM.
+            Tu as un accès OMNISCIENT et EN DIRECT à toute la base de données et aux moindres actions de ton utilisateur.
             Tu t'adresses à ton utilisateur en l'appelant : "${userTitle.toUpperCase()}".
             Si c'est "COMMANDANTE", accorde tes adjectifs au féminin (ex: "Vous êtes prête", "Soyez attentive").
             
-            DONNÉES STRATÉGIQUES DU ${userTitle.toUpperCase()} :
-            💰 FINANCES (Cash/Wave): ${contextData.balance} / ${contextData.bunker} ${contextData.currency}
+            ÉTAT RÉEL ET SYNCHRONISÉ DE L'EMPIRE (MIS À JOUR À LA SECONDE PRÈS) :
+            💰 TRÉSORERIE :
+            - Cash disponible (dispo immédiat) : ${live.balance} ${live.currency}
+            - Bunker de sécurité (Wave / Épargne) : ${live.bunker} ${live.currency}
+            - Zone d'opération : ${live.zone.name}
+            - Grade Impérial : ${live.tier}
             
-            📜 REGISTRE (15 derniers mouvements) :
+            📜 REGISTRE (15 derniers mouvements financiers) :
             ${recentLogs}
             
-            🎯 CIBLES (Projets en cours) :
+            🏰 CITADELLE (Dettes dues & Créances à recouvrer) :
+            ${citadelle}
+            
+            🚀 FRONTS OPÉRATIONNELS & CONQUÊTES (Projets / Chantiers en cours) :
+            ${chantiers}
+            
+            🎯 CIBLES D'ÉPARGNE (Objectifs financiers) :
             ${cibles}
             
-            ⚔️ ARSENAL (Compétences) :
-            ${arsenal || "Aucune compétence enregistrée."}
+            ⚔️ ARSENAL (Compétences réelles du soldat) :
+            ${arsenal}
             
-            🏰 CITADELLE (Dettes & Règles) :
-            ${citadelle || "Aucune dette active."}
+            📜 PROTOCOLES IMPÉRIAUX (Règles d'or) :
             ${protocoles}
             
-            TES ORDRES :
-            1. Utilise ces données pour répondre. 
-            2. Sois bref, style militaire/efficace mais respectueux du grade.
-            3. Termine parfois par "Rompez !" ou "À vos ordres !".
+            TES ORDRES ET DIRECTIVES :
+            1. Analyse scrupuleusement ces données réelles pour répondre. Tu connais TOUS ses projets actuels et TOUTES ses dettes réelles.
+            2. Si l'utilisateur demande l'état de l'empire, dresse un bilan percutant, militaire et précis de ses VRAIES dettes, ses VRAIS projets, son cash et ses compétences.
+            3. Sois stratégique, lucide, style officier d'état-major / Jarvis IA, sans inventer de données fantômes.
+            4. Termine parfois par "Rompez !" ou "À vos ordres !".
         `;
 
         const contents = [
@@ -1225,21 +1282,6 @@ function JarvisModal({ onClose, contextData }) {
         setInput("");
         setLoading(true);
 
-        // 🛠️ ASTUCE DÉMO : LE TRIGGER SECRET (OFFLINE)
-        if (input.toLowerCase().includes("demo") || input.toLowerCase().includes("status")) {
-            setTimeout(() => {
-                 setMessages(prev => [...prev, { 
-                    id: Date.now() + 1, 
-                    sender: 'jarvis', 
-                    text: `Rapport Tactique pour la ${title} :\n\n1. Discipline : Excellente (Flamme active).\n2. Finance : Le Bunker est sécurisé.\n3. Alerte : Attention aux dépenses futiles ce week-end.\n\nContinuez comme ça. Rompez !` 
-                }]);
-                setLoading(false);
-            }, 800);
-            return;
-        }
-
-        // --- CORRECTION ICI ---
-        // On passe 'title' (Commandant ou Commandante) en 4ème argument
         const responseText = await askJarvisChat(messages, input, contextData, title);
         
         const jarvisMsg = { id: Date.now() + 1, sender: 'jarvis', text: responseText };
