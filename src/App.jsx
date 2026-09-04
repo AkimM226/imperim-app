@@ -351,91 +351,7 @@ const getDaysLeft = (targetDate) => {
     return days;
 };
 
-// ==========================================
-// SYSTEME DE SECURITE
-// ==========================================
-function SecurityGate({ onAccessGranted }) {
-    const [code, setCode] = useState("");
-    const [error, setError] = useState(false);
-    const [loading, setLoading] = useState(false);
 
-    const checkCode = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(false);
-
-        try {
-            const response = await fetch('/api/verify-access', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code.trim().toUpperCase() })
-            });
-            const data = await response.json();
-
-            if (data.valid) {
-                localStorage.setItem('imperium_license', 'GRANTED_V1');
-                onAccessGranted();
-            } else {
-                setError(true);
-                setLoading(false);
-                setCode("");
-            }
-        } catch (err) {
-            console.error("Erreur vérification code:", err);
-            setError(true);
-            setLoading(false);
-            setCode("");
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black z-[200] flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-full max-w-sm">
-                <div className="w-24 h-24 bg-red-900/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/30 animate-pulse">
-                    <Lock className="w-10 h-10 text-red-500" />
-                </div>
-                
-                <h1 className="text-2xl font-serif text-white font-bold mb-2 uppercase tracking-widest">Zone Restreinte</h1>
-                <p className="text-gray-500 text-xs mb-8 leading-relaxed">
-                    Cette application est en phase de test classifiée.<br/>
-                    L'accès est limité au personnel autorisé disposant d'une Clé Impériale.
-                </p>
-
-                <form onSubmit={checkCode} className="space-y-4">
-                    <div className="relative">
-                        <Key className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
-                        <input 
-                            type="text" 
-                            value={code} 
-                            onChange={(e) => setCode(e.target.value)} 
-                            className={`w-full bg-[#111] border rounded-lg pl-10 pr-4 py-3 text-white font-mono text-center uppercase tracking-widest focus:outline-none transition-all ${error ? 'border-red-500 animate-shake' : 'border-white/20 focus:border-gold'}`}
-                            placeholder="XXX-XXXXX-00" 
-                            autoFocus
-                        />
-                    </div>
-                    
-                    <button 
-                        type="submit" 
-                        disabled={!code || loading}
-                        className={`w-full font-bold py-4 rounded-lg uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-800 text-gray-500' : 'bg-white text-black hover:bg-gray-200'}`}
-                    >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Unlock className="w-4 h-4"/>}
-                        {loading ? "Vérification..." : "Déverrouiller"}
-                    </button>
-                </form>
-
-                {error && (
-                    <div className="mt-6 p-3 bg-red-900/20 border border-red-500/20 rounded text-red-400 text-xs flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2">
-                        <AlertTriangle className="w-4 h-4" /> Code invalide ou expiré.
-                    </div>
-                )}
-                
-                <p className="fixed bottom-6 w-full left-0 text-[9px] text-gray-700 uppercase tracking-widest">Security Protocol v{APP_VERSION}</p>
-            </div>
-            <style>{`@keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } } .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }`}</style>
-        </div>
-    );
-}
 
 function PatchNotesModal({ onAck }) {
     return (
@@ -800,17 +716,14 @@ export default function App() {
 function AppContent() {
     const [loading, setLoading] = useState(true);
     const [hasOnboarded, setHasOnboarded] = useState(false);
-    const [isAuthorized, setIsAuthorized] = useState(false); 
   
     useEffect(() => { 
         const timer = setTimeout(() => { setLoading(false); }, 2500); 
         setHasOnboarded(localStorage.getItem('imperium_onboarded') === 'true');
-        setIsAuthorized(localStorage.getItem('imperium_license') === 'GRANTED_V1'); 
         return () => clearTimeout(timer); 
     }, []);
   
     if (loading) return <SplashScreen APP_VERSION={APP_VERSION} />;
-    if (!isAuthorized) return <SecurityGate onAccessGranted={() => setIsAuthorized(true)} />;
     if (!hasOnboarded) return <OnboardingScreen onComplete={() => setHasOnboarded(true)} />;
     
     return <MainOS />;
