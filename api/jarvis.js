@@ -18,6 +18,15 @@ if (!admin.apps.length) {
 
 const DAILY_LIMIT = 15;
 
+// Liste ordonnée de modèles de secours (Cascade anti-surcharge)
+const FALLBACK_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.5-flash',
+  'gemini-1.5-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-flash-latest'
+];
+
 export default async function handler(req, res) {
   // Autoriser uniquement les requêtes POST
   if (req.method !== 'POST') {
@@ -36,9 +45,8 @@ export default async function handler(req, res) {
     if (admin.apps.length) {
       try {
         const rawUserId = String(userId || 'anonymous').trim();
-        // Sécuriser l'ID pour le nom de document Firestore
         const sanitizedUserId = rawUserId.replace(/[/\\?%*:|"<>]/g, '_');
-        const today = new Date().toISOString().slice(0, 10); // Format: "YYYY-MM-DD"
+        const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
         const docId = `${sanitizedUserId}_${today}`;
 
         const db = admin.firestore();
@@ -63,32 +71,68 @@ export default async function handler(req, res) {
 
       } catch (quotaError) {
         console.error('Erreur lors du suivi du quota Firestore :', quotaError);
-        // On continue si Firestore admin a un problème temporaire, pour ne pas bloquer l'utilisateur légitime
       }
     }
 
-    // 3. CHANTIER 1 — APPEL SÉCURISÉ À GEMINI AVEC CLÉ SERVEUR
+    // 3. CHANTIER 1 — APPEL SÉCURISÉ AVEC CASCADE DE MODÈLES ANTI-OVERLOAD
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.error('GEMINI_API_KEY manquante dans l\'environnement serveur');
-      return res.status(500).json({ error: 'Configuration serveur incomplète (GEMINI_API_KEY manquante).' });
+      return res.status(500).json({ error: 'Configuration serveur incomplète (GEMINI_API_KEY manquante sur Vercel).' });
     }
 
     const geminiPayload = contents && Array.isArray(contents)
       ? { contents }
       : { contents: [{ parts: [{ text: prompt }] }] };
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    let lastErrorData = null;
+    let lastStatus = 500;
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiPayload)
-    });
+    // Tentative en cascade sur chaque modèle disponible
+    for (const model of FALLBACK_MODELS) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    const data = await geminiResponse.json();
+        const geminiResponse = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(geminiPayload)
+        });
 
-    return res.status(geminiResponse.status).json(data);
+        const data = await geminiResponse.json();
+
+        // Si le modèle a réussi, on renvoie immédiatement le résultat
+        if (geminiResponse.ok && data.candidates && data.candidates.length > 0) {
+          return res.status(200).json(data);
+        }
+
+        // En cas d'erreur de surcharge (503 / 429 / high demand), on passe au modèle suivant
+        const errorMsg = data?.error?.message || '';
+        const isOverloaded = geminiResponse.status === 503 ||
+          geminiResponse.status === 429 ||
+          errorMsg.toLowerCase().includes('high demand') ||
+          errorMsg.toLowerCase().includes('overloaded') ||
+          errorMsg.toLowerCase().includes('resource_exhausted') ||
+          errorMsg.toLowerCase().includes('unavailable');
+
+        if (isOverloaded) {
+          console.warn(`Modèle ${model} saturé (${geminiResponse.status}: ${errorMsg}), bascule sur le modèle suivant...`);
+          lastErrorData = data;
+          lastStatus = geminiResponse.status;
+          continue;
+        }
+
+        // Si c'est une autre erreur (ex: clé invalide 400/403), on la renvoie directement
+        return res.status(geminiResponse.status).json(data);
+
+      } catch (reqError) {
+        console.warn(`Échec de requête sur ${model}:`, reqError.message);
+        lastErrorData = { error: { message: reqError.message } };
+      }
+    }
+
+    // Si tous les modèles ont échoué
+    return res.status(lastStatus).json(lastErrorData || { error: { message: 'Tous les modèles Gemini sont actuellement indisponibles. Réessayez dans un instant.' } });
 
   } catch (error) {
     console.error('Erreur proxy Gemini /api/jarvis :', error);
