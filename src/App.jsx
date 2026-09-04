@@ -241,11 +241,6 @@ const RELEASE_NOTES = [
     }
 ];
 
-const VALID_HASHES = [
-    "SU1QLUFMUEhBLTc3", "SU1QLUJSQVZPLTg4", "SU1QLUNIQVJMSUUtOTk=", "SU1QLURFTEVULTEw", 
-    "SU1QLRUNITy0yMA==", "SU1QLUZPWFRST1QtMzA=", "SU1QLUdPTEYtNDA=", "SU1QLUhPVEVMLTUw", 
-    "SU1QLUlORElBLTYw", "SU1QLUpVTElFVFQtNzA=", "SU1QRVJBVE9SLVg=" 
-];
 
 const DAILY_QUOTES = [
     { text: "Ce n'est pas parce que les choses sont difficiles que nous n'osons pas, c'est parce que nous n'osons pas qu'elles sont difficiles.", author: "Sénèque" },
@@ -364,14 +359,20 @@ function SecurityGate({ onAccessGranted }) {
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const checkCode = (e) => {
+    const checkCode = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(false);
 
-        setTimeout(() => {
-            const inputHash = btoa(code.trim().toUpperCase());
-            if (VALID_HASHES.includes(inputHash)) {
+        try {
+            const response = await fetch('/api/verify-access', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code.trim().toUpperCase() })
+            });
+            const data = await response.json();
+
+            if (data.valid) {
                 localStorage.setItem('imperium_license', 'GRANTED_V1');
                 onAccessGranted();
             } else {
@@ -379,7 +380,12 @@ function SecurityGate({ onAccessGranted }) {
                 setLoading(false);
                 setCode("");
             }
-        }, 1500); 
+        } catch (err) {
+            console.error("Erreur vérification code:", err);
+            setError(true);
+            setLoading(false);
+            setCode("");
+        }
     };
 
     return (
@@ -600,8 +606,6 @@ function OrdersModal({ onClose }) {
 // 13. LE CHRONO-VISOR (SIMULATEUR QUANTIQUE - AUTONOME)
 // ==========================================
 function QuantumScreen({ onBack }) {
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    
     // 1. CHARGEMENT AUTONOME DES DONNÉES
     const currency = localStorage.getItem('imperium_currency') || "€";
     const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
@@ -648,20 +652,29 @@ function QuantumScreen({ onBack }) {
         `;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            const response = await fetch('/api/jarvis', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    prompt,
+                    userId: auth?.currentUser?.uid || 'guest'
+                })
             });
             const data = await response.json();
             
+            if (response.status === 429) {
+                alert(data.error || "⚠️ Quota quotidien d'IA dépassé. Réessayez demain.");
+                return;
+            }
+
             if (data.candidates && data.candidates[0].content) {
                 const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
                 setSimulation(JSON.parse(text));
             } else {
-                throw new Error("Pas de réponse");
+                throw new Error(data.error || "Pas de réponse");
             }
         } catch (error) {
-            alert("⚠️ Erreur de distorsion temporelle. Réessayez.");
+            alert(error.message ? `⚠️ ${error.message}` : "⚠️ Erreur de distorsion temporelle. Réessayez.");
         } finally {
             setLoading(false);
         }
@@ -1079,9 +1092,6 @@ function OnboardingScreen({ onComplete }) {
 // 11. RADIO LINK (VERSION STABLE - FLASH LATEST)
 // ==========================================
 function RadioLink({ onClose }) {
-    // ⚠️ COLLE TA CLÉ API ICI ⚠️
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -1109,21 +1119,25 @@ function RadioLink({ onClose }) {
 
         const callGemini = async () => {
             try {
-                // CHANGEMENT ICI : On utilise "gemini-flash-latest" qui est dans ta liste et a de meilleurs quotas
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
+                const response = await fetch('/api/jarvis', {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    body: JSON.stringify({ 
+                        prompt,
+                        userId: auth?.currentUser?.uid || 'guest'
+                    })
                 });
                 
                 const data = await response.json();
 
-                if (data.error) {
-                    // Si erreur de quota, on l'affiche gentiment
-                    if (data.error.message.includes("quota")) {
+                if (response.status === 429) {
+                    setMessage(typeof data.error === 'string' ? data.error : "Quota quotidien atteint. Rompez !");
+                } else if (data.error) {
+                    const errMsg = typeof data.error === 'object' ? data.error.message : data.error;
+                    if (errMsg && errMsg.includes("quota")) {
                         setMessage("Le QG est saturé d'appels. Réessayez dans 1 minute.");
                     } else {
-                        setMessage(`Erreur QG : ${data.error.message}`);
+                        setMessage(`Erreur QG : ${errMsg || 'Échec de transmission'}`);
                     }
                 } else if (data.candidates && data.candidates[0].content) {
                     setMessage(data.candidates[0].content.parts[0].text);
@@ -1189,9 +1203,6 @@ function RadioLink({ onClose }) {
 // SERVICE JARVIS PRIME - VISION TOTALE (MISE À JOUR V17.1)
 // ==========================================
 const askJarvisChat = async (history, userMessage, contextData, userTitle = "Commandant") => {
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
-    const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
-
     try {
        // 1. Préparation des données
        const recentLogs = (contextData.transactions || []).slice(0, 15).map(t => 
@@ -1241,15 +1252,25 @@ const askJarvisChat = async (history, userMessage, contextData, userTitle = "Com
             { role: "user", parts: [{ text: userMessage }] }
         ];
 
-        const response = await fetch(URL, {
+        const response = await fetch('/api/jarvis', {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: contents })
+            body: JSON.stringify({ 
+                contents,
+                userId: auth?.currentUser?.uid || 'guest'
+            })
         });
 
         const data = await response.json();
 
-        if (data.error) return "⚠️ Erreur liaison QG.";
+        if (response.status === 429) {
+            return data.error || "⚠️ Quota quotidien atteint (15 requêtes/jour). Reposez-vous, Commandant.";
+        }
+
+        if (data.error) {
+            const errMsg = typeof data.error === 'object' ? data.error.message : data.error;
+            return `⚠️ Erreur liaison QG : ${errMsg || 'Inconnue'}`;
+        }
         if (data.candidates && data.candidates[0].content) {
             return data.candidates[0].content.parts[0].text;
         }
@@ -3130,7 +3151,6 @@ function StatsScreen({ onBack }) {
 // ==========================================
 function SkillsScreen({ onBack }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
     const savedZone = localStorage.getItem('imperium_zone');
     const userZone = savedZone ? JSON.parse(savedZone) : { name: "Zone Inconnue" };
@@ -3190,17 +3210,25 @@ function SkillsScreen({ onBack }) {
         `;
 
         try {
-            // Utilisation du modèle PRO pour l'Arsenal
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
+            const response = await fetch('/api/jarvis', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                body: JSON.stringify({ 
+                    prompt,
+                    userId: auth?.currentUser?.uid || 'guest'
+                })
             });
             
             const data = await response.json();
             
+            if (response.status === 429) {
+                alert(data.error || "⚠️ Quota quotidien atteint (15 requêtes/jour).");
+                return;
+            }
+
             if (data.error) {
-                throw new Error(data.error.message);
+                const errMsg = typeof data.error === 'object' ? data.error.message : data.error;
+                throw new Error(errMsg || "Erreur lors de l'analyse tactique");
             }
 
             if (data.candidates && data.candidates[0].content) {
