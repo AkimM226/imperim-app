@@ -19,12 +19,13 @@ if (!admin.apps.length) {
 const DAILY_LIMIT = 15;
 
 // Liste ordonnée de modèles de secours (Cascade anti-surcharge)
+// Mise à jour : modèles stables génération 3.x (septembre 2026)
 const FALLBACK_MODELS = [
-  'gemini-2.0-flash',
-  'gemini-2.5-flash',
-  'gemini-1.5-flash',
-  'gemini-2.0-flash-lite',
-  'gemini-flash-latest'
+  'gemini-3.6-flash',      // Stable, génération actuelle recommandée par Google
+  'gemini-3.7-flash',      // Stable, plus récent — filet principal
+  'gemini-3.5-flash',      // Stable, légèrement antérieur — second filet
+  'gemini-flash-latest'    // Alias auto-mis à jour par Google (jamais de mort brutale),
+                           // comportement variable — dernier recours uniquement
 ];
 
 export default async function handler(req, res) {
@@ -115,8 +116,15 @@ export default async function handler(req, res) {
           errorMsg.toLowerCase().includes('resource_exhausted') ||
           errorMsg.toLowerCase().includes('unavailable');
 
-        if (isOverloaded) {
-          console.warn(`Modèle ${model} saturé (${geminiResponse.status}: ${errorMsg}), bascule sur le modèle suivant...`);
+        // Correction B : détecter aussi un modèle retiré/introuvable (404 NOT_FOUND)
+        // Un modèle définitivement fermé renvoie 404, pas 503 — il faut aussi basculer
+        const isModelUnavailable = geminiResponse.status === 404 ||
+          errorMsg.toLowerCase().includes('no longer available') ||
+          errorMsg.toLowerCase().includes('not found') ||
+          errorMsg.toLowerCase().includes('not_found');
+
+        if (isOverloaded || isModelUnavailable) {
+          console.warn(`Modèle ${model} indisponible (${geminiResponse.status}: ${errorMsg}), bascule sur le modèle suivant...`);
           lastErrorData = data;
           lastStatus = geminiResponse.status;
           continue;
