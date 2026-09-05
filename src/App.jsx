@@ -543,6 +543,8 @@ function QuantumScreen({ onBack }) {
         setLoading(true);
         setSimulation(null);
 
+        const live = getLiveEmpireContext();
+
         // Prompt Recalibré : Moins de poésie, plus de stratégie financière
         const prompt = `
             Tu es le système central IMPERIUM. Tu es un CONSEILLER FINANCIER FROID ET LOGIQUE.
@@ -550,12 +552,13 @@ function QuantumScreen({ onBack }) {
             DONNÉES DU COMMANDANT :
             - Argent disponible (Cash) : ${availableCash} ${currency}
             - Épargne de secours (Bunker) : ${bunker} ${currency}
+            - Profil comportemental : ${live.behaviorProfile.disciplineLevel}, ${live.behaviorProfile.incomeRegularity}, ${live.behaviorProfile.savingBehavior}
 
             ACTION PROPOSÉE : "${scenario}"
             COÛT ESTIMÉ : ${cost || "Inconnu"} ${currency}
 
             TES ORDRES :
-            Analyse cette dépense froidement. Ne sois pas poétique. Sois BRUTAL et RÉALISTE.
+            Analyse cette dépense froidement en tenant compte de son profil comportemental réel. Ne sois pas poétique. Sois BRUTAL et RÉALISTE.
             
             RÉPONDS UNIQUEMENT AVEC CE JSON STRICT (SANS RIEN D'AUTRE) :
             {
@@ -1065,20 +1068,16 @@ function RadioLink({ onClose }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
-        const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
+        const live = getLiveEmpireContext();
         const daysLeft = 30 - new Date().getDate(); 
-
-        const expenses = transactions.filter(t => t.type === 'expense');
-        const wants = expenses.filter(t => t.category === 'want').reduce((acc, t) => acc + t.amount, 0);
-        const totalExp = expenses.reduce((acc, t) => acc + t.amount, 0);
-        const ratio = totalExp > 0 ? Math.round((wants / totalExp) * 100) : 0;
 
         const prompt = `
             Tu es le Sergent Hartman. Ta recrue a ces stats :
-            - Solde : ${balance}
+            - Solde : ${live.balance} ${live.currency}
             - Jours restants : ${daysLeft}
-            - Dépenses Futiles : ${ratio}%
+            - Dépenses Futiles : ${live.behaviorProfile.impulsivityRatio}% (Discipline: ${live.behaviorProfile.disciplineLevel})
+            - Revenus : ${live.behaviorProfile.incomeRegularity}
+            - Engagement Projets : ${live.behaviorProfile.engagementProfile}
 
             Analyse ça en 2 phrases max.
             Si futilité > 30% ou solde bas : Sois dur, autoritaire, secoue-le.
@@ -1171,7 +1170,57 @@ function RadioLink({ onClose }) {
 // ==========================================
 // SERVICE JARVIS PRIME - VISION TOTALE & TEMPS RÉEL (V18.0)
 // ==========================================
-const getLiveEmpireContext = (contextData = {}) => {
+
+// --- Calcul du profil comportemental ---
+function calculateBehaviorProfile(transactions = [], goals = [], projects = []) {
+    const now = Date.now();
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+    const recentTx = (transactions || []).filter(t => {
+        const txDate = new Date(t.rawDate || t.date).getTime();
+        return !isNaN(txDate) && (now - txDate) <= THIRTY_DAYS;
+    });
+
+    // 1. Discipline financière : ratio dépenses futiles / dépenses totales (30j)
+    const expenses = recentTx.filter(t => t.type === 'expense');
+    const wantExpenses = expenses.filter(t => t.category === 'want');
+    const totalExpAmount = expenses.reduce((acc, t) => acc + (parseFloat(t.amount) || 0), 0);
+    const wantAmount = wantExpenses.reduce((acc, t) => acc + (parseFloat(t.amount) || 0), 0);
+    const impulsivityRatio = totalExpAmount > 0 ? Math.round((wantAmount / totalExpAmount) * 100) : 0;
+
+    let disciplineLevel = "Modérée";
+    if (impulsivityRatio > 50) disciplineLevel = "Faible (dépenses impulsives fréquentes)";
+    else if (impulsivityRatio < 20) disciplineLevel = "Élevée (dépenses maîtrisées)";
+
+    // 2. Régularité de revenu : variance des entrées d'argent
+    const incomes = recentTx.filter(t => t.type === 'income');
+    const incomeRegularity = incomes.length >= 3 ? "Revenus réguliers" : "Revenus irréguliers/imprévisibles";
+
+    // 3. Rapport à l'épargne : progression réelle des objectifs
+    const activeGoals = goals || [];
+    const goalsProgressing = activeGoals.filter(g => (parseFloat(g.current) || 0) > 0).length;
+    const savingBehavior = activeGoals.length === 0 ? "Aucun objectif défini"
+        : (goalsProgressing / activeGoals.length) > 0.5 ? "Épargnant actif"
+        : "Objectifs stagnants";
+
+    // 4. Rapport à l'engagement : taux de complétion des tâches de projets
+    const allTasks = (projects || []).flatMap(p => p.tasks || []);
+    const doneTasks = allTasks.filter(t => t.done).length;
+    const completionRate = allTasks.length > 0 ? Math.round((doneTasks / allTasks.length) * 100) : null;
+    const engagementProfile = completionRate === null ? "Pas assez de données"
+        : completionRate > 60 ? "Bon exécutant (termine ce qu'il commence)"
+        : completionRate < 30 ? "Démarre beaucoup, termine peu"
+        : "Exécution moyenne";
+
+    return {
+        disciplineLevel,
+        impulsivityRatio,
+        incomeRegularity,
+        savingBehavior,
+        engagementProfile,
+    };
+}
+
+function getLiveEmpireContext(contextData = {}) {
     const safeParse = (val, fallback) => {
         if (!val) return fallback;
         try { return JSON.parse(val); } catch { return fallback; }
@@ -1189,6 +1238,8 @@ const getLiveEmpireContext = (contextData = {}) => {
     const zone = safeParse(localStorage.getItem('imperium_zone'), { name: "Afrique (Marché Local)" });
     const tier = localStorage.getItem('imperium_tier') || "FREE";
 
+    const behaviorProfile = calculateBehaviorProfile(transactions, goals, projects);
+
     return {
         currency,
         balance,
@@ -1200,9 +1251,10 @@ const getLiveEmpireContext = (contextData = {}) => {
         skills,
         protocols,
         zone,
-        tier
+        tier,
+        behaviorProfile
     };
-};
+}
 
 const askJarvisChat = async (history, userMessage, contextData = {}, userTitle = "Commandant") => {
     try {
@@ -1274,12 +1326,19 @@ const askJarvisChat = async (history, userMessage, contextData = {}, userTitle =
             
             📜 PROTOCOLES IMPÉRIAUX (Règles d'or) :
             ${protocoles}
+
+            🧠 PROFIL COMPORTEMENTAL OBSERVÉ (30 derniers jours) :
+            - Discipline financière : ${live.behaviorProfile.disciplineLevel} (${live.behaviorProfile.impulsivityRatio}% de dépenses futiles)
+            - Stabilité des revenus : ${live.behaviorProfile.incomeRegularity}
+            - Rapport à l'épargne : ${live.behaviorProfile.savingBehavior}
+            - Rapport à l'engagement : ${live.behaviorProfile.engagementProfile}
             
             TES ORDRES ET DIRECTIVES :
             1. Analyse scrupuleusement ces données réelles pour répondre. Tu connais TOUS ses projets actuels et TOUTES ses dettes réelles.
             2. Si l'utilisateur demande l'état de l'empire, dresse un bilan percutant, militaire et précis de ses VRAIES dettes, ses VRAIS projets, son cash et ses compétences.
             3. Sois stratégique, lucide, style officier d'état-major / Jarvis IA, sans inventer de données fantômes.
             4. Termine parfois par "Rompez !" ou "À vos ordres !".
+            5. Adapte ton ton et tes conseils à ce profil comportemental : si la discipline est faible, sois plus direct/ferme ; si l'engagement est faible (démarre beaucoup, termine peu), encourage la priorisation plutôt que l'accumulation de nouveaux projets ; si les revenus sont irréguliers, ne recommande jamais une dépense qui suppose un revenu stable à venir.
         `;
 
         const contents = [
@@ -3254,12 +3313,15 @@ function SkillsScreen({ onBack }) {
         setAnalyzing(skill.id);
         setTacticResult(null);
 
+        const live = getLiveEmpireContext();
+
         const prompt = `
             AGIS COMME UN GÉNÉRAL EN GUERRE ÉCONOMIQUE.
             SOLDAT : Possède la compétence "${skill.name}".
-            TERRAIN : ${userZone.name}.
-            DEVISE : ${currency}.
-            MISSION : Donne-moi UNE SEULE stratégie d'attaque immédiate (Guérilla Marketing) pour trouver un client AUJOURD'HUI.
+            PROFIL : ${live.behaviorProfile.disciplineLevel}, ${live.behaviorProfile.incomeRegularity}.
+            TERRAIN : ${live.zone.name}.
+            DEVISE : ${live.currency}.
+            MISSION : Donne-moi UNE SEULE stratégie d'attaque immédiate (Guérilla Marketing) pour trouver un client AUJOURD'HUI adaptée à ce profil.
             FORMAT DE RÉPONSE STRICT (JSON) :
             {
                 "target": "Qui aller voir précisément",
@@ -3606,62 +3668,74 @@ function ProjectScreen({ onBack }) {
         setIsThinking(true);
 
         try {
-            // 🛑 ICI : C'est ici que vous pourrez brancher votre API OpenAI ou autre plus tard.
-            // const response = await fetch("VOTRE_API_JARVIS", { ... });
-            // const aiTasks = await response.json();
+            const live = getLiveEmpireContext(); // profil comportemental inclus
 
-            // En attendant, on simule le temps de réflexion de l'IA (2.5 secondes)
-            await new Promise(resolve => setTimeout(resolve, 2500));
+            const prompt = `
+                Tu es JARVIS, le stratège en chef d'IMPERIUM.
+                
+                CONTEXTE DU COMMANDANT :
+                - Profil : ${live.behaviorProfile.disciplineLevel}, ${live.behaviorProfile.incomeRegularity}, ${live.behaviorProfile.engagementProfile}
+                - Zone : ${live.zone.name}, Devise : ${live.currency}
+                - Cash disponible : ${live.balance} ${live.currency}
+                
+                NOUVEAU PROJET DÉCRIT PAR LE COMMANDANT :
+                "${jarvisPrompt}"
+                
+                MISSION : Génère un plan d'action réaliste et adapté à CE projet précis
+                et à CE profil précis (si l'engagement est faible, garde le plan court
+                et actionnable dès aujourd'hui ; si les revenus sont irréguliers, priorise
+                les étapes qui génèrent du cash rapidement).
+                
+                RÉPONDS UNIQUEMENT AVEC CE JSON STRICT (SANS RIEN D'AUTRE), un tableau
+                de 5 à 8 tâches maximum, chacune préfixée par sa phase :
+                [
+                    { "text": "[Phase 1 : Reconnaissance] ..." },
+                    { "text": "[Phase 2 : Logistique] ..." },
+                    { "text": "[Phase 3 : Assaut] ..." }
+                ]
+            `;
 
-            const timestamp = Date.now();
-            
-            // Simulation d'une analyse intelligente basée sur des mots clés
-            const isTech = jarvisPrompt.toLowerCase().includes("site") || jarvisPrompt.toLowerCase().includes("app");
-            const isFormation = jarvisPrompt.toLowerCase().includes("formation") || jarvisPrompt.toLowerCase().includes("cours");
-            
-            let generatedTasks = [];
+            const response = await fetch('/api/jarvis', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    prompt,
+                    userId: auth?.currentUser?.uid || 'guest'
+                })
+            });
 
-            if (isFormation) {
-                generatedTasks = [
-                    { id: timestamp + 1, text: "[Phase 1 : Reconnaissance] Définir le plan et les chapitres de la formation", done: false },
-                    { id: timestamp + 2, text: "[Phase 1 : Reconnaissance] Identifier le public cible et le prix de vente", done: false },
-                    { id: timestamp + 3, text: "[Phase 2 : Logistique] Rédiger le contenu textuel ou les slides", done: false },
-                    { id: timestamp + 4, text: "[Phase 2 : Logistique] Enregistrer et monter les vidéos/audios", done: false },
-                    { id: timestamp + 5, text: "[Phase 2 : Logistique] Configurer la plateforme de paiement (Stripe/Paypal)", done: false },
-                    { id: timestamp + 6, text: "[Phase 3 : Assaut] Teaser la formation sur les réseaux sociaux", done: false },
-                    { id: timestamp + 7, text: "[Phase 3 : Assaut] Lancement officiel et ouverture des ventes", done: false },
-                ];
-            } else if (isTech) {
-                generatedTasks = [
-                    { id: timestamp + 1, text: "[Phase 1 : Reconnaissance] Faire une maquette (Wireframe) du projet", done: false },
-                    { id: timestamp + 2, text: "[Phase 1 : Reconnaissance] Choisir les technologies et l'hébergement", done: false },
-                    { id: timestamp + 3, text: "[Phase 2 : Logistique] Développer la structure de base (Front-end)", done: false },
-                    { id: timestamp + 4, text: "[Phase 2 : Logistique] Connecter la base de données (Back-end)", done: false },
-                    { id: timestamp + 5, text: "[Phase 3 : Assaut] Phase de tests et corrections de bugs (QA)", done: false },
-                    { id: timestamp + 6, text: "[Phase 3 : Assaut] Mise en ligne sur les serveurs de production", done: false },
-                ];
-            } else {
-                // Stratégie générique par défaut
-                generatedTasks = [
-                    { id: timestamp + 1, text: "[Phase 1 : Reconnaissance] Étude de marché et analyse de la faisabilité", done: false },
-                    { id: timestamp + 2, text: "[Phase 1 : Reconnaissance] Définition du budget et du plan d'action", done: false },
-                    { id: timestamp + 3, text: "[Phase 2 : Logistique] Acquisition des ressources nécessaires", done: false },
-                    { id: timestamp + 4, text: "[Phase 2 : Logistique] Mise en place des structures de base", done: false },
-                    { id: timestamp + 5, text: "[Phase 3 : Assaut] Campagne de communication et marketing", done: false },
-                    { id: timestamp + 6, text: "[Phase 3 : Assaut] Déploiement complet des opérations", done: false },
-                ];
+            const data = await response.json();
+
+            if (response.status === 429) {
+                alert(data.error || "⚠️ Quota quotidien d'IA atteint. Réessayez demain.");
+                setIsThinking(false);
+                return;
             }
 
-            // On ajoute les tâches générées au projet
-            updateProjectTasks([...(activeProject.tasks || []), ...generatedTasks]);
-            
-            // Nettoyage et fermeture
-            setJarvisPrompt("");
-            setShowJarvisModal(false);
+            if (data.error) {
+                const errMsg = typeof data.error === 'object' ? data.error.message : data.error;
+                throw new Error(errMsg || "Erreur de communication avec Jarvis.");
+            }
+
+            if (data.candidates && data.candidates[0].content) {
+                const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
+                const aiTasks = JSON.parse(text);
+                const timestamp = Date.now();
+                const generatedTasks = aiTasks.map((t, i) => ({
+                    id: timestamp + i,
+                    text: t.text,
+                    done: false
+                }));
+                updateProjectTasks([...(activeProject.tasks || []), ...generatedTasks]);
+                setJarvisPrompt("");
+                setShowJarvisModal(false);
+            } else {
+                throw new Error("Pas de réponse exploitable de Jarvis.");
+            }
 
         } catch (error) {
             console.error(error);
-            alert("Erreur de communication avec Jarvis.");
+            alert(error.message ? `⚠️ ${error.message}` : "⚠️ Erreur de communication avec Jarvis.");
         } finally {
             setIsThinking(false);
         }
