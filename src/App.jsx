@@ -4392,7 +4392,7 @@ const [calibBunker, setCalibBunker] = useState(() => {
             const payload = {
                 message: feedbackText,
                 category: feedbackCategory,
-                version: localStorage.getItem('imperium_version') || "Inconnue",
+                version: APP_VERSION,
                 date: new Date().toLocaleString(),
                 userEmail: auth.currentUser?.email || "Non connecté",
                 userId: auth.currentUser?.uid || "Anonyme",
