@@ -729,7 +729,44 @@ function AppContent() {
     return <MainOS />;
 }
   
-  function MainOS() {
+// ==========================================
+// ÉCRAN DE VERROUILLAGE DES MODULES RESTREINTS (RÔLE STANDARD)
+// ==========================================
+function RestrictedAccessScreen({ onBack }) {
+    return (
+        <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+            <div className="w-full max-w-sm bg-[#121212] border border-red-500/30 rounded-2xl p-6 shadow-[0_0_50px_rgba(239,68,68,0.15)] relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent"></div>
+                
+                <div className="w-16 h-16 bg-red-950/40 border border-red-500/40 rounded-2xl flex items-center justify-center mx-auto mb-5 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+                    <Lock className="w-8 h-8 animate-pulse" />
+                </div>
+
+                <div className="inline-block bg-red-500/10 border border-red-500/30 px-3 py-1 rounded-full text-[10px] font-bold text-red-400 tracking-widest uppercase mb-3">
+                    Zone Réservée aux Généraux
+                </div>
+
+                <h2 className="text-xl font-bold font-serif text-white uppercase tracking-wider mb-3">
+                    Accès Restreint
+                </h2>
+
+                <p className="text-xs text-gray-400 leading-relaxed mb-6">
+                    Ce module est réservé aux Généraux de l'Empire. Accès complet bientôt disponible pour tous.
+                </p>
+
+                <button 
+                    onClick={onBack}
+                    className="w-full bg-gradient-to-r from-[#F4D35E] to-yellow-500 hover:from-yellow-400 hover:to-yellow-300 text-black font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(244,211,94,0.2)] active:scale-95 flex items-center justify-center gap-2"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Retour au QG
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function MainOS() {
     const [view, setView] = useState('dashboard');
     const [currentView, setCurrentView] = useState('dashboard');
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -737,43 +774,73 @@ function AppContent() {
     const [currentTier, setCurrentTier] = useState(localStorage.getItem('imperium_tier') || 'FREE');
     const [showUpgrade, setShowUpgrade] = useState(false);
     const [showPatchNotes, setShowPatchNotes] = useState(false);
-    // --- SYSTÈME DE DÉTECTION DE MISE À JOUR ---
-useEffect(() => {
-    const lastSeenVersion = localStorage.getItem('imperium_version_seen');
-    
-    // Si la version est différente (nouvelle install ou mise à jour)
-    if (lastSeenVersion !== APP_VERSION) {
-        setShowPatchNotes(true);
-    }
-}, []);
 
-// Fonction pour fermer et enregistrer que la mise à jour est lue
-const ackPatchNotes = () => {
-    localStorage.setItem('imperium_version_seen', APP_VERSION);
-    setShowPatchNotes(false);
-};
+    // 🎖️ RÔLE DU COMMANDANT (general | standard)
+    // RÈGLE ABSOLUE : Lu UNIQUEMENT depuis Firestore, JAMAIS de localStorage, JAMAIS modifiable par le client.
+    const [userRole, setUserRole] = useState('standard');
+
+    // Modules réservés aux Généraux
+    const GENERAL_ONLY_VIEWS = ['project', 'skills', 'protocols', 'quantum', 'debts'];
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                try {
+                    const cloudData = await loadEmpireFromCloud(currentUser.uid);
+                    if (cloudData && cloudData.role === 'general') {
+                        setUserRole('general');
+                    } else {
+                        setUserRole('standard');
+                    }
+                } catch (err) {
+                    console.error("Erreur vérification rôle:", err);
+                    setUserRole('standard');
+                }
+            } else {
+                setUserRole('standard');
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
+    // --- SYSTÈME DE DÉTECTION DE MISE À JOUR ---
+    useEffect(() => {
+        const lastSeenVersion = localStorage.getItem('imperium_version_seen');
+        
+        // Si la version est différente (nouvelle install ou mise à jour)
+        if (lastSeenVersion !== APP_VERSION) {
+            setShowPatchNotes(true);
+        }
+    }, []);
+
+    // Fonction pour fermer et enregistrer que la mise à jour est lue
+    const ackPatchNotes = () => {
+        localStorage.setItem('imperium_version_seen', APP_VERSION);
+        setShowPatchNotes(false);
+    };
     const navigate = (view) => { setCurrentView(view); window.scrollTo(0, 0); };
 
-// --- SYSTÈME CLOUD : GESTION DES NOUVEAUX (HARCÈLEMENT TACTIQUE) ---
-useEffect(() => {
-    if (!auth.currentUser) {
-        // On compte le nombre de fois que le soldat a ouvert l'application
-        let sessionCount = parseInt(localStorage.getItem('imperium_session_count') || "0");
-        sessionCount += 1;
-        localStorage.setItem('imperium_session_count', sessionCount.toString());
+    // --- SYSTÈME CLOUD : GESTION DES NOUVEAUX (HARCÈLEMENT TACTIQUE) ---
+    useEffect(() => {
+        if (!auth.currentUser) {
+            // On compte le nombre de fois que le soldat a ouvert l'application
+            let sessionCount = parseInt(localStorage.getItem('imperium_session_count') || "0");
+            sessionCount += 1;
+            localStorage.setItem('imperium_session_count', sessionCount.toString());
 
-        // Si c'est sa 1ère ouverture, OU toutes les 3 ouvertures (4, 7, 10...)
-        if (sessionCount === 1 || sessionCount % 3 === 0) {
-            const timer = setTimeout(() => {
-                setShowLoginPrompt(true); 
-            }, 3000);
-            return () => clearTimeout(timer);
+            // Si c'est sa 1ère ouverture, OU toutes les 3 ouvertures (4, 7, 10...)
+            if (sessionCount === 1 || sessionCount % 3 === 0) {
+                const timer = setTimeout(() => {
+                    setShowLoginPrompt(true); 
+                }, 3000);
+                return () => clearTimeout(timer);
+            }
         }
-    }
-}, []);
+    }, []);
+
     return (
       <> 
-           {/* 🛡️ LE BUREAU DE RECRUTEMENT (S'affiche par-dessus tout) */}
+          {/* 🛡️ LE BUREAU DE RECRUTEMENT (S'affiche par-dessus tout) */}
           {showUpgrade && (
              <UpgradeScreen 
                 currentTier={currentTier} 
@@ -813,35 +880,37 @@ useEffect(() => {
               />
           )}
           {showPatchNotes && <PatchNotesModal onAck={ackPatchNotes} />}
-          {currentView === 'dashboard' && <Dashboard onNavigate={navigate} />}
-          {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
+
+          {/* CHAPITRE 1 : VUES OUVERTES À TOUS */}
+          {currentView === 'dashboard' && <Dashboard onNavigate={navigate} userRole={userRole} />}
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'quantum' && <QuantumScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}   {/* 🛡️ LE BUREAU DE RECRUTEMENT */}
-       {showUpgrade && (
-     <UpgradeScreen 
-        currentTier={currentTier} 
-        onClose={() => setShowUpgrade(false)} 
-        onSelectPlan={(planId) => {
-            setCurrentTier(planId);
-            localStorage.setItem('imperium_tier', planId);
-            setShowUpgrade(false);
-        }}
-    />
-)}
-          {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'academy' && <AcademyScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'settings' && (
-          <SettingsScreen 
-             onBack={() => navigate('dashboard')} 
-             onNavigate={navigate} 
-             currentTier={currentTier} 
-             setShowUpgrade={setShowUpgrade} 
-            />
+              <SettingsScreen 
+                 onBack={() => navigate('dashboard')} 
+                 onNavigate={navigate} 
+                 currentTier={currentTier} 
+                 setShowUpgrade={setShowUpgrade}
+                 userRole={userRole}
+              />
+          )}
+
+          {/* VUES RESTREINTES (GÉNÉRAUX UNIQUEMENT) AVEC ROUTEUR SÉCURISÉ */}
+          {GENERAL_ONLY_VIEWS.includes(currentView) && (
+              userRole !== 'general' ? (
+                  <RestrictedAccessScreen onBack={() => navigate('dashboard')} />
+              ) : (
+                  <>
+                      {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
+                      {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
+                      {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
+                      {currentView === 'quantum' && <QuantumScreen onBack={() => navigate('dashboard')} />}
+                      {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
+                  </>
+              )
           )}
       </>
     );
@@ -1359,7 +1428,8 @@ function JarvisModal({ onClose, contextData }) {
 // ==========================================
 //             DASHBOARD
 // ==========================================
-function Dashboard({ onNavigate }) {
+function Dashboard({ onNavigate, userRole = 'standard' }) {
+    const isGeneral = userRole === 'general';
     // 📡 APPEL AU QG
     const { showAlert, showConfirm } = useJarvis();
     
@@ -2090,8 +2160,8 @@ function Dashboard({ onNavigate }) {
                </div>
           </div>
   
-          {/* ALERTE DETTE PRIORITAIRE */}
-          {priorityDebt && (
+          {/* ALERTE DETTE PRIORITAIRE (RÉSERVÉE AUX GÉNÉRAUX) */}
+          {isGeneral && priorityDebt && (
               <div onClick={() => onNavigate('debts')} className="bg-red-600/10 border border-red-500/50 p-3 rounded-xl flex items-center justify-between animate-pulse cursor-pointer">
                   <div className="flex items-center gap-3">
                       <div className="p-2 bg-red-500/20 rounded-full"><AlertTriangle className="w-4 h-4 text-red-500"/></div>
@@ -2117,54 +2187,58 @@ function Dashboard({ onNavigate }) {
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 relative z-10" />
           </div>
   
-          {/* GRILLE D'ACTIONS RAPIDES */}
-          <div className="grid grid-cols-2 gap-3 mb-2">
-              <button onClick={() => onNavigate('project')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                  <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Projets</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
-              </button>
-              
-              <button onClick={() => { playSound('radio'); setShowRadio(true); }} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98] relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20"><Radio className="w-12 h-12 text-green-500 -rotate-12"/></div>
-                    <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
-                    <h3 className="text-sm font-bold text-white relative z-10">Radio QG</h3>
-                    <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Rapport Sergent</p>
-              </button>
-              
-             {/* BOUTON JARVIS (PREMIUM) */}
-             <button onClick={() => setShowJarvis(true)} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-gold/20 active:scale-[0.98] relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <Zap className="w-6 h-6 text-gold mb-3 opacity-90 relative z-10" />
-                  <h3 className="text-sm font-bold text-white relative z-10">JARVIS AI</h3>
-                  <p className="text-[9px] text-gold uppercase tracking-wide relative z-10">Analyse Tactique</p>
-             </button>
+          {/* GRILLE D'ACTIONS RAPIDES (RÉSERVÉE AUX GÉNÉRAUX) */}
+          {isGeneral && (
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                  <button onClick={() => onNavigate('project')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
+                      <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Projets</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
+                  </button>
+                  
+                  <button onClick={() => { playSound('radio'); setShowRadio(true); }} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98] relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20"><Radio className="w-12 h-12 text-green-500 -rotate-12"/></div>
+                        <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
+                        <h3 className="text-sm font-bold text-white relative z-10">Radio QG</h3>
+                        <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Rapport Sergent</p>
+                  </button>
+                  
+                 {/* BOUTON JARVIS (PREMIUM) */}
+                 <button onClick={() => setShowJarvis(true)} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-gold/20 active:scale-[0.98] relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <Zap className="w-6 h-6 text-gold mb-3 opacity-90 relative z-10" />
+                      <h3 className="text-sm font-bold text-white relative z-10">JARVIS AI</h3>
+                      <p className="text-[9px] text-gold uppercase tracking-wide relative z-10">Analyse Tactique</p>
+                 </button>
 
-              <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                  <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Arsenal</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Compétences</p>
-              </button>
-              <button onClick={() => onNavigate('protocols')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                  <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Protocole</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
-              </button>
-          </div>
+                  <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
+                      <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Arsenal</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Compétences</p>
+                  </button>
+                  <button onClick={() => onNavigate('protocols')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
+                      <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Protocole</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
+                  </button>
+              </div>
+          )}
           
-          {/* BOUTON CHRONO-VISOR (AVEC VERROU SEC) */}
-          <button onClick={handleQuantumAccess} className="w-full bg-[#111] rounded-xl p-0.5 flex items-center justify-between active:scale-[0.98] mt-2 group relative overflow-hidden mb-3">
-             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 opacity-20 animate-pulse"></div>
-             <div className="bg-[#0a0a0a] w-full h-full rounded-[10px] p-4 flex items-center gap-4 relative z-10">
-                 <div className="p-2 bg-cyan-900/20 rounded-full text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-                     <Infinity className="w-6 h-6 animate-spin-slow" />
+          {/* BOUTON CHRONO-VISOR (RÉSERVÉ AUX GÉNÉRAUX) */}
+          {isGeneral && (
+              <button onClick={handleQuantumAccess} className="w-full bg-[#111] rounded-xl p-0.5 flex items-center justify-between active:scale-[0.98] mt-2 group relative overflow-hidden mb-3">
+                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 opacity-20 animate-pulse"></div>
+                 <div className="bg-[#0a0a0a] w-full h-full rounded-[10px] p-4 flex items-center gap-4 relative z-10">
+                     <div className="p-2 bg-cyan-900/20 rounded-full text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+                         <Infinity className="w-6 h-6 animate-spin-slow" />
+                     </div>
+                     <div className="text-left">
+                         <h3 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">CHRONO-VISOR</h3>
+                         <p className="text-[9px] text-cyan-600 uppercase tracking-widest">Simuler le Futur</p>
+                     </div>
+                     {isQuantumUnlocked ? (
+                        <ChevronRight className="w-5 h-5 text-cyan-400 ml-auto" />
+                     ) : (
+                        <Lock className="w-4 h-4 text-gray-500 ml-auto" />
+                     )}
                  </div>
-                 <div className="text-left">
-                     <h3 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">CHRONO-VISOR</h3>
-                     <p className="text-[9px] text-cyan-600 uppercase tracking-widest">Simuler le Futur</p>
-                 </div>
-                 {isQuantumUnlocked ? (
-                    <ChevronRight className="w-5 h-5 text-cyan-400 ml-auto" />
-                 ) : (
-                    <Lock className="w-4 h-4 text-gray-500 ml-auto" />
-                 )}
-             </div>
-             <style>{`@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .animate-spin-slow { animation: spin-slow 10s linear infinite; }`}</style>
-          </button>
+                 <style>{`@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .animate-spin-slow { animation: spin-slow 10s linear infinite; }`}</style>
+              </button>
+          )}
           
           {/* BOUTON CIBLES */}
            <button onClick={() => { playSound('click'); onNavigate('goals'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mb-2 group hover:bg-[#222] transition-colors">
@@ -2209,22 +2283,24 @@ function Dashboard({ onNavigate }) {
               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-purple-400 transition-colors" />
           </button>
 
-          {/* BOUTON REGISTRE */}
-          <button onClick={() => { playSound('debts'); onNavigate('debts'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
-              <div className="flex items-center gap-4">
-                  <div className="p-2 bg-red-900/20 rounded-full text-red-500 border border-red-500/20">
-                      <Scroll className="w-5 h-5" />
+          {/* BOUTON REGISTRE (RÉSERVÉ AUX GÉNÉRAUX) */}
+          {isGeneral && (
+              <button onClick={() => { playSound('debts'); onNavigate('debts'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+                  <div className="flex items-center gap-4">
+                      <div className="p-2 bg-red-900/20 rounded-full text-red-500 border border-red-500/20">
+                          <Scroll className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                          <h3 className="text-sm font-bold text-white">Le Registre</h3>
+                          <p className="text-[9px] text-gray-500 uppercase tracking-wide">Dettes & Créances</p>
+                      </div>
                   </div>
-                  <div className="text-left">
-                      <h3 className="text-sm font-bold text-white">Le Registre</h3>
-                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Dettes & Créances</p>
+                  <div className="flex items-center gap-2">
+                       {(debts.length > 0) && <span className="bg-white/10 text-white text-[9px] font-bold px-2 py-0.5 rounded">{debts.length}</span>}
+                       <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-red-500 transition-colors" />
                   </div>
-              </div>
-              <div className="flex items-center gap-2">
-                   {(debts.length > 0) && <span className="bg-white/10 text-white text-[9px] font-bold px-2 py-0.5 rounded">{debts.length}</span>}
-                   <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-red-500 transition-colors" />
-              </div>
-          </button>
+              </button>
+          )}
   
           {/* BOUTON TROPHÉES */}
           <button onClick={() => { playSound('trophies'); onNavigate('trophies'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
@@ -2391,10 +2467,10 @@ function Dashboard({ onNavigate }) {
       )}
       
         {showOrders && <OrdersModal onClose={() => setShowOrders(false)} />}
-        {showRadio && <RadioLink onClose={() => setShowRadio(false)} />}
+        {isGeneral && showRadio && <RadioLink onClose={() => setShowRadio(false)} />}
         
-        {/* MODALE JARVIS PRIME */}
-        {showJarvis && (
+        {/* MODALE JARVIS PRIME (GÉNÉRAUX UNIQUEMENT) */}
+        {isGeneral && showJarvis && (
             <JarvisModal 
                 onClose={() => setShowJarvis(false)} 
                 contextData={{ balance: availableCash, bunker: totalBunker, currency: currency, transactions: transactions, projects: projects, skills: skills, debts: debts, protocols: protocols }}
@@ -4030,7 +4106,7 @@ function AcademyScreen({ onBack }) {
 // ==========================================
 // 12. ÉCRAN PARAMÈTRES (CORRIGÉ AVEC DEVISE/ZONE)
 // ==========================================
-function SettingsScreen({ onBack, onNavigate, currentTier, setShowUpgrade}) { 
+function SettingsScreen({ onBack, onNavigate, currentTier, setShowUpgrade, userRole = 'standard' }) { 
     // const isAdmin = auth.currentUser && auth.currentUser.uid === ADMIN_UID;
     const isAdmin = false; // Désactivé temporairement car ADMIN_UID n'est pas défini (module PEGAZUS retiré)
     // 📡 APPEL AU QG : Récupération des outils du HUD
@@ -4476,7 +4552,12 @@ const [calibBunker, setCalibBunker] = useState(() => {
                                         <img src={auth.currentUser.photoURL} alt="Avatar" className="w-10 h-10 rounded-full border border-blue-400" />
                                     )}
                                     <div>
-                                        <p className="text-xs text-blue-300 font-bold uppercase">Liaison Active</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-xs text-blue-300 font-bold uppercase">Liaison Active</p>
+                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${userRole === 'general' ? 'bg-[#F4D35E]/20 text-[#F4D35E] border border-[#F4D35E]/40' : 'bg-gray-800 text-gray-400 border border-white/10'}`}>
+                                                {userRole === 'general' ? 'Général' : 'Soldat'}
+                                            </span>
+                                        </div>
                                         <p className="text-[10px] text-white">{auth.currentUser.email}</p>
                                     </div>
                                 </div>
