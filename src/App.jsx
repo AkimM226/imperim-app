@@ -4144,6 +4144,7 @@ const [calibBunker, setCalibBunker] = useState(() => {
     // Feedback
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedbackText, setFeedbackText] = useState("");
+    const [feedbackCategory, setFeedbackCategory] = useState('suggestion');
 
     // --- NOUVEAU : ÉTATS DEVISE & ZONE ---
     const [empireCurrency, setEmpireCurrency] = useState(localStorage.getItem('imperium_currency') || "€");
@@ -4390,15 +4391,27 @@ const [calibBunker, setCalibBunker] = useState(() => {
         try {
             const payload = {
                 message: feedbackText,
+                category: feedbackCategory,
                 version: localStorage.getItem('imperium_version') || "Inconnue",
                 date: new Date().toLocaleString(),
+                userEmail: auth.currentUser?.email || "Non connecté",
+                userId: auth.currentUser?.uid || "Anonyme",
+                userRole: userRole,
             };
             const response = await fetch(FORM_ENDPOINT, {
                 method: "POST", headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             if (response.ok) {
-                showAlert("RAPPORT TRANSMIS", "Votre message a bien été reçu par l'Architecte.", "success");
-                setFeedbackText(""); setShowFeedback(false);
+                const successMessages = {
+                    bug: ["RAPPORT DE COMBAT REÇU", "Le bug signalé remonte directement à l'Architecte. Merci, Commandant."],
+                    suggestion: ["STRATÉGIE TRANSMISE", "Votre idée a été ajoutée au conseil de guerre."],
+                    autre: ["MESSAGE TRANSMIS", "Votre message a bien été reçu par l'Architecte."],
+                };
+                const [title, msg] = successMessages[feedbackCategory] || successMessages.autre;
+                showAlert(title, msg, "success");
+                setFeedbackText("");
+                setFeedbackCategory('suggestion');
+                setShowFeedback(false);
             } else { 
                 showAlert("ÉCHEC DE TRANSMISSION", "Le serveur a rejeté le rapport.", "error"); 
             }
@@ -4674,10 +4687,36 @@ const [calibBunker, setCalibBunker] = useState(() => {
                                 </div>
                             </div>
 
+                            {/* SÉLECTION DE CATÉGORIE */}
+                            <div className="flex gap-2 mb-4">
+                                {[
+                                    { id: 'bug', label: '🐛 Bug' },
+                                    { id: 'suggestion', label: '💡 Idée' },
+                                    { id: 'autre', label: '💬 Autre' },
+                                ].map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => setFeedbackCategory(cat.id)}
+                                        className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                                            feedbackCategory === cat.id
+                                                ? 'bg-gold/20 border-gold text-gold shadow-[0_0_10px_rgba(244,211,94,0.15)]'
+                                                : 'bg-black border-white/10 text-gray-500 hover:text-gray-300'
+                                        }`}
+                                    >
+                                        {cat.label}
+                                    </button>
+                                ))}
+                            </div>
+
                             <textarea 
                                 value={feedbackText} 
                                 onChange={(e) => setFeedbackText(e.target.value)} 
-                                placeholder="Commandant, je suggère..." 
+                                placeholder={
+                                    feedbackCategory === 'bug' ? "Décrivez ce qui ne fonctionne pas..." :
+                                    feedbackCategory === 'suggestion' ? "Commandant, je suggère..." :
+                                    "Votre message pour l'Architecte..."
+                                }
                                 className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm text-gray-200 focus:border-gold focus:outline-none h-32 mb-4 custom-scrollbar resize-none"
                                 autoFocus
                             />
