@@ -22,6 +22,9 @@ export const messaging = getMessaging(app);
 // 2. Initialisation de l'Auth
 export const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 // 3. Initialisation de la Database (Avec correctif WebContainer)
 export const db = initializeFirestore(app, {
