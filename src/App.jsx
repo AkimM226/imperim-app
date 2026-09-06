@@ -1012,7 +1012,7 @@ function OnboardingScreen({ onComplete }) {
 
     // --- RENDU TUTORIEL INTERACTIF ---
     if (showTutorial) {
-        return <InteractiveTutorial onComplete={finishComplete} currency={currency || "€"} />;
+        return <InteractiveTutorial onComplete={finishComplete} currency={currency || "€"} userRole="standard" />;
     }
 
     // --- RENDU CONFIGURATION ---
@@ -2574,7 +2574,7 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
         )}
 
       {/* 🎯 TUTORIEL GUIDÉ - OVERLAY SUR VRAIS ÉCRANS */}
-      {showTutorial && <InteractiveTutorial onComplete={handleTutorialComplete} currency={currency} />}
+      {showTutorial && <InteractiveTutorial onComplete={handleTutorialComplete} currency={currency} userRole={userRole} />}
 
       </div>
       </PageTransition>
