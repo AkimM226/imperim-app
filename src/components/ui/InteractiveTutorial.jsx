@@ -13,7 +13,7 @@ const TutorialContext = createContext(null);
 export const useTutorial = () => useContext(TutorialContext);
 
 // ==========================================
-// TUTORIEL GUIDÉ - OVERLAYS SUR VRAIS ÉCRANS
+// TUTORIEL EXPLICATIF - DÉCOUVERTE DE L'EMPIRE
 // ==========================================
 function InteractiveTutorial({ onComplete, currency = "€", userRole = 'standard' }) {
   const isGeneral = userRole === 'general';
@@ -22,150 +22,86 @@ function InteractiveTutorial({ onComplete, currency = "€", userRole = 'standar
   const [isCompleted, setIsCompleted] = useState(false);
 
   // ==========================================
-  // TOUTES LES ÉTAPES (jamais supprimées — filtrées selon le rôle)
+  // TOUTES LES ÉTAPES EXPLICATIVES
   // ==========================================
   const ALL_STEPS = [
     {
       id: 'intro',
       title: "BIENVENUE, COMMANDANT",
-      subtitle: "Formation Guidée",
-      type: 'intro',
+      subtitle: "Découverte de l'Empire",
       icon: Shield,
-      content: "Bienvenue dans Imperium ! Ce tutoriel va vous guider à travers les fonctionnalités principales de l'application. Vous utiliserez vos propres données réelles pour découvrir chaque fonctionnalité.",
-      objectives: isGeneral ? [
-        "Découvrir le Dashboard et enregistrer des transactions",
-        "Apprendre à gérer vos objectifs d'épargne",
-        "Comprendre le suivi des dettes",
-        "Explorer les projets et ROI",
-        "Analyser vos statistiques"
-      ] : [
-        "Découvrir le Dashboard et enregistrer des transactions",
-        "Apprendre à gérer vos objectifs d'épargne",
-        "Découvrir vos accomplissements et votre progression",
-        "Consulter l'Académie du Commandant",
-        "Analyser vos statistiques"
-      ]
+      content: "IMPERIUM transforme la gestion de votre vie financière et de vos projets en une véritable conquête. Chaque décision compte, chaque discipline vous rapproche de la victoire. Découvrons ensemble les piliers de votre Empire."
     },
     {
       id: 'dashboard',
-      title: "DASHBOARD - POSTE DE COMMANDEMENT",
-      subtitle: "Étape 1/5 : Le QG",
-      type: 'guided',
+      title: "LE QG - VOTRE POSTE DE COMMANDEMENT",
+      subtitle: "Vue d'ensemble",
       icon: Shield,
-      content: "Le Dashboard est votre centre de commandement. Vous y voyez votre solde, vos dépenses du jour, et pouvez enregistrer des transactions. Enregistrez une transaction réelle pour voir l'impact sur votre solde.",
-      instruction: "Cliquez sur le bouton '+' en haut à droite pour ajouter une transaction. Essayez d'enregistrer une dépense réelle.",
-      targetElement: 'transaction-button',
-      validation: () => {
-        const transactions = JSON.parse(localStorage.getItem('imperium_transactions') || "[]");
-        return transactions.length > 0;
-      }
+      content: "Le Dashboard est le cœur de votre Empire. En un coup d'œil : votre solde disponible, vos dépenses du jour, et la Ration de Guerre qu'il vous reste à dépenser sans mettre votre stabilité en danger."
+    },
+    {
+      id: 'bloodtax',
+      title: "LA TAXE DE SANG",
+      subtitle: "Votre discipline en action",
+      icon: Wallet,
+      content: "Chaque dépense futile ('Want') prélève automatiquement une partie vers votre Bunker. C'est le mécanisme central d'IMPERIUM : transformer vos petits écarts en épargne malgré vous."
     },
     {
       id: 'goals',
-      title: "OBJECTIFS - CIBLES DE CONQUÊTE",
-      subtitle: "Étape 2/5 : Gestion d'Objectifs",
-      type: 'guided',
+      title: "LE BUNKER - VOS OBJECTIFS",
+      subtitle: "Argent guerre vs argent sécurité",
       icon: Target,
-      content: "Les Cibles sont vos objectifs d'épargne. L'argent alloué est verrouillé et ne peut être dépensé. Créez un objectif réel pour voir comment cela affecte votre trésorerie disponible.",
-      instruction: "Cliquez sur l'icône 'Objectifs' dans la barre de navigation en bas, puis créez votre première cible d'épargne.",
-      targetElement: 'goals-nav',
-      validation: () => {
-        const goals = JSON.parse(localStorage.getItem('imperium_goals') || "[]");
-        return goals.length > 0;
-      }
+      content: "Le Bunker sépare votre argent 'guerre' (disponible) de votre argent 'sécurité' (objectifs verrouillés). Définissez des cibles d'épargne réelles pour donner une direction à votre discipline."
     },
-    // --- Étapes réservées aux Généraux ---
-    {
-      id: 'debts',
-      title: "DETTE - LE GRAND LIVRE",
-      subtitle: "Étape 3/5 : Gestion de Dettes",
-      type: 'guided',
-      icon: Wallet,
-      content: "Le Grand Livre suit toutes vos dettes (ce que vous devez et ce qu'on vous doit). C'est essentiel pour maintenir une comptabilité précise.",
-      instruction: "Cliquez sur l'icône 'Dettes' dans la barre de navigation pour découvrir cette fonctionnalité. Vous pouvez enregistrer une dette si nécessaire.",
-      targetElement: 'debts-nav',
-      skippable: true,
-      validation: () => true
-    },
-    {
-      id: 'projects',
-      title: "PROJETS - CONQUÊTES STRATÉGIQUES",
-      subtitle: "Étape 4/5 : Gestion de Projets",
-      type: 'guided',
-      icon: BookOpen,
-      content: "Les Projets sont vos conquêtes avec un ROI (Retour sur Investissement). Transformez vos compétences en revenus ou gains uniques.",
-      instruction: "Cliquez sur l'icône 'Projets' dans la barre de navigation pour découvrir cette fonctionnalité et créer un projet si vous le souhaitez.",
-      targetElement: 'projects-nav',
-      skippable: true,
-      validation: () => true
-    },
-    // --- Étapes réservées aux Soldats (non-Généraux) ---
     {
       id: 'trophies',
       title: "TROPHÉES - SALLE D'HONNEUR",
-      subtitle: "Étape 3/5 : Progression",
-      type: 'guided',
+      subtitle: "Votre progression",
       icon: Trophy,
-      content: "La Salle d'Honneur affiche vos accomplissements et votre rang actuel dans l'Empire.",
-      instruction: "Cliquez sur l'icône 'Trophées' dans la barre de navigation pour découvrir vos accomplissements.",
-      targetElement: 'trophies-nav',
-      skippable: true,
-      validation: () => true
+      content: "Chaque jour de discipline maintenue vous rapproche d'un nouveau grade. La Salle d'Honneur retrace votre parcours et vos accomplissements dans l'Empire."
     },
     {
       id: 'academy',
       title: "ACADÉMIE - SALLE D'ÉTUDE",
-      subtitle: "Étape 4/5 : Formation",
-      type: 'guided',
+      subtitle: "Formation continue",
       icon: BookOpen,
-      content: "L'Académie regroupe des connaissances essentielles sur la gestion financière.",
-      instruction: "Cliquez sur l'icône 'Académie' dans la barre de navigation pour consulter une fiche.",
-      targetElement: 'academy-nav',
-      skippable: true,
-      validation: () => true
+      content: "L'Académie regroupe des connaissances essentielles en gestion financière : règle des 50/30/20, intérêts composés, négociation, et bien plus."
     },
-    // --- Étapes communes ---
     {
       id: 'stats',
-      title: "STATISTIQUES - SALLE DES CARTES",
-      subtitle: "Étape 5/5 : Analyse",
-      type: 'guided',
+      title: "SALLE DES CARTES",
+      subtitle: "Analyse et tendances",
       icon: BarChart3,
-      content: "La Salle des Cartes vous montre vos statistiques et tendances financières. Analysez vos dépenses pour optimiser votre gestion.",
-      instruction: "Cliquez sur l'icône 'Cartes' dans la barre de navigation pour voir vos statistiques et tendances.",
-      targetElement: 'stats-nav',
-      skippable: true,
-      validation: () => true
+      content: "Visualisez l'évolution de votre trésorerie et de vos habitudes de dépense dans le temps, pour ajuster votre stratégie en connaissance de cause."
+    },
+    {
+      id: 'general_preview',
+      title: "AU-DELÀ DU CHAPITRE 1",
+      subtitle: "Réservé aux Généraux",
+      icon: Shield,
+      content: "Les Généraux de l'Empire ont accès à des modules avancés : Jarvis (votre stratège IA personnel), l'Arsenal Tactique pour monétiser vos compétences, la gestion de Projets avec plans d'action générés par IA, et plus encore. Ces modules s'ouvriront à tous progressivement."
     },
     {
       id: 'synthesis',
-      title: "MISSION ACCOMPLIE",
-      subtitle: "Formation Terminée",
-      type: 'intro',
+      title: "VOTRE EMPIRE VOUS ATTEND",
+      subtitle: "Formation terminée",
       icon: CheckCircle,
-      content: "Félicitations, Commandant ! Vous avez découvert les principales fonctionnalités d'Imperium avec vos propres données. Vous pouvez maintenant utiliser l'application en toute autonomie.",
-      objectives: isGeneral ? [
-        "Dashboard et transactions maîtrisés",
-        "Gestion d'objectifs comprise",
-        "Suivi des dettes découvert",
-        "Projets et ROI explorés",
-        "Statistiques analysées"
-      ] : [
-        "Dashboard et transactions maîtrisés",
-        "Gestion d'objectifs comprise",
-        "Trophées et progression découverts",
-        "Académie du Commandant consultée",
-        "Statistiques analysées"
-      ]
+      content: "Vous connaissez maintenant les piliers d'IMPERIUM. À vous de jouer, Commandant : chaque transaction, chaque objectif, chaque jour de discipline construit votre Empire."
     }
   ];
 
-  // ==========================================
-  // FILTRE SELON LE RÔLE
-  // ==========================================
-  const TUTORIAL_STEPS = isGeneral
-    ? ALL_STEPS.filter(s => !['trophies', 'academy'].includes(s.id))
-    : ALL_STEPS.filter(s => !['debts', 'projects'].includes(s.id));
+  // Adaptation de l'étape Généraux selon le rôle
+  const TUTORIAL_STEPS = ALL_STEPS.map(step => {
+    if (step.id === 'general_preview' && isGeneral) {
+      return {
+        ...step,
+        title: "VOS MODULES DE GÉNÉRAL",
+        subtitle: "Accès Général",
+        content: "En tant que Général, vous avez déjà accès à Jarvis, l'Arsenal Tactique, la gestion de Projets, et plus encore. Explorez-les depuis le QG."
+      };
+    }
+    return step;
+  });
 
   const currentTutorialStep = TUTORIAL_STEPS[currentStep];
   const StepIcon = currentTutorialStep.icon;
@@ -183,10 +119,6 @@ function InteractiveTutorial({ onComplete, currency = "€", userRole = 'standar
     }
   };
 
-  const skipCurrentStep = () => {
-    nextStep();
-  };
-
   const skipTutorial = () => {
     localStorage.setItem('imperium_tutorial_completed', 'true');
     onComplete();
@@ -194,14 +126,6 @@ function InteractiveTutorial({ onComplete, currency = "€", userRole = 'standar
 
   const toggleOverlay = () => {
     setShowOverlay(!showOverlay);
-  };
-
-  // Vérifier si l'étape est validée
-  const isStepValidated = () => {
-    if (currentTutorialStep.validation) {
-      return currentTutorialStep.validation();
-    }
-    return false;
   };
 
   if (isCompleted) {
@@ -246,6 +170,7 @@ function InteractiveTutorial({ onComplete, currency = "€", userRole = 'standar
                     <button 
                       onClick={toggleOverlay}
                       className="text-gray-500 hover:text-white"
+                      title="Fermer temporairement"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -254,45 +179,10 @@ function InteractiveTutorial({ onComplete, currency = "€", userRole = 'standar
                 </div>
               </div>
 
-              {/* Contenu */}
-              {currentTutorialStep.type === 'intro' ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-300 leading-relaxed">{currentTutorialStep.content}</p>
-                  {currentTutorialStep.objectives && (
-                    <div className="space-y-2">
-                      {currentTutorialStep.objectives.map((obj, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs text-gray-400">
-                          <CheckCircle className="w-3 h-3 text-green-500 shrink-0" />
-                          <span>{obj}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-300 leading-relaxed">{currentTutorialStep.content}</p>
-                  <div className="bg-gold/10 border border-gold/30 rounded-lg p-4">
-                    <p className="text-xs text-gold font-bold uppercase tracking-widest mb-1">Instruction</p>
-                    <p className="text-sm text-white">{currentTutorialStep.instruction}</p>
-                  </div>
-
-                  {/* Message "Étape validée !" animé */}
-                  <AnimatePresence>
-                    {isStepValidated() && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="flex items-center gap-2 text-green-500 text-sm overflow-hidden"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        <span>Étape validée !</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
+              {/* Contenu explicatif */}
+              <div className="space-y-4">
+                <p className="text-sm text-gray-300 leading-relaxed">{currentTutorialStep.content}</p>
+              </div>
 
               {/* Zone des boutons */}
               <div className="flex gap-3 mt-6">
@@ -300,20 +190,19 @@ function InteractiveTutorial({ onComplete, currency = "€", userRole = 'standar
                   onClick={skipTutorial}
                   className="text-gray-500 text-[10px] uppercase tracking-widest underline px-2"
                 >
-                  Quitter le tutoriel
+                  Quitter
                 </button>
-                {!isStepValidated() && currentTutorialStep.type !== 'intro' && (
+                {currentStep > 0 && (
                   <button 
-                    onClick={skipCurrentStep}
+                    onClick={() => setCurrentStep(currentStep - 1)}
                     className="flex-1 bg-transparent border border-gray-700 text-gray-400 font-bold py-3 rounded-lg uppercase tracking-widest text-xs hover:bg-gray-800 transition-colors"
                   >
-                    Passer cette étape
+                    Précédent
                   </button>
                 )}
                 <button 
                   onClick={nextStep}
-                  disabled={!isStepValidated() && currentTutorialStep.type === 'guided' && !currentTutorialStep.skippable}
-                  className="flex-1 bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 bg-gold text-black font-bold py-3 rounded-lg uppercase tracking-widest text-xs hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"
                 >
                   {currentStep === TUTORIAL_STEPS.length - 1 ? "Terminer" : "Continuer"}
                   <ArrowRight className="w-4 h-4" />
