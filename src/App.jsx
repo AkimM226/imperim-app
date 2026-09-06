@@ -1779,9 +1779,9 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
     if (impactValue < -50) impactStatus = "malus"; 
   
     // Couleur barre
-    let rationColor = "bg-[#F4D35E]";
-    if (remainingDaily < 0) rationColor = "bg-red-600";
-    else if (dailyProgress < 50) rationColor = "bg-green-500";
+    let rationColor = "bg-gold";
+    if (remainingDaily < 0) rationColor = "bg-danger";
+    else if (dailyProgress < 50) rationColor = "bg-success";
   
     // FLAMME (STREAK)
     const calculateStreak = () => {
@@ -2066,7 +2066,7 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
   
     return (
       <PageTransition>
-      <div className="h-[100dvh] w-full max-w-md mx-auto bg-dark text-gray-200 font-sans flex flex-col relative overflow-hidden">
+      <div className="h-[100dvh] w-full max-w-md mx-auto bg-nuit text-ivoire font-sans flex flex-col relative overflow-hidden">
         
        {/* ========================================== */}
         {/* 1. LIGNE D'EN-TÊTE (Titre et Badges)        */}
@@ -2075,8 +2075,8 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
            
            {/* PARTIE GAUCHE : TITRE */}
            <div className="flex-1 min-w-0 pr-2">
-              <h1 className="text-xl font-serif text-[#F4D35E] font-bold tracking-widest truncate">IMPERIUM</h1>
-              <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">J-{daysRemaining} • {todayStr}</p>
+              <h1 className="text-xl font-serif text-gold font-bold tracking-widest truncate">IMPERIUM</h1>
+              <p className="text-[9px] text-ivoire-dim uppercase tracking-widest mt-0.5 truncate">J-{daysRemaining} • {todayStr}</p>
            </div>
         
            {/* PARTIE DROITE : BADGES */}
@@ -2160,22 +2160,22 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
           
           {/* 🧠 RAPPORT OMNISCIENT DE JARVIS */}
           {jarvisInsights.length > 0 && (
-                    <div className="mx-5 mt-4 p-4 bg-[#0a0a0a] border border-white/5 rounded-2xl relative overflow-hidden">
+                    <div className="mx-5 mt-4 p-4 bg-card-warm border border-gold/10 rounded-2xl relative overflow-hidden">
                         {/* Effet d'arrière-plan technique */}
                         <div className="absolute -right-4 -top-4 opacity-[0.03]">
                             <Cpu className="w-24 h-24 text-white" />
                         </div>
                         
                         <div className="flex items-center gap-2 mb-3">
-                            <Cpu className="w-4 h-4 text-blue-500 animate-pulse" />
-                            <h3 className="text-white text-xs font-bold uppercase tracking-widest">Analyse Jarvis</h3>
+                            <Cpu className="w-4 h-4 text-gold-vif animate-pulse" />
+                            <h3 className="text-ivoire text-xs font-bold uppercase tracking-widest">Analyse Jarvis</h3>
                         </div>
 
                         <div className="space-y-2 relative z-10">
                             {jarvisInsights.slice(0, 2).map((insight, index) => ( // On n'affiche que les 2 plus importants pour ne pas saturer l'écran
-                                <div key={index} className="flex gap-3 bg-[#111] p-3 rounded-xl border border-white/5">
+                                <div key={index} className="flex gap-3 bg-card p-3 rounded-xl border border-white/5">
                                     <div className="shrink-0 mt-0.5">{insight.icon}</div>
-                                    <p className="text-[10px] text-gray-400 leading-relaxed">{insight.text}</p>
+                                    <p className="text-[10px] text-ivoire-dim leading-relaxed">{insight.text}</p>
                                 </div>
                             ))}
                         </div>
@@ -2183,20 +2183,20 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
                 )}
 
           {/* CARTE PRINCIPALE */}
-          <div className="bg-[#111] rounded-2xl border-t-2 border-[#F4D35E] p-5 relative shadow-lg overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-b from-[#F4D35E]/5 to-transparent rounded-2xl pointer-events-none"></div>
+          <div className="bg-card imperium-weave-bg rounded-2xl border-t-2 border-gold p-5 relative shadow-lg overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent rounded-2xl pointer-events-none"></div>
                
                {/* Solde Global */}
-               <div className="text-center mb-6">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-2">Disponible (Cash + OM)</p>
-                  <h2 className="text-4xl font-serif font-bold text-white tracking-wide">{formatMoney(availableCash)} <span className="text-base text-[#F4D35E] font-sans font-bold">{currency}</span></h2>
+               <div className="text-center mb-6 relative z-10">
+                  <p className="text-[10px] text-ivoire-dim uppercase tracking-widest font-bold mb-2">Disponible (Cash + OM)</p>
+                  <h2 className="text-4xl font-serif font-bold text-ivoire tracking-wide">{formatMoney(availableCash)} <span className="text-base text-gold-vif font-sans font-bold">{currency}</span></h2>
                </div>
   
                {/* RATION DU JOUR */}
-               <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 relative overflow-hidden">
+               <div className="bg-card-warm rounded-xl p-4 border border-white/5 relative z-10 overflow-hidden">
                   <div className="flex justify-between items-center mb-2">
-                      <span className="text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1"><Clock className="w-3 h-3 text-[#F4D35E]"/> Ration du Jour</span>
-                      <span className={`text-xs font-bold ${remainingDaily < 0 ? 'text-red-500' : 'text-white'}`}>
+                      <span className="text-[10px] text-ivoire-dim uppercase font-bold flex items-center gap-1"><Clock className="w-3 h-3 text-gold"/> Ration du Jour</span>
+                      <span className={`text-xs font-bold ${remainingDaily < 0 ? 'text-danger' : 'text-ivoire'}`}>
                           {remainingDaily < 0 ? 'DÉPASSÉ' : 'Reste : ' + formatMoney(remainingDaily)}
                       </span>
                   </div>
@@ -2204,16 +2204,16 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
                       <div className={`h-full transition-all duration-500 ${rationColor}`} style={{ width: `${dailyProgress}%` }}></div>
                   </div>
                   <div className="flex justify-between items-center text-[10px] mb-3">
-                        <span className="text-gray-500">Dépensé : <span className="text-white font-bold">{formatMoney(spentToday)}</span></span>
-                        <span className="text-gray-500">Budget Max : <span className="text-gray-400">{formatMoney(realDailyAllocation)}</span></span>
+                        <span className="text-ivoire-dim">Dépensé : <span className="text-ivoire font-bold">{formatMoney(spentToday)}</span></span>
+                        <span className="text-ivoire-dim">Budget Max : <span className="text-ivoire-dim/80">{formatMoney(realDailyAllocation)}</span></span>
                   </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Projection Demain</p>
+                  <div className="flex items-center justify-between pt-3 border-t border-gold/10">
+                      <p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Projection Demain</p>
                       <div className="text-right">
-                           <p className={`text-xs font-bold ${impactStatus === 'bonus' ? 'text-green-400' : impactStatus === 'malus' ? 'text-red-400' : 'text-gray-400'}`}>
+                           <p className={`text-xs font-bold ${impactStatus === 'bonus' ? 'text-green-400' : impactStatus === 'malus' ? 'text-danger' : 'text-ivoire-dim'}`}>
                                {formatMoney(projectedRationTomorrow)} {currency}
                            </p>
-                           <p className="text-[9px] text-gray-500 italic">{impactStatus === 'bonus' ? "▲ Bonus (Discipline)" : impactStatus === 'malus' ? "▼ Malus (Dette)" : "= Stable"}</p>
+                           <p className="text-[9px] text-ivoire-dim italic">{impactStatus === 'bonus' ? "▲ Bonus (Discipline)" : impactStatus === 'malus' ? "▼ Malus (Dette)" : "= Stable"}</p>
                       </div>
                   </div>
                </div>
@@ -2221,58 +2221,58 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
   
           {/* ALERTE DETTE PRIORITAIRE (RÉSERVÉE AUX GÉNÉRAUX) */}
           {isGeneral && priorityDebt && (
-              <div onClick={() => onNavigate('debts')} className="bg-red-600/10 border border-red-500/50 p-3 rounded-xl flex items-center justify-between animate-pulse cursor-pointer">
+              <div onClick={() => onNavigate('debts')} className="bg-danger/10 border border-danger/50 p-3 rounded-xl flex items-center justify-between animate-pulse cursor-pointer">
                   <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-500/20 rounded-full"><AlertTriangle className="w-4 h-4 text-red-500"/></div>
+                      <div className="p-2 bg-danger/20 rounded-full"><AlertTriangle className="w-4 h-4 text-danger"/></div>
                       <div>
-                          <p className="text-[9px] text-red-400 font-bold uppercase tracking-widest">Dette Payable Immédiatement</p>
-                          <p className="text-xs text-white">Rembourser <span className="font-bold">{priorityDebt.name}</span> ({formatMoney(priorityDebt.amount)})</p>
+                          <p className="text-[9px] text-danger font-bold uppercase tracking-widest">Dette Payable Immédiatement</p>
+                          <p className="text-xs text-ivoire">Rembourser <span className="font-bold">{priorityDebt.name}</span> ({formatMoney(priorityDebt.amount)})</p>
                       </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-red-500" />
+                  <ChevronRight className="w-4 h-4 text-danger" />
               </div>
           )}
   
           {/* CARTE WAVE */}
-          <div onClick={() => setIsBunkerModalOpen(true)} className="bg-[#10141d] border border-blue-900/40 rounded-xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden group">
-               <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
+          <div onClick={() => setIsBunkerModalOpen(true)} className="bg-gradient-to-br from-indigo/25 to-indigo/10 border border-indigo-vif/40 rounded-xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden group">
+               <div className="absolute inset-0 bg-indigo/5 group-hover:bg-indigo/10 transition-colors"></div>
                <div className="flex items-center gap-4 relative z-10">
-                   <div className="p-2.5 bg-[#1a2333] rounded-lg text-blue-400 border border-blue-500/20"><Smartphone className="w-5 h-5"/></div>
+                   <div className="p-2.5 bg-indigo/30 rounded-lg text-indigo-vif border border-indigo-vif/30"><Smartphone className="w-5 h-5"/></div>
                    <div>
-                       <p className="text-[9px] text-blue-300 uppercase tracking-widest font-bold mb-0.5">Coffre-Fort Wave</p>
-                       <p className="text-xl font-bold text-white font-serif">{formatMoney(totalBunker)} {currency}</p>
+                       <p className="text-[9px] text-indigo-vif uppercase tracking-widest font-bold mb-0.5">Coffre-Fort Wave</p>
+                       <p className="text-xl font-bold text-ivoire font-serif">{formatMoney(totalBunker)} {currency}</p>
                    </div>
                </div>
-               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 relative z-10" />
+               <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-indigo-vif relative z-10" />
           </div>
   
           {/* GRILLE D'ACTIONS RAPIDES (RÉSERVÉE AUX GÉNÉRAUX) */}
           {isGeneral && (
               <div className="grid grid-cols-2 gap-3 mb-2">
-                  <button onClick={() => onNavigate('project')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                      <Castle className="w-6 h-6 text-[#F4D35E] mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Projets</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Conquêtes</p>
+                  <button onClick={() => onNavigate('project')} className="bg-gradient-to-br from-terre/20 to-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-terre-vif/30 active:scale-[0.98]">
+                      <Castle className="w-6 h-6 text-terre-vif mb-3 opacity-90" /><h3 className="text-sm font-bold text-ivoire">Projets</h3><p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Conquêtes</p>
                   </button>
                   
-                  <button onClick={() => { playSound('radio'); setShowRadio(true); }} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98] relative overflow-hidden group">
+                  <button onClick={() => { playSound('radio'); setShowRadio(true); }} className="bg-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-white/5 active:scale-[0.98] relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20"><Radio className="w-12 h-12 text-green-500 -rotate-12"/></div>
                         <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
-                        <h3 className="text-sm font-bold text-white relative z-10">Radio QG</h3>
-                        <p className="text-[9px] text-gray-500 uppercase tracking-wide relative z-10">Rapport Sergent</p>
+                        <h3 className="text-sm font-bold text-ivoire relative z-10">Radio QG</h3>
+                        <p className="text-[9px] text-ivoire-dim uppercase tracking-wide relative z-10">Rapport Sergent</p>
                   </button>
                   
                  {/* BOUTON JARVIS (PREMIUM) */}
-                 <button onClick={() => setShowJarvis(true)} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-gold/20 active:scale-[0.98] relative overflow-hidden group">
+                 <button onClick={() => setShowJarvis(true)} className="bg-gradient-to-br from-gold/20 to-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-gold/40 active:scale-[0.98] relative overflow-hidden group">
                       <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <Zap className="w-6 h-6 text-gold mb-3 opacity-90 relative z-10" />
-                      <h3 className="text-sm font-bold text-white relative z-10">JARVIS AI</h3>
-                      <p className="text-[9px] text-gold uppercase tracking-wide relative z-10">Analyse Tactique</p>
+                      <Zap className="w-6 h-6 text-gold-vif mb-3 opacity-90 relative z-10" />
+                      <h3 className="text-sm font-bold text-ivoire relative z-10">JARVIS AI</h3>
+                      <p className="text-[9px] text-gold-vif uppercase tracking-wide relative z-10">Analyse Tactique</p>
                  </button>
 
-                  <button onClick={() => onNavigate('skills')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                      <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Arsenal</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Compétences</p>
+                  <button onClick={() => onNavigate('skills')} className="bg-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-white/5 active:scale-[0.98]">
+                      <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-ivoire">Arsenal</h3><p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Compétences</p>
                   </button>
-                  <button onClick={() => onNavigate('protocols')} className="bg-[#1a1a1a] rounded-xl p-4 text-left hover:bg-[#222] transition-colors border border-white/5 active:scale-[0.98]">
-                      <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-white">Protocole</h3><p className="text-[9px] text-gray-500 uppercase tracking-wide">Rentes/Charges</p>
+                  <button onClick={() => onNavigate('protocols')} className="bg-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-white/5 active:scale-[0.98]">
+                      <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-ivoire">Protocole</h3><p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Rentes/Charges</p>
                   </button>
               </div>
           )}
@@ -2300,101 +2300,101 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
           )}
           
           {/* BOUTON CIBLES */}
-           <button onClick={() => { playSound('click'); onNavigate('goals'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mb-2 group hover:bg-[#222] transition-colors">
+           <button onClick={() => { playSound('click'); onNavigate('goals'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mb-2 group hover:brightness-110 transition-all">
               <div className="flex items-center gap-4">
-                  <div className="p-2 bg-blue-900/20 rounded-full text-blue-400 border border-blue-500/20">
+                  <div className="p-2 bg-indigo/20 rounded-full text-indigo-vif border border-indigo-vif/20">
                       <Target className="w-5 h-5" />
                   </div>
                   <div className="text-left">
-                      <h3 className="text-sm font-bold text-white">Cibles</h3>
-                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Objectifs d'Achat</p>
+                      <h3 className="text-sm font-bold text-ivoire">Cibles</h3>
+                      <p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Objectifs d'Achat</p>
                   </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-indigo-vif transition-colors" />
           </button>
           
            {/* --- BOUTON CITADELLE (GÉNÉRAUX UNIQUEMENT) --- */}
           {isGeneral && (
-          <button onClick={() => { playSound('citadel'); onNavigate('citadel'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors relative overflow-hidden">
-               <div className="absolute inset-0 bg-[#F4D35E]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <button onClick={() => { playSound('citadel'); onNavigate('citadel'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:brightness-110 transition-all relative overflow-hidden">
+               <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                <div className="flex items-center gap-4 relative z-10">
-                   <div className="p-2 bg-[#F4D35E]/10 rounded-full text-[#F4D35E] border border-[#F4D35E]/20">
+                   <div className="p-2 bg-gold/10 rounded-full text-gold border border-gold/20">
                        <Shield className="w-5 h-5" />
                    </div>
                    <div className="text-left">
-                       <h3 className="text-sm font-bold text-white">La Citadelle</h3>
-                       <p className="text-[9px] text-gray-500 uppercase tracking-wide">Simulateur de Survie</p>
+                       <h3 className="text-sm font-bold text-ivoire">La Citadelle</h3>
+                       <p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Simulateur de Survie</p>
                    </div>
                </div>
-               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
+               <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-gold transition-colors" />
           </button>
           )}
 
            {/* --- BOUTON ACADÉMIE --- */}
-          <button onClick={() => { playSound('click'); onNavigate('academy'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+          <button onClick={() => { playSound('click'); onNavigate('academy'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:brightness-110 transition-all">
               <div className="flex items-center gap-4">
                   <div className="p-2 bg-purple-900/20 rounded-full text-purple-400 border border-purple-500/20">
                       <BookOpen className="w-5 h-5" />
                   </div>
                   <div className="text-left">
-                      <h3 className="text-sm font-bold text-white">L'Académie</h3>
-                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Savoir Stratégique</p>
+                      <h3 className="text-sm font-bold text-ivoire">L'Académie</h3>
+                      <p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Savoir Stratégique</p>
                   </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-purple-400 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-purple-400 transition-colors" />
           </button>
 
           {/* BOUTON REGISTRE (RÉSERVÉ AUX GÉNÉRAUX) */}
           {isGeneral && (
-              <button onClick={() => { playSound('debts'); onNavigate('debts'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+              <button onClick={() => { playSound('debts'); onNavigate('debts'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:brightness-110 transition-all">
                   <div className="flex items-center gap-4">
                       <div className="p-2 bg-red-900/20 rounded-full text-red-500 border border-red-500/20">
                           <Scroll className="w-5 h-5" />
                       </div>
                       <div className="text-left">
-                          <h3 className="text-sm font-bold text-white">Le Registre</h3>
-                          <p className="text-[9px] text-gray-500 uppercase tracking-wide">Dettes & Créances</p>
+                          <h3 className="text-sm font-bold text-ivoire">Le Registre</h3>
+                          <p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Dettes & Créances</p>
                       </div>
                   </div>
                   <div className="flex items-center gap-2">
-                       {(debts.length > 0) && <span className="bg-white/10 text-white text-[9px] font-bold px-2 py-0.5 rounded">{debts.length}</span>}
-                       <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-red-500 transition-colors" />
+                       {(debts.length > 0) && <span className="bg-white/10 text-ivoire text-[9px] font-bold px-2 py-0.5 rounded">{debts.length}</span>}
+                       <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-red-500 transition-colors" />
                   </div>
               </button>
           )}
   
           {/* BOUTON TROPHÉES */}
-          <button onClick={() => { playSound('trophies'); onNavigate('trophies'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
+          <button onClick={() => { playSound('trophies'); onNavigate('trophies'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:brightness-110 transition-all">
               <div className="flex items-center gap-4">
-                  <div className="p-2 bg-[#F4D35E]/10 rounded-full text-[#F4D35E] border border-[#F4D35E]/20">
+                  <div className="p-2 bg-gold/10 rounded-full text-gold border border-gold/20">
                       <Trophy className="w-5 h-5" />
                   </div>
                   <div className="text-left">
-                      <h3 className="text-sm font-bold text-white">Salle des Trophées</h3>
-                      <p className="text-[9px] text-gray-500 uppercase tracking-wide">Voir mes succès</p>
+                      <h3 className="text-sm font-bold text-ivoire">Salle des Trophées</h3>
+                      <p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Voir mes succès</p>
                   </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
+              <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-gold transition-colors" />
           </button>
   
           {/* CITATION */}
-          <div className="text-center pt-4 opacity-60"><p className="text-[10px] text-gray-400 italic">"{dailyQuote.text}"</p></div>
+          <div className="text-center pt-4 opacity-60"><p className="text-[10px] text-ivoire-dim italic">"{dailyQuote.text}"</p></div>
         </div>
   
-        {/* 3. FAB */}
+        {/* 3. FAB -> SCEAU D'ACTION */}
         <div className="absolute bottom-20 left-0 right-0 flex justify-center z-30 pointer-events-none">
-            <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto w-14 h-14 rounded-full bg-[#EAB308] text-black shadow-[0_0_20px_rgba(234,179,8,0.4)] flex items-center justify-center active:scale-90 transition-transform border-4 border-[#0d0d0d]">
+            <button onClick={() => setIsModalOpen(true)} className="pointer-events-auto w-14 h-14 rounded-full imperium-seal text-ivoire flex items-center justify-center active:scale-90 transition-transform">
                 <Plus className="w-7 h-7" />
             </button>
         </div>
   
         {/* 4. NAV */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#161616] border-t border-white/5 px-6 pb-6 pt-3 flex justify-between items-end z-20">
-            <button onClick={() => onNavigate('dashboard')} className="flex flex-col items-center gap-1 text-[#F4D35E] opacity-100"><div className="w-6 h-6 bg-[#F4D35E]/10 rounded flex items-center justify-center"><Castle className="w-4 h-4" /></div><span className="text-[9px] font-bold uppercase">QG</span></button>
-            <button onClick={() => onNavigate('stats')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors"><BarChart3 className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Cartes</span></button>
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-nuit-deep border-t border-gold/10 px-6 pb-6 pt-3 flex justify-between items-end z-20">
+            <button onClick={() => onNavigate('dashboard')} className="flex flex-col items-center gap-1 text-gold opacity-100"><div className="w-6 h-6 bg-gold/10 rounded flex items-center justify-center"><Castle className="w-4 h-4" /></div><span className="text-[9px] font-bold uppercase">QG</span></button>
+            <button onClick={() => onNavigate('stats')} className="flex flex-col items-center gap-1 text-ivoire-dim hover:text-ivoire transition-colors"><BarChart3 className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Cartes</span></button>
             <div className="w-10"></div> 
-            <button onClick={() => setShowHistory(true)} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors"><History className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Journal</span></button>
-            <button onClick={() => onNavigate('settings')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors"><Settings className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Réglages</span></button>
+            <button onClick={() => setShowHistory(true)} className="flex flex-col items-center gap-1 text-ivoire-dim hover:text-ivoire transition-colors"><History className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Journal</span></button>
+            <button onClick={() => onNavigate('settings')} className="flex flex-col items-center gap-1 text-ivoire-dim hover:text-ivoire transition-colors"><Settings className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Réglages</span></button>
         </div>
   
         {/* MODALES INTEGREES */}
