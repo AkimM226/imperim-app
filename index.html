@@ -19,11 +19,32 @@
         theme: {
           extend: {
             colors: {
-              gold: '#D4AF37',
+              // Fond
+              nuit: '#120D09',        // fond principal (remplace 'dark': '#0a0a0a')
+              'nuit-deep': '#0A0705', // fond le plus sombre (headers, nav bar)
+              card: '#1D1712',        // fond de carte standard (remplace 'card': '#121212')
+              'card-warm': '#241B13', // fond de carte à accent chaud (ex: bandeau Jarvis)
+
+              // Accents chauds (identité principale)
+              terre: '#8B4226',       // terre-cuite, accent secondaire
+              'terre-vif': '#B85C3A', // terre-cuite plus vive (icônes, highlights)
+              gold: '#C9A227',        // remplace l'ancien gold '#D4AF37', plus mat/terreux
+              'gold-vif': '#E8C55A',  // or plus lumineux (texte accent, valeurs chiffrées)
+
+              // Accent froid de contraste
+              indigo: '#2E4057',      // bleu profond (Coffre-fort, modules "info")
+              'indigo-vif': '#4A6488',// variante plus claire
+
+              // Texte
+              ivoire: '#F1E9D8',      // texte clair principal (remplace le blanc/gris par défaut)
+              'ivoire-dim': '#A69B87',// texte secondaire/atténué
+
+              // États
+              danger: '#B54834',      // rouille-alerte (remplace danger: '#ef4444', moins agressif)
+              success: '#4A7856',     // vert sourd (remplace success: '#10b981')
+
+              // Clés rétrocompatibilité transitoire
               dark: '#0a0a0a',
-              card: '#121212',
-              danger: '#ef4444',
-              success: '#10b981',
             },
             fontFamily: {
               serif: ['Cinzel', 'serif'],
