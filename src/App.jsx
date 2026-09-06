@@ -783,7 +783,7 @@ function MainOS() {
     const [userRole, setUserRole] = useState('standard');
 
     // Modules réservés aux Généraux
-    const GENERAL_ONLY_VIEWS = ['project', 'skills', 'protocols', 'quantum', 'debts'];
+    const GENERAL_ONLY_VIEWS = ['project', 'skills', 'protocols', 'quantum', 'debts', 'citadel'];
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -2313,7 +2313,8 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
               <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />
           </button>
           
-           {/* --- BOUTON CITADELLE --- */}
+           {/* --- BOUTON CITADELLE (GÉNÉRAUX UNIQUEMENT) --- */}
+          {isGeneral && (
           <button onClick={() => { playSound('citadel'); onNavigate('citadel'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors relative overflow-hidden">
                <div className="absolute inset-0 bg-[#F4D35E]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                <div className="flex items-center gap-4 relative z-10">
@@ -2327,6 +2328,7 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
                </div>
                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-[#F4D35E] transition-colors" />
           </button>
+          )}
 
            {/* --- BOUTON ACADÉMIE --- */}
           <button onClick={() => { playSound('click'); onNavigate('academy'); }} className="w-full bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:bg-[#222] transition-colors">
