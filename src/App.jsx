@@ -521,7 +521,7 @@ function OrdersModal({ onClose }) {
 // ==========================================
 // 13. LE CHRONO-VISOR (SIMULATEUR QUANTIQUE - AUTONOME)
 // ==========================================
-function QuantumScreen({ onBack }) {
+function QuantumScreen({ onBack, userRole = 'standard' }) {
     // 1. CHARGEMENT AUTONOME DES DONNÉES
     const currency = localStorage.getItem('imperium_currency') || "€";
     const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
@@ -576,7 +576,8 @@ function QuantumScreen({ onBack }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     prompt,
-                    userId: auth?.currentUser?.uid || 'guest'
+                    userId: auth?.currentUser?.uid || 'guest',
+                    userRole
                 })
             });
             const data = await response.json();
@@ -783,7 +784,7 @@ function MainOS() {
     const [userRole, setUserRole] = useState('standard');
 
     // Modules réservés aux Généraux
-    const GENERAL_ONLY_VIEWS = ['project', 'skills', 'protocols', 'quantum', 'debts', 'citadel'];
+    const GENERAL_ONLY_VIEWS = ['protocols', 'citadel'];
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -889,7 +890,6 @@ function MainOS() {
           {currentView === 'stats' && <StatsScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'trophies' && <TrophiesScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'goals' && <GoalsScreen onBack={() => navigate('dashboard')} />}
-          {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'academy' && <AcademyScreen onBack={() => navigate('dashboard')} />}
           {currentView === 'settings' && (
               <SettingsScreen 
@@ -900,6 +900,10 @@ function MainOS() {
                  userRole={userRole}
               />
           )}
+          {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} userRole={userRole} />}
+          {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} userRole={userRole} />}
+          {currentView === 'quantum' && <QuantumScreen onBack={() => navigate('dashboard')} userRole={userRole} />}
+          {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
 
           {/* VUES RESTREINTES (GÉNÉRAUX UNIQUEMENT) AVEC ROUTEUR SÉCURISÉ */}
           {GENERAL_ONLY_VIEWS.includes(currentView) && (
@@ -907,11 +911,8 @@ function MainOS() {
                   <RestrictedAccessScreen onBack={() => navigate('dashboard')} />
               ) : (
                   <>
-                      {currentView === 'project' && <ProjectScreen onBack={() => navigate('dashboard')} />}
-                      {currentView === 'skills' && <SkillsScreen onBack={() => navigate('dashboard')} />}
                       {currentView === 'protocols' && <ProtocolsScreen onBack={() => navigate('dashboard')} />}
-                      {currentView === 'quantum' && <QuantumScreen onBack={() => navigate('dashboard')} />}
-                      {currentView === 'debts' && <DebtsScreen onBack={() => navigate('dashboard')} />}
+                      {currentView === 'citadel' && <CitadelScreen onBack={() => navigate('dashboard')} />}
                   </>
               )
           )}
@@ -1063,7 +1064,7 @@ function OnboardingScreen({ onComplete }) {
 // ==========================================
 // 11. RADIO LINK (VERSION STABLE - FLASH LATEST)
 // ==========================================
-function RadioLink({ onClose }) {
+function RadioLink({ onClose, userRole = 'standard' }) {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -1092,7 +1093,8 @@ function RadioLink({ onClose }) {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
                         prompt,
-                        userId: auth?.currentUser?.uid || 'guest'
+                        userId: auth?.currentUser?.uid || 'guest',
+                        userRole
                     })
                 });
                 
@@ -1256,7 +1258,7 @@ function getLiveEmpireContext(contextData = {}) {
     };
 }
 
-const askJarvisChat = async (history, userMessage, contextData = {}, userTitle = "Commandant") => {
+const askJarvisChat = async (history, userMessage, contextData = {}, userTitle = "Commandant", userRole = "standard") => {
     try {
         // 1. Récupération en temps réel absolu de TOUTES les données de l'Empire
         const live = getLiveEmpireContext(contextData);
@@ -1315,7 +1317,7 @@ const askJarvisChat = async (history, userMessage, contextData = {}, userTitle =
             🏰 CITADELLE (Dettes dues & Créances à recouvrer) :
             ${citadelle}
             
-            🚀 FRONTS OPÉRATIONNELS & CONQUÊTES (Projets / Chantiers en cours) :
+            🏗️ FRONTS OPÉRATIONNELS & CONQUÊTES (Projets / Chantiers en cours) :
             ${chantiers}
             
             🎯 CIBLES D'ÉPARGNE (Objectifs financiers) :
@@ -1355,14 +1357,15 @@ const askJarvisChat = async (history, userMessage, contextData = {}, userTitle =
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 contents,
-                userId: auth?.currentUser?.uid || 'guest'
+                userId: auth?.currentUser?.uid || 'guest',
+                userRole
             })
         });
 
         const data = await response.json();
 
         if (response.status === 429) {
-            return data.error || "⚠️ Quota quotidien atteint (15 requêtes/jour). Reposez-vous, Commandant.";
+            return data.error || "⚠️ Quota quotidien atteint. Reposez-vous, Commandant.";
         }
 
         if (data.error) {
@@ -1383,7 +1386,7 @@ const askJarvisChat = async (history, userMessage, contextData = {}, userTitle =
 // ==========================================
 // INTERFACE JARVIS PRIME (CHAT)
 // ==========================================
-function JarvisModal({ onClose, contextData }) {
+function JarvisModal({ onClose, contextData, userRole = 'standard' }) {
     // RECUPERATION DU GENRE
     const gender = localStorage.getItem('imperium_gender') || 'M';
     const title = gender === 'F' ? 'Commandante' : 'Commandant';
@@ -1410,7 +1413,7 @@ function JarvisModal({ onClose, contextData }) {
         setInput("");
         setLoading(true);
 
-        const responseText = await askJarvisChat(messages, input, contextData, title);
+        const responseText = await askJarvisChat(messages, input, contextData, title, userRole);
         
         const jarvisMsg = { id: Date.now() + 1, sender: 'jarvis', text: responseText };
         setMessages(prev => [...prev, jarvisMsg]);
@@ -2219,8 +2222,8 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
                </div>
           </div>
   
-          {/* ALERTE DETTE PRIORITAIRE (RÉSERVÉE AUX GÉNÉRAUX) */}
-          {isGeneral && priorityDebt && (
+          {/* ALERTE DETTE PRIORITAIRE */}
+          {priorityDebt && (
               <div onClick={() => onNavigate('debts')} className="bg-danger/10 border border-danger/50 p-3 rounded-xl flex items-center justify-between animate-pulse cursor-pointer">
                   <div className="flex items-center gap-3">
                       <div className="p-2 bg-danger/20 rounded-full"><AlertTriangle className="w-4 h-4 text-danger"/></div>
@@ -2246,58 +2249,56 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
                <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-indigo-vif relative z-10" />
           </div>
   
-          {/* GRILLE D'ACTIONS RAPIDES (RÉSERVÉE AUX GÉNÉRAUX) */}
-          {isGeneral && (
-              <div className="grid grid-cols-2 gap-3 mb-2">
-                  <button onClick={() => onNavigate('project')} className="bg-gradient-to-br from-terre/20 to-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-terre-vif/30 active:scale-[0.98]">
-                      <Castle className="w-6 h-6 text-terre-vif mb-3 opacity-90" /><h3 className="text-sm font-bold text-ivoire">Projets</h3><p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Conquêtes</p>
-                  </button>
-                  
-                  <button onClick={() => { playSound('radio'); setShowRadio(true); }} className="bg-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-white/5 active:scale-[0.98] relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20"><Radio className="w-12 h-12 text-green-500 -rotate-12"/></div>
-                        <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
-                        <h3 className="text-sm font-bold text-ivoire relative z-10">Radio QG</h3>
-                        <p className="text-[9px] text-ivoire-dim uppercase tracking-wide relative z-10">Rapport Sergent</p>
-                  </button>
-                  
-                 {/* BOUTON JARVIS (PREMIUM) */}
-                 <button onClick={() => setShowJarvis(true)} className="bg-gradient-to-br from-gold/20 to-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-gold/40 active:scale-[0.98] relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <Zap className="w-6 h-6 text-gold-vif mb-3 opacity-90 relative z-10" />
-                      <h3 className="text-sm font-bold text-ivoire relative z-10">JARVIS AI</h3>
-                      <p className="text-[9px] text-gold-vif uppercase tracking-wide relative z-10">Analyse Tactique</p>
-                 </button>
+          {/* GRILLE D'ACTIONS RAPIDES */}
+          <div className="grid grid-cols-2 gap-3 mb-2">
+              <button onClick={() => onNavigate('project')} className="bg-gradient-to-br from-terre/20 to-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-terre-vif/30 active:scale-[0.98]">
+                  <Castle className="w-6 h-6 text-terre-vif mb-3 opacity-90" /><h3 className="text-sm font-bold text-ivoire">Projets</h3><p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Conquêtes</p>
+              </button>
+              
+              <button onClick={() => { playSound('radio'); setShowRadio(true); }} className="bg-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-white/5 active:scale-[0.98] relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20"><Radio className="w-12 h-12 text-green-500 -rotate-12"/></div>
+                    <Radio className="w-6 h-6 text-green-500 mb-3 opacity-90 relative z-10" />
+                    <h3 className="text-sm font-bold text-ivoire relative z-10">Radio QG</h3>
+                    <p className="text-[9px] text-ivoire-dim uppercase tracking-wide relative z-10">Rapport Sergent</p>
+              </button>
+              
+             {/* BOUTON JARVIS (PREMIUM) */}
+             <button onClick={() => setShowJarvis(true)} className="bg-gradient-to-br from-gold/20 to-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-gold/40 active:scale-[0.98] relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <Zap className="w-6 h-6 text-gold-vif mb-3 opacity-90 relative z-10" />
+                  <h3 className="text-sm font-bold text-ivoire relative z-10">JARVIS AI</h3>
+                  <p className="text-[9px] text-gold-vif uppercase tracking-wide relative z-10">Analyse Tactique</p>
+             </button>
 
-                  <button onClick={() => onNavigate('skills')} className="bg-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-white/5 active:scale-[0.98]">
-                      <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-ivoire">Arsenal</h3><p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Compétences</p>
-                  </button>
+              <button onClick={() => onNavigate('skills')} className="bg-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-white/5 active:scale-[0.98]">
+                  <Sword className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-ivoire">Arsenal</h3><p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Compétences</p>
+              </button>
+              {isGeneral && (
                   <button onClick={() => onNavigate('protocols')} className="bg-card rounded-xl p-4 text-left hover:brightness-110 transition-all border border-white/5 active:scale-[0.98]">
                       <RefreshCw className="w-6 h-6 text-white mb-3 opacity-90" /><h3 className="text-sm font-bold text-ivoire">Protocole</h3><p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Rentes/Charges</p>
                   </button>
-              </div>
-          )}
+              )}
+          </div>
           
-          {/* BOUTON CHRONO-VISOR (RÉSERVÉ AUX GÉNÉRAUX) */}
-          {isGeneral && (
-              <button onClick={handleQuantumAccess} className="w-full bg-[#111] rounded-xl p-0.5 flex items-center justify-between active:scale-[0.98] mt-2 group relative overflow-hidden mb-3">
-                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 opacity-20 animate-pulse"></div>
-                 <div className="bg-[#0a0a0a] w-full h-full rounded-[10px] p-4 flex items-center gap-4 relative z-10">
-                     <div className="p-2 bg-cyan-900/20 rounded-full text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-                         <Infinity className="w-6 h-6 animate-spin-slow" />
-                     </div>
-                     <div className="text-left">
-                         <h3 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">CHRONO-VISOR</h3>
-                         <p className="text-[9px] text-cyan-600 uppercase tracking-widest">Simuler le Futur</p>
-                     </div>
-                     {isQuantumUnlocked ? (
-                        <ChevronRight className="w-5 h-5 text-cyan-400 ml-auto" />
-                     ) : (
-                        <Lock className="w-4 h-4 text-gray-500 ml-auto" />
-                     )}
+          {/* BOUTON CHRONO-VISOR */}
+          <button onClick={handleQuantumAccess} className="w-full bg-[#111] rounded-xl p-0.5 flex items-center justify-between active:scale-[0.98] mt-2 group relative overflow-hidden mb-3">
+             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 opacity-20 animate-pulse"></div>
+             <div className="bg-[#0a0a0a] w-full h-full rounded-[10px] p-4 flex items-center gap-4 relative z-10">
+                 <div className="p-2 bg-cyan-900/20 rounded-full text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+                     <Infinity className="w-6 h-6 animate-spin-slow" />
                  </div>
-                 <style>{`@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .animate-spin-slow { animation: spin-slow 10s linear infinite; }`}</style>
-              </button>
-          )}
+                 <div className="text-left">
+                     <h3 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">CHRONO-VISOR</h3>
+                     <p className="text-[9px] text-cyan-600 uppercase tracking-widest">Simuler le Futur</p>
+                 </div>
+                 {isQuantumUnlocked ? (
+                    <ChevronRight className="w-5 h-5 text-cyan-400 ml-auto" />
+                 ) : (
+                    <Lock className="w-4 h-4 text-gray-500 ml-auto" />
+                 )}
+             </div>
+             <style>{`@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .animate-spin-slow { animation: spin-slow 10s linear infinite; }`}</style>
+          </button>
           
           {/* BOUTON CIBLES */}
            <button onClick={() => { playSound('click'); onNavigate('goals'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mb-2 group hover:brightness-110 transition-all">
@@ -2344,24 +2345,22 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
               <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-purple-400 transition-colors" />
           </button>
 
-          {/* BOUTON REGISTRE (RÉSERVÉ AUX GÉNÉRAUX) */}
-          {isGeneral && (
-              <button onClick={() => { playSound('debts'); onNavigate('debts'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:brightness-110 transition-all">
-                  <div className="flex items-center gap-4">
-                      <div className="p-2 bg-red-900/20 rounded-full text-red-500 border border-red-500/20">
-                          <Scroll className="w-5 h-5" />
-                      </div>
-                      <div className="text-left">
-                          <h3 className="text-sm font-bold text-ivoire">Le Registre</h3>
-                          <p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Dettes & Créances</p>
-                      </div>
+          {/* BOUTON REGISTRE */}
+          <button onClick={() => { playSound('debts'); onNavigate('debts'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:brightness-110 transition-all">
+              <div className="flex items-center gap-4">
+                  <div className="p-2 bg-red-900/20 rounded-full text-red-500 border border-red-500/20">
+                      <Scroll className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                       {(debts.length > 0) && <span className="bg-white/10 text-ivoire text-[9px] font-bold px-2 py-0.5 rounded">{debts.length}</span>}
-                       <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-red-500 transition-colors" />
+                  <div className="text-left">
+                      <h3 className="text-sm font-bold text-ivoire">Le Registre</h3>
+                      <p className="text-[9px] text-ivoire-dim uppercase tracking-wide">Dettes & Créances</p>
                   </div>
-              </button>
-          )}
+              </div>
+              <div className="flex items-center gap-2">
+                   {(debts.length > 0) && <span className="bg-white/10 text-ivoire text-[9px] font-bold px-2 py-0.5 rounded">{debts.length}</span>}
+                   <ChevronRight className="w-5 h-5 text-ivoire-dim group-hover:text-red-500 transition-colors" />
+              </div>
+          </button>
   
           {/* BOUTON TROPHÉES */}
           <button onClick={() => { playSound('trophies'); onNavigate('trophies'); }} className="w-full bg-card rounded-xl p-4 flex items-center justify-between border border-white/5 active:scale-[0.98] mt-2 group hover:brightness-110 transition-all">
@@ -2528,12 +2527,13 @@ function Dashboard({ onNavigate, userRole = 'standard' }) {
       )}
       
         {showOrders && <OrdersModal onClose={() => setShowOrders(false)} />}
-        {isGeneral && showRadio && <RadioLink onClose={() => setShowRadio(false)} />}
+        {showRadio && <RadioLink onClose={() => setShowRadio(false)} userRole={userRole} />}
         
-        {/* MODALE JARVIS PRIME (GÉNÉRAUX UNIQUEMENT) */}
-        {isGeneral && showJarvis && (
+        {/* MODALE JARVIS PRIME */}
+        {showJarvis && (
             <JarvisModal 
                 onClose={() => setShowJarvis(false)} 
+                userRole={userRole}
                 contextData={{ balance: availableCash, bunker: totalBunker, currency: currency, transactions: transactions, projects: projects, skills: skills, debts: debts, protocols: protocols }}
             />
         )}
@@ -3270,7 +3270,7 @@ function StatsScreen({ onBack }) {
 // ==========================================
 // 4. ARSENAL (Version Stable - Sans Animation)
 // ==========================================
-function SkillsScreen({ onBack }) {
+function SkillsScreen({ onBack, userRole = 'standard' }) {
     const currency = localStorage.getItem('imperium_currency') || "€";
 
     const savedZone = localStorage.getItem('imperium_zone');
@@ -3339,14 +3339,15 @@ function SkillsScreen({ onBack }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     prompt,
-                    userId: auth?.currentUser?.uid || 'guest'
+                    userId: auth?.currentUser?.uid || 'guest',
+                    userRole
                 })
             });
             
             const data = await response.json();
             
             if (response.status === 429) {
-                alert(data.error || "⚠️ Quota quotidien atteint (15 requêtes/jour).");
+                alert(data.error || "⚠️ Quota quotidien atteint.");
                 return;
             }
 
@@ -3524,7 +3525,7 @@ function TrophiesScreen({ onBack }) {
 // ==========================================
 // 6. PROJET & STRATÉGIE (AVEC JARVIS AI)
 // ==========================================
-function ProjectScreen({ onBack }) { 
+function ProjectScreen({ onBack, userRole = 'standard' }) { 
     // 📡 APPEL AU QG
     const { showAlert, showConfirm } = useJarvis();
     const currency = localStorage.getItem('imperium_currency') || "€";
@@ -3702,7 +3703,8 @@ function ProjectScreen({ onBack }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     prompt,
-                    userId: auth?.currentUser?.uid || 'guest'
+                    userId: auth?.currentUser?.uid || 'guest',
+                    userRole
                 })
             });
 

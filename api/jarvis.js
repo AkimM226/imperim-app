@@ -16,7 +16,8 @@ if (!admin.apps.length) {
   }
 }
 
-const DAILY_LIMIT = 15;
+const DAILY_LIMIT_STANDARD = 4;
+const DAILY_LIMIT_GENERAL = 15;
 
 // Liste ordonnée de modèles de secours (Cascade anti-surcharge)
 // Mise à jour : modèles stables génération 3.x (septembre 2026)
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Données de requête invalides (prompt ou contents requis).' });
     }
 
-    // 2. CHANTIER 3 — QUOTA QUOTIDIEN ANTI-ABUS (15 requêtes/jour par utilisateur)
+    // 2. CHANTIER 3 — QUOTA QUOTIDIEN ANTI-ABUS (Différencié selon le rôle vérifié côté serveur)
     if (admin.apps.length) {
       try {
         const rawUserId = String(userId || 'anonymous').trim();
@@ -51,6 +52,23 @@ export default async function handler(req, res) {
         const docId = `${sanitizedUserId}_${today}`;
 
         const db = admin.firestore();
+
+        // Vérification du VRAI rôle depuis Firestore, ne jamais faire confiance
+        // au rôle envoyé par le client
+        let realRole = 'standard';
+        if (sanitizedUserId !== 'anonymous' && sanitizedUserId !== 'guest') {
+          try {
+            const empireDoc = await db.collection('empires').doc(sanitizedUserId).get();
+            if (empireDoc.exists && empireDoc.data()?.role === 'general') {
+              realRole = 'general';
+            }
+          } catch (e) {
+            console.warn('Impossible de vérifier le rôle, application du quota standard par défaut:', e);
+          }
+        }
+
+        const DAILY_LIMIT = realRole === 'general' ? DAILY_LIMIT_GENERAL : DAILY_LIMIT_STANDARD;
+
         const usageRef = db.collection('usage').doc(docId);
         const usageSnap = await usageRef.get();
 
