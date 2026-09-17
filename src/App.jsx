@@ -522,6 +522,7 @@ function OrdersModal({ onClose }) {
 // 13. LE CHRONO-VISOR (SIMULATEUR QUANTIQUE - AUTONOME)
 // ==========================================
 function QuantumScreen({ onBack, userRole = 'standard' }) {
+    const { showAlert } = useJarvis();
     // 1. CHARGEMENT AUTONOME DES DONNÉES
     const currency = localStorage.getItem('imperium_currency') || "€";
     const balance = JSON.parse(localStorage.getItem('imperium_balance') || "0");
@@ -583,7 +584,11 @@ function QuantumScreen({ onBack, userRole = 'standard' }) {
             const data = await response.json();
             
             if (response.status === 429) {
-                alert(data.error || "⚠️ Quota quotidien d'IA dépassé. Réessayez demain.");
+                showAlert(
+                    "TRANSMISSION SATURÉE",
+                    data.error || "Le QG a suspendu les communications jusqu'à demain. Revenez plus tard, Commandant.",
+                    "warning"
+                );
                 return;
             }
 
@@ -1065,6 +1070,7 @@ function OnboardingScreen({ onComplete }) {
 // 11. RADIO LINK (VERSION STABLE - FLASH LATEST)
 // ==========================================
 function RadioLink({ onClose, userRole = 'standard' }) {
+    const { showAlert } = useJarvis();
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -1101,7 +1107,13 @@ function RadioLink({ onClose, userRole = 'standard' }) {
                 const data = await response.json();
 
                 if (response.status === 429) {
+                    showAlert(
+                        "TRANSMISSION SATURÉE",
+                        data.error || "Le QG a suspendu les communications jusqu'à demain. Revenez plus tard, Commandant.",
+                        "warning"
+                    );
                     setMessage(typeof data.error === 'string' ? data.error : "Quota quotidien atteint. Rompez !");
+                    return;
                 } else if (data.error) {
                     const errMsg = typeof data.error === 'object' ? data.error.message : data.error;
                     if (errMsg && errMsg.includes("quota")) {
@@ -1258,7 +1270,7 @@ function getLiveEmpireContext(contextData = {}) {
     };
 }
 
-const askJarvisChat = async (history, userMessage, contextData = {}, userTitle = "Commandant", userRole = "standard") => {
+const askJarvisChat = async (history, userMessage, contextData = {}, userTitle = "Commandant", userRole = "standard", showAlert = null) => {
     try {
         // 1. Récupération en temps réel absolu de TOUTES les données de l'Empire
         const live = getLiveEmpireContext(contextData);
@@ -1365,7 +1377,14 @@ const askJarvisChat = async (history, userMessage, contextData = {}, userTitle =
         const data = await response.json();
 
         if (response.status === 429) {
-            return data.error || "⚠️ Quota quotidien atteint. Reposez-vous, Commandant.";
+            if (showAlert) {
+                showAlert(
+                    "TRANSMISSION SATURÉE",
+                    data.error || "Le QG a suspendu les communications jusqu'à demain. Revenez plus tard, Commandant.",
+                    "warning"
+                );
+            }
+            return data.error || "⚠️ Le QG a suspendu les communications jusqu'à demain. Revenez plus tard, Commandant.";
         }
 
         if (data.error) {
@@ -1387,6 +1406,7 @@ const askJarvisChat = async (history, userMessage, contextData = {}, userTitle =
 // INTERFACE JARVIS PRIME (CHAT)
 // ==========================================
 function JarvisModal({ onClose, contextData, userRole = 'standard' }) {
+    const { showAlert } = useJarvis();
     // RECUPERATION DU GENRE
     const gender = localStorage.getItem('imperium_gender') || 'M';
     const title = gender === 'F' ? 'Commandante' : 'Commandant';
@@ -1413,7 +1433,7 @@ function JarvisModal({ onClose, contextData, userRole = 'standard' }) {
         setInput("");
         setLoading(true);
 
-        const responseText = await askJarvisChat(messages, input, contextData, title, userRole);
+        const responseText = await askJarvisChat(messages, input, contextData, title, userRole, showAlert);
         
         const jarvisMsg = { id: Date.now() + 1, sender: 'jarvis', text: responseText };
         setMessages(prev => [...prev, jarvisMsg]);
@@ -3271,6 +3291,7 @@ function StatsScreen({ onBack }) {
 // 4. ARSENAL (Version Stable - Sans Animation)
 // ==========================================
 function SkillsScreen({ onBack, userRole = 'standard' }) {
+    const { showAlert } = useJarvis();
     const currency = localStorage.getItem('imperium_currency') || "€";
 
     const savedZone = localStorage.getItem('imperium_zone');
@@ -3347,7 +3368,11 @@ function SkillsScreen({ onBack, userRole = 'standard' }) {
             const data = await response.json();
             
             if (response.status === 429) {
-                alert(data.error || "⚠️ Quota quotidien atteint.");
+                showAlert(
+                    "TRANSMISSION SATURÉE",
+                    data.error || "Le QG a suspendu les communications jusqu'à demain. Revenez plus tard, Commandant.",
+                    "warning"
+                );
                 return;
             }
 
@@ -3711,7 +3736,11 @@ function ProjectScreen({ onBack, userRole = 'standard' }) {
             const data = await response.json();
 
             if (response.status === 429) {
-                alert(data.error || "⚠️ Quota quotidien d'IA atteint. Réessayez demain.");
+                showAlert(
+                    "TRANSMISSION SATURÉE",
+                    data.error || "Le QG a suspendu les communications jusqu'à demain. Revenez plus tard, Commandant.",
+                    "warning"
+                );
                 setIsThinking(false);
                 return;
             }
